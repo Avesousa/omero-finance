@@ -1,7 +1,6 @@
 /**
  * Dashboard data layer.
  * Aggregates all data sources into a single DashboardData shape.
- * Uses mock data until auth + Prisma client are wired up.
  */
 
 import {
@@ -10,6 +9,8 @@ import {
   calculatePerUserBudget,
   calculateGastosLibres,
 } from "./budget";
+import { prisma } from "./prisma";
+import { HOUSEHOLD_ID } from "../../prisma/constants";
 
 export const MONTH_NAMES = [
   "enero","febrero","marzo","abril","mayo","junio",
@@ -52,8 +53,8 @@ export interface TdcAlert {
 export interface DashboardData {
   month: MonthName;
   year: number;
-  isFuture: boolean;   // month/year is ahead of today
-  hasData: boolean;    // at least one income or expense exists for this period
+  isFuture: boolean;
+  hasData: boolean;
   totalIncomeArs: number;
   totalUsd: number;
   exchangeRate: number;
@@ -69,10 +70,8 @@ export interface DashboardData {
 
 export function isMonthInFuture(month: MonthName, year: number): boolean {
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-indexed
-  const selectedMonth = MONTH_NAMES.indexOf(month); // 0-indexed
-  return year > currentYear || (year === currentYear && selectedMonth > currentMonth);
+  const selectedMonth = MONTH_NAMES.indexOf(month);
+  return year > now.getFullYear() || (year === now.getFullYear() && selectedMonth > now.getMonth());
 }
 
 export function isCurrentMonth(month: MonthName, year: number): boolean {
@@ -80,64 +79,28 @@ export function isCurrentMonth(month: MonthName, year: number): boolean {
   return year === now.getFullYear() && MONTH_NAMES.indexOf(month) === now.getMonth();
 }
 
-/** Months that have real data in the mock. Replace with DB query result. */
-const MONTHS_WITH_DATA = new Set([
-  "octubre-2025","noviembre-2025","diciembre-2025","enero-2026",
-]);
-
-export function monthHasData(month: MonthName, year: number): boolean {
-  // TODO: replace with: return prisma.income.count({ where: { month, year, householdId } }) > 0
-  return MONTHS_WITH_DATA.has(`${month}-${year}`);
-}
-
 // ─────────────────────────────────────────────
-// Mock data — replace with real Prisma queries
+// Constants
 // ─────────────────────────────────────────────
 
-const MOCK_USERS = [
-  { id: "avelino", name: "Avelino", avatarColor: "#6366F1", incomeArs: 4_387_957 },
-  { id: "maria",   name: "Maria",   avatarColor: "#EC4899", incomeArs: 957_250  },
-];
+const AUTO_CATEGORIES = ["ALQUILER", "TDC", "GASTOS_FIJOS"] as const;
 
-const MOCK_AUTO = {
-  alquiler:    1_095_397,  // 666,409 + 428,988 (Depto 1G, enero-2026)
-  tdc:         6_121_144,  // sum of all cards, enero-2026
-  gastos_fijos:  979_643,  // real total from Gasto fijos sheet, enero-2026
+const ALL_CATEGORIES = [
+  "ALQUILER","TDC","GASTOS_FIJOS","MERCADO",
+  "GASTOS_LIBRES","AHORRO_CASA","AHORRO_VACACIONES","INVERSION_AHORRO","OTROS",
+] as const;
+
+const LABELS: Record<string, string> = {
+  ALQUILER:          "Alquiler",
+  TDC:               "Tarjetas de crédito",
+  GASTOS_FIJOS:      "Gastos fijos",
+  MERCADO:           "Mercado",
+  GASTOS_LIBRES:     "Gastos libres",
+  AHORRO_CASA:       "Ahorro casa",
+  AHORRO_VACACIONES: "Ahorro vacaciones",
+  INVERSION_AHORRO:  "Inversión & ahorro",
+  OTROS:             "Otros",
 };
-
-const MOCK_USED = {
-  ALQUILER:         1_095_397,
-  TDC:              5_321_144,
-  GASTOS_FIJOS:        79_083,
-  MERCADO:            763_862,
-  GASTOS_LIBRES:      120_000,
-  AHORRO_CASA:              0,
-  AHORRO_VACACIONES:        0,
-  INVERSION_AHORRO:         0,
-  OTROS:              113_646,
-};
-
-const MOCK_CONFIG: Record<string, { manualPercentage?: number; manualAmount?: number; isReserved: boolean }> = {
-  ALQUILER:         { isReserved: true  },
-  TDC:              { isReserved: true  },
-  GASTOS_FIJOS:     { isReserved: true  },
-  MERCADO:          { manualAmount: 500_000, isReserved: true  },
-  GASTOS_LIBRES:    { isReserved: true  },
-  AHORRO_CASA:      { manualPercentage: 0, isReserved: false },
-  AHORRO_VACACIONES:{ manualAmount: 0,    isReserved: false },
-  INVERSION_AHORRO: { manualPercentage: 0, isReserved: false },
-  OTROS:            { isReserved: true  },
-};
-
-const MOCK_TDC_ALERTS: TdcAlert[] = [
-  {
-    id: "1",
-    cardName: "VISA AVELINO BK",
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(),
-    amountToPay: 157_000,
-    daysUntilDue: 2,
-  },
-];
 
 // ─────────────────────────────────────────────
 // Main function
@@ -146,102 +109,196 @@ const MOCK_TDC_ALERTS: TdcAlert[] = [
 export async function getDashboardData(
   month: MonthName,
   year: number,
-  // householdId: string  ← add once auth is wired
 ): Promise<DashboardData> {
   const isFuture = isMonthInFuture(month, year);
-  const hasData = !isFuture && monthHasData(month, year);
 
-  // Return early shell for months with no data
+  // Real hasData: check if at least one income record exists
+  const incomeCount = await prisma.income.count({
+    where: { householdId: HOUSEHOLD_ID, month, year },
+  });
+  const hasData = !isFuture && incomeCount > 0;
+
   if (!hasData) {
+    const fallbackRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
     return {
       month, year, isFuture, hasData,
-      totalIncomeArs: 0, totalUsd: 0, exchangeRate: 1477.20,
+      totalIncomeArs: 0, totalUsd: 0,
+      exchangeRate: fallbackRate ? Number(fallbackRate.usdArs) : 1477.20,
       surplusArs: 0, users: [], categories: [], tdcAlerts: [],
     };
   }
 
-  // TODO: replace mock with:
-  // const [incomes, cards, fixed, groceries, expenses, configs, rate] = await Promise.all([
-  //   prisma.income.findMany({ where: { householdId, month, year } }),
-  //   ...
-  // ])
+  // Fetch everything needed in parallel
+  const [
+    dbUsers,
+    incomes,
+    rentAgg,
+    cardStatements,
+    fixedAgg,
+    groceryAgg,
+    householdAgg,
+    personalByUser,
+    latestRate,
+    budgetConfigs,
+  ] = await Promise.all([
+    prisma.user.findMany({ where: { householdId: HOUSEHOLD_ID } }),
+    prisma.income.findMany({ where: { householdId: HOUSEHOLD_ID, month, year } }),
+    prisma.rentPayment.aggregate({
+      where: { householdId: HOUSEHOLD_ID, month, year },
+      _sum: { amount: true },
+    }),
+    prisma.creditCardStatement.findMany({
+      where: { householdId: HOUSEHOLD_ID, month, year },
+    }),
+    prisma.fixedExpense.aggregate({
+      where: { householdId: HOUSEHOLD_ID, month, year },
+      _sum: { amount: true },
+    }),
+    prisma.groceryExpense.aggregate({
+      where: { householdId: HOUSEHOLD_ID, month, year },
+      _sum: { amount: true },
+    }),
+    prisma.householdExpense.aggregate({
+      where: { householdId: HOUSEHOLD_ID, month, year },
+      _sum: { amount: true },
+    }),
+    prisma.personalExpense.groupBy({
+      by: ["userId"],
+      where: { householdId: HOUSEHOLD_ID, month, year },
+      _sum: { amount: true },
+    }),
+    prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } }),
+    prisma.budgetConfig.findMany({
+      where: { householdId: HOUSEHOLD_ID, month, year },
+    }),
+  ]);
 
-  const totalIncomeArs = MOCK_USERS.reduce((s, u) => s + u.incomeArs, 0);
-  const exchangeRate = 1477.20;
-  const totalUsd = 840;
+  const exchangeRate = latestRate ? Number(latestRate.usdArs) : 1477.20;
 
-  // Build user summaries with percentage split
-  const users: UserSummary[] = MOCK_USERS.map((u) => ({
-    ...u,
-    percentage: totalIncomeArs > 0 ? u.incomeArs / totalIncomeArs : 0,
+  // ── Income & users ────────────────────────────────────────────────────────
+  const incomeByUser: Record<string, number> = {};
+  for (const inc of incomes) {
+    if (inc.type === "SUELDO") {
+      incomeByUser[inc.createdById] = (incomeByUser[inc.createdById] ?? 0) + Number(inc.amount);
+    }
+  }
+  const totalIncomeArs = Object.values(incomeByUser).reduce((s, v) => s + v, 0);
+
+  const users: UserSummary[] = dbUsers.map((u) => ({
+    id: u.id,
+    name: u.name,
+    avatarColor: u.avatarColor,
+    incomeArs: incomeByUser[u.id] ?? 0,
+    percentage: totalIncomeArs > 0 ? (incomeByUser[u.id] ?? 0) / totalIncomeArs : 0,
   }));
 
-  // Build category rows
-  const AUTO_CATEGORIES = ["ALQUILER", "TDC", "GASTOS_FIJOS"] as const;
-  const ALL_CATEGORIES = [
-    "ALQUILER","TDC","GASTOS_FIJOS","MERCADO",
-    "GASTOS_LIBRES","AHORRO_CASA","AHORRO_VACACIONES","INVERSION_AHORRO","OTROS",
-  ] as const;
-
-  const LABELS: Record<string, string> = {
-    ALQUILER: "Alquiler",
-    TDC: "Tarjetas de crédito",
-    GASTOS_FIJOS: "Gastos fijos",
-    MERCADO: "Mercado",
-    GASTOS_LIBRES: "Gastos libres",
-    AHORRO_CASA: "Ahorro casa",
-    AHORRO_VACACIONES: "Ahorro vacaciones",
-    INVERSION_AHORRO: "Inversión & ahorro",
-    OTROS: "Otros",
+  // ── Auto amounts (come from DB records, not configurable %) ──────────────
+  const autoAmounts: Record<string, number> = {
+    ALQUILER:    Number(rentAgg._sum.amount ?? 0),
+    TDC:         cardStatements.reduce((s, c) => s + Number(c.amountToPay), 0),
+    GASTOS_FIJOS: Number(fixedAgg._sum.amount ?? 0),
   };
 
-  // First pass: calculate all reserved amounts for gastos libres
-  const reservedAmounts: number[] = [];
+  // ── Used amounts (actual spending per category) ───────────────────────────
+  const personalTotal = personalByUser.reduce((s, r) => s + Number(r._sum.amount ?? 0), 0);
+  const usedAmounts: Record<string, number> = {
+    ALQUILER:          autoAmounts.ALQUILER,
+    TDC:               autoAmounts.TDC,
+    GASTOS_FIJOS:      autoAmounts.GASTOS_FIJOS,
+    MERCADO:           Number(groceryAgg._sum.amount ?? 0),
+    GASTOS_LIBRES:     Number(householdAgg._sum.amount ?? 0),
+    AHORRO_CASA:       0,
+    AHORRO_VACACIONES: 0,
+    INVERSION_AHORRO:  0,
+    OTROS:             personalTotal,
+  };
+
+  // ── Budget config per category (from DB, with sensible defaults) ──────────
+  const configMap = Object.fromEntries(budgetConfigs.map((c) => [c.category, c]));
+
+  const categoryConfig: Record<string, {
+    manualPercentage?: number;
+    manualAmount?: number;
+    isReserved: boolean;
+  }> = {
+    ALQUILER:         { isReserved: true },
+    TDC:              { isReserved: true },
+    GASTOS_FIJOS:     { isReserved: true },
+    MERCADO: {
+      manualAmount: configMap["MERCADO"]?.manualAmount
+        ? Number(configMap["MERCADO"].manualAmount)
+        : 500_000,
+      isReserved: true,
+    },
+    GASTOS_LIBRES:    { isReserved: true },
+    AHORRO_CASA: {
+      manualPercentage: configMap["AHORRO_CASA"]?.manualPercentage
+        ? Number(configMap["AHORRO_CASA"].manualPercentage)
+        : 0,
+      isReserved: false,
+    },
+    AHORRO_VACACIONES: {
+      manualAmount: configMap["AHORRO_VACACIONES"]?.manualAmount
+        ? Number(configMap["AHORRO_VACACIONES"].manualAmount)
+        : 0,
+      isReserved: false,
+    },
+    INVERSION_AHORRO: {
+      manualPercentage: configMap["INVERSION_AHORRO"]?.manualPercentage
+        ? Number(configMap["INVERSION_AHORRO"].manualPercentage)
+        : 0,
+      isReserved: false,
+    },
+    OTROS:            { isReserved: true },
+  };
+
+  // ── First pass: compute raw budgeted amounts (needed for gastos libres) ───
   const rawAmounts: Record<string, number> = {};
+  const reservedAmounts: number[] = [];
 
   for (const key of ALL_CATEGORIES) {
     if (key === "GASTOS_LIBRES") continue;
-    const cfg = MOCK_CONFIG[key];
-    const autoAmt = MOCK_AUTO[key.toLowerCase() as keyof typeof MOCK_AUTO] ?? 0;
-    const amt = calculateCategoryAmount(totalIncomeArs, { category: key, ...cfg }, autoAmt);
+    const cfg     = categoryConfig[key];
+    const autoAmt = autoAmounts[key] ?? 0;
+    const amt     = calculateCategoryAmount(totalIncomeArs, { category: key, ...cfg }, autoAmt);
     rawAmounts[key] = amt;
     if (cfg.isReserved) reservedAmounts.push(amt);
   }
-
   rawAmounts["GASTOS_LIBRES"] = calculateGastosLibres(totalIncomeArs, reservedAmounts);
 
-  // Second pass: build full rows
+  // ── Second pass: build CategoryRow array ──────────────────────────────────
   const categories: CategoryRow[] = ALL_CATEGORIES.map((key) => {
-    const cfg = MOCK_CONFIG[key];
+    const cfg        = categoryConfig[key];
     const budgetedArs = rawAmounts[key];
-    const usedArs = MOCK_USED[key] ?? 0;
+    const usedArs    = usedAmounts[key] ?? 0;
     const availableArs = budgetedArs - usedArs;
+
     const perUserBudget = calculatePerUserBudget(
       budgetedArs,
-      users.map((u) => ({ userId: u.id, name: u.name, incomeArs: u.incomeArs }))
+      users.map((u) => ({ userId: u.id, name: u.name, incomeArs: u.incomeArs })),
     );
 
     const perUser: CategoryRow["perUser"] = {};
     for (const u of users) {
-      const userUsed = usedArs * u.percentage; // approximation until real data
+      const userUsed = usedArs * u.percentage;
       perUser[u.id] = {
-        budgeted: perUserBudget[u.id],
-        used: userUsed,
+        budgeted:  perUserBudget[u.id],
+        used:      userUsed,
         available: perUserBudget[u.id] - userUsed,
       };
     }
 
     return {
       key,
-      label: LABELS[key],
-      isAuto: AUTO_CATEGORIES.includes(key as typeof AUTO_CATEGORIES[number]),
+      label:    LABELS[key],
+      isAuto:   AUTO_CATEGORIES.includes(key as typeof AUTO_CATEGORIES[number]),
       budgetedArs,
       usedArs,
       availableArs,
       percentage: calculateCategoryPercentage(budgetedArs, totalIncomeArs),
       manualPercentage: cfg.manualPercentage,
-      manualAmount: cfg.manualAmount,
-      isReserved: cfg.isReserved,
+      manualAmount:     cfg.manualAmount,
+      isReserved:       cfg.isReserved,
       perUser,
       isOverspent: availableArs < 0,
     };
@@ -251,17 +308,34 @@ export async function getDashboardData(
     .filter((c) => c.isReserved)
     .reduce((s, c) => s + c.budgetedArs, 0);
 
+  // ── TDC alerts: cards due within 7 days ───────────────────────────────────
+  const now    = new Date();
+  const in7    = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const tdcAlerts: TdcAlert[] = cardStatements
+    .filter((c) => !c.isPaid && new Date(c.dueDate) <= in7)
+    .map((c) => {
+      const msLeft = new Date(c.dueDate).getTime() - now.getTime();
+      return {
+        id:          c.id,
+        cardName:    c.cardName,
+        dueDate:     c.dueDate.toISOString(),
+        amountToPay: Number(c.amountToPay),
+        daysUntilDue: Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24))),
+      };
+    })
+    .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+
   return {
     month,
     year,
     isFuture: false,
     hasData: true,
     totalIncomeArs,
-    totalUsd,
+    totalUsd: 0,
     exchangeRate,
     surplusArs,
     users,
     categories,
-    tdcAlerts: MOCK_TDC_ALERTS,
+    tdcAlerts,
   };
 }
