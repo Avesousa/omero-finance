@@ -153,6 +153,7 @@ model GroceryExpense {
   month              String
   year               Int
   description        String
+  cardName           String?
   currency           Currency @default(ARS)
   amount             Decimal  @db.Decimal(14, 2)
   amountArs          Decimal? @db.Decimal(14, 2)
@@ -174,6 +175,7 @@ model HouseholdExpense {
   month              String
   year               Int
   description        String
+  cardName           String?
   expenseType        ExpenseType @default(UNNECESSARY)
   currency           Currency    @default(ARS)
   amount             Decimal     @db.Decimal(14, 2)
@@ -197,6 +199,7 @@ model PersonalExpense {
   month              String
   year               Int
   concept            String
+  cardName           String?
   currency           Currency @default(ARS)
   amount             Decimal  @db.Decimal(14, 2)
   amountArs          Decimal? @db.Decimal(14, 2)
