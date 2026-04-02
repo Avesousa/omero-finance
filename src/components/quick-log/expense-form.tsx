@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Mic, MicOff, Loader2 } from "lucide-react";
+import { Mic, MicOff, Loader2, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,12 +57,20 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
   const [isListening, setIsListening] = useState(false);
   const [isParsingVoice, setIsParsingVoice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
   const [voiceHint, setVoiceHint] = useState<string | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState(false);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
   const update = (patch: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
+
+  function dismissVoice() {
+    setVoiceTranscript(null);
+    setVoiceHint(null);
+    setPendingConfirm(false);
+  }
 
   /* ── Voice recording ─────────────────────── */
   async function startListening() {
@@ -75,7 +83,7 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
       recorder.start();
       mediaRef.current = recorder;
       setIsListening(true);
-      setVoiceHint(null);
+      dismissVoice();
     } catch {
       setVoiceHint("No se pudo acceder al micrófono");
     }
@@ -98,9 +106,25 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
       const res = await fetch("/api/voice/parse", { method: "POST", body: fd });
       const json = await res.json();
 
+      if (json.error) {
+        setVoiceHint(json.error);
+        return;
+      }
+
       if (json.fields) {
-        update(json.fields);
-        if (json.hint) setVoiceHint(json.hint);
+        // Merge parsed fields into form (skip empty strings so defaults stay)
+        update({
+          ...(json.fields.amount ? { amount: json.fields.amount } : {}),
+          ...(json.fields.currency ? { currency: json.fields.currency } : {}),
+          ...(json.fields.category ? { category: json.fields.category } : {}),
+          ...(json.fields.description ? { description: json.fields.description } : {}),
+          ...(json.fields.cardName ? { cardName: json.fields.cardName } : {}),
+        });
+        setVoiceTranscript(json.transcript ?? null);
+        if (json.fields.hint) setVoiceHint(json.fields.hint);
+        setPendingConfirm(true);
+      } else if (json.hint) {
+        setVoiceHint(json.hint);
       }
     } catch {
       setVoiceHint("No se pudo interpretar el audio. Intentá de nuevo.");
@@ -116,8 +140,7 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
     try {
       await onSubmit({ ...form, target });
       setForm(DEFAULT_FORM);
-      setVoiceHint(null);
-      // Haptic feedback on mobile
+      dismissVoice();
       navigator.vibrate?.(50);
     } finally {
       setIsSubmitting(false);
@@ -134,15 +157,12 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
       style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
     >
       {/* Target toggle */}
-      <div
-        className="flex border-b"
-        style={{ borderColor: "var(--border)" }}
-      >
+      <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
         {(["casa", "personal"] as ExpenseTarget[]).map((t) => (
           <button
             key={t}
             type="button"
-            onClick={() => { setTarget(t); setForm(DEFAULT_FORM); }}
+            onClick={() => { setTarget(t); setForm(DEFAULT_FORM); dismissVoice(); }}
             className="flex-1 py-3 text-sm font-medium transition-colors"
             style={{
               backgroundColor: target === t ? "var(--accent)" : "transparent",
@@ -185,19 +205,54 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
           </span>
         </button>
 
-        {voiceHint && (
-          <p
-            className="text-xs px-1"
-            style={{ color: "var(--accent-amber)" }}
+        {/* Voice confirmation banner */}
+        {pendingConfirm && voiceTranscript && (
+          <div
+            className="rounded-xl border px-3 py-3 space-y-2"
+            style={{
+              borderColor: "var(--accent)",
+              backgroundColor: "rgba(99,102,241,0.07)",
+            }}
           >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={15} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                <p className="text-xs font-medium" style={{ color: "var(--accent)" }}>
+                  Revisá los datos antes de guardar
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissVoice}
+                className="p-0.5 rounded"
+                style={{ color: "var(--text-secondary)" }}
+                aria-label="Descartar"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <p
+              className="text-xs italic leading-snug"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              &ldquo;{voiceTranscript}&rdquo;
+            </p>
+            {voiceHint && (
+              <p className="text-xs" style={{ color: "var(--accent-amber)" }}>
+                ⚠ {voiceHint}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Non-confirm voice hint (errors / warnings) */}
+        {!pendingConfirm && voiceHint && (
+          <p className="text-xs px-1" style={{ color: "var(--accent-amber)" }}>
             {voiceHint}
           </p>
         )}
 
-        <div
-          className="border-t pt-3"
-          style={{ borderColor: "var(--border)" }}
-        >
+        <div className="border-t pt-3" style={{ borderColor: "var(--border)" }}>
           {/* Amount + currency */}
           <div className="flex gap-2">
             <div className="flex-1">
@@ -277,10 +332,7 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
         {/* Category (casa only) */}
         {target === "casa" && (
           <div>
-            <Label
-              className="text-xs mb-1"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <Label className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
               Tipo
             </Label>
             <div className="flex gap-2">
@@ -306,10 +358,7 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
         {/* Expense type (necessary / unnecessary) */}
         {showExpenseType && (
           <div>
-            <Label
-              className="text-xs mb-1"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <Label className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
               Clasificación
             </Label>
             <div className="flex gap-2">
@@ -363,10 +412,7 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
         {/* Card selector */}
         {showCard && (
           <div>
-            <Label
-              className="text-xs mb-1"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <Label className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
               Tarjeta <span style={{ color: "var(--text-secondary)" }}>(opcional)</span>
             </Label>
             <Select
@@ -404,10 +450,12 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
             color: "var(--accent-foreground)",
           }}
         >
-          {isSubmitting ? (
-            <Loader2 size={18} className="animate-spin mr-2" />
-          ) : null}
-          {isSubmitting ? "Guardando..." : "Agregar →"}
+          {isSubmitting ? <Loader2 size={18} className="animate-spin mr-2" /> : null}
+          {isSubmitting
+            ? "Guardando..."
+            : pendingConfirm
+            ? "Confirmar y guardar →"
+            : "Agregar →"}
         </Button>
       </div>
     </form>
