@@ -82,7 +82,7 @@ export function isCurrentMonth(month: MonthName, year: number): boolean {
 
 /** Months that have real data in the mock. Replace with DB query result. */
 const MONTHS_WITH_DATA = new Set([
-  "octubre-2024","noviembre-2024","diciembre-2024","enero-2026",
+  "octubre-2025","noviembre-2025","diciembre-2025","enero-2026",
 ]);
 
 export function monthHasData(month: MonthName, year: number): boolean {
@@ -100,9 +100,9 @@ const MOCK_USERS = [
 ];
 
 const MOCK_AUTO = {
-  alquiler:    1_095_397,
-  tdc:         6_121_144,
-  gastos_fijos:   79_083,
+  alquiler:    1_095_397,  // 666,409 + 428,988 (Depto 1G, enero-2026)
+  tdc:         6_121_144,  // sum of all cards, enero-2026
+  gastos_fijos:  979_643,  // real total from Gasto fijos sheet, enero-2026
 };
 
 const MOCK_USED = {
