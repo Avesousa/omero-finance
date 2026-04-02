@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, Loader2, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,14 +46,21 @@ const CARDS = [
   "MC AVELINO MP",
 ];
 
+const USERS = [
+  { id: "cm_user_avelino", name: "Avelino", color: "#6366F1" },
+  { id: "cm_user_maria",   name: "Maria",   color: "#EC4899" },
+] as const;
+type UserId = (typeof USERS)[number]["id"];
+
 interface ExpenseFormProps {
   currentRate: number;
-  onSubmit: (data: FormState & { target: ExpenseTarget }) => Promise<void>;
+  onSubmit: (data: FormState & { target: ExpenseTarget; userId: UserId }) => Promise<void>;
 }
 
 export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
   const [target, setTarget] = useState<ExpenseTarget>("casa");
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+  const [userId, setUserId] = useState<UserId>("cm_user_avelino");
   const [isListening, setIsListening] = useState(false);
   const [isParsingVoice, setIsParsingVoice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +69,16 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
   const [pendingConfirm, setPendingConfirm] = useState(false);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
+  // Persist last-used user in localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("omero_userId") as UserId | null;
+    if (saved && USERS.some((u) => u.id === saved)) setUserId(saved);
+  }, []);
+  function selectUser(id: UserId) {
+    setUserId(id);
+    localStorage.setItem("omero_userId", id);
+  }
 
   const update = (patch: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
@@ -138,7 +155,7 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
     if (!form.amount || isNaN(Number(form.amount))) return;
     setIsSubmitting(true);
     try {
-      await onSubmit({ ...form, target });
+      await onSubmit({ ...form, target, userId });
       setForm(DEFAULT_FORM);
       dismissVoice();
       navigator.vibrate?.(50);
@@ -172,6 +189,35 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
             {t === "casa" ? "🏠 Casa" : "👤 Personal"}
           </button>
         ))}
+      </div>
+
+      {/* User picker */}
+      <div
+        className="flex items-center gap-2 px-4 py-2 border-b"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
+      >
+        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>¿Quién?</span>
+        <div className="flex gap-1.5 ml-auto">
+          {USERS.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => selectUser(u.id)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+              style={{
+                borderColor:     userId === u.id ? u.color : "var(--border)",
+                backgroundColor: userId === u.id ? `${u.color}22` : "transparent",
+                color:           userId === u.id ? u.color : "var(--text-secondary)",
+              }}
+            >
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: u.color }}
+              />
+              {u.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
