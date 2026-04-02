@@ -52,6 +52,8 @@ export interface TdcAlert {
 export interface DashboardData {
   month: MonthName;
   year: number;
+  isFuture: boolean;   // month/year is ahead of today
+  hasData: boolean;    // at least one income or expense exists for this period
   totalIncomeArs: number;
   totalUsd: number;
   exchangeRate: number;
@@ -59,6 +61,33 @@ export interface DashboardData {
   users: UserSummary[];
   categories: CategoryRow[];
   tdcAlerts: TdcAlert[];
+}
+
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+
+export function isMonthInFuture(month: MonthName, year: number): boolean {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed
+  const selectedMonth = MONTH_NAMES.indexOf(month); // 0-indexed
+  return year > currentYear || (year === currentYear && selectedMonth > currentMonth);
+}
+
+export function isCurrentMonth(month: MonthName, year: number): boolean {
+  const now = new Date();
+  return year === now.getFullYear() && MONTH_NAMES.indexOf(month) === now.getMonth();
+}
+
+/** Months that have real data in the mock. Replace with DB query result. */
+const MONTHS_WITH_DATA = new Set([
+  "octubre-2024","noviembre-2024","diciembre-2024","enero-2026",
+]);
+
+export function monthHasData(month: MonthName, year: number): boolean {
+  // TODO: replace with: return prisma.income.count({ where: { month, year, householdId } }) > 0
+  return MONTHS_WITH_DATA.has(`${month}-${year}`);
 }
 
 // ─────────────────────────────────────────────
@@ -119,6 +148,18 @@ export async function getDashboardData(
   year: number,
   // householdId: string  ← add once auth is wired
 ): Promise<DashboardData> {
+  const isFuture = isMonthInFuture(month, year);
+  const hasData = !isFuture && monthHasData(month, year);
+
+  // Return early shell for months with no data
+  if (!hasData) {
+    return {
+      month, year, isFuture, hasData,
+      totalIncomeArs: 0, totalUsd: 0, exchangeRate: 1477.20,
+      surplusArs: 0, users: [], categories: [], tdcAlerts: [],
+    };
+  }
+
   // TODO: replace mock with:
   // const [incomes, cards, fixed, groceries, expenses, configs, rate] = await Promise.all([
   //   prisma.income.findMany({ where: { householdId, month, year } }),
@@ -213,6 +254,8 @@ export async function getDashboardData(
   return {
     month,
     year,
+    isFuture: false,
+    hasData: true,
     totalIncomeArs,
     totalUsd,
     exchangeRate,
