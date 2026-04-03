@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { MONTH_NAMES, isMonthInFuture, type MonthName } from "@/lib/dashboard";
+import { MONTH_NAMES, isMonthInFuture, type MonthName } from "@/lib/months";
 
 interface MonthSelectorProps {
   month: MonthName;
@@ -11,6 +11,7 @@ interface MonthSelectorProps {
 
 export function MonthSelector({ month, year }: MonthSelectorProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   // Disable "next" if already at current month (can't browse the future)
@@ -25,7 +26,7 @@ export function MonthSelector({ month, year }: MonthSelectorProps) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("month", newMonth);
     params.set("year", String(newYear));
-    router.push(`/dashboard?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   function prev() {

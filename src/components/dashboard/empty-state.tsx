@@ -1,5 +1,5 @@
 import { CalendarX, Clock } from "lucide-react";
-import type { MonthName } from "@/lib/dashboard";
+import type { MonthName } from "@/lib/months";
 
 interface EmptyStateProps {
   month: MonthName;

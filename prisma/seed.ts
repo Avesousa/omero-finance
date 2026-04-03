@@ -266,6 +266,49 @@ async function main() {
   });
   console.log("✓ Household and users");
 
+  // 3. Card catalog
+  const KNOWN_CARDS = [
+    "VISA MARIA BBVA",
+    "VISA MARIA CP",
+    "VISA AVELINO BN",
+    "MC AVELINO BN",
+    "VISA AVELINO BK",
+    "MC AVELINO MP",
+  ];
+  for (const name of KNOWN_CARDS) {
+    await prisma.card.upsert({
+      where:  { householdId_name: { householdId: HOUSEHOLD_ID, name } },
+      update: {},
+      create: { householdId: HOUSEHOLD_ID, name },
+    });
+  }
+  console.log("✓ Card catalog");
+
+  // 4. Fixed expense templates
+  const FIXED_TEMPLATES = [
+    { concept: "Alquiler",          amount: 450_000, sortOrder: 0 },
+    { concept: "Expensas",          amount:  80_000, sortOrder: 1 },
+    { concept: "Luz",               amount:  25_000, sortOrder: 2 },
+    { concept: "Teléfono",          amount:  15_000, sortOrder: 3 },
+    { concept: "Auto",              amount:  45_000, sortOrder: 4 },
+    { concept: "MELI+",             amount:   8_000, sortOrder: 5 },
+    { concept: "Brubank",           amount:   5_000, sortOrder: 6 },
+    { concept: "Apple",             amount:   3_000, sortOrder: 7 },
+    { concept: "Gimnasio",          amount:  12_000, sortOrder: 8 },
+    { concept: "Limpieza",          amount:  20_000, sortOrder: 9 },
+  ];
+  for (const t of FIXED_TEMPLATES) {
+    const existing = await prisma.fixedExpenseTemplate.findFirst({
+      where: { householdId: HOUSEHOLD_ID, concept: t.concept },
+    });
+    if (!existing) {
+      await prisma.fixedExpenseTemplate.create({
+        data: { householdId: HOUSEHOLD_ID, ...t },
+      });
+    }
+  }
+  console.log("✓ Fixed expense templates");
+
   // 3. Exchange rates
   for (const [key, rate] of Object.entries(RATES)) {
     const date = rateDate(key);

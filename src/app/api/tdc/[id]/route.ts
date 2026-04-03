@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/** PATCH /api/tdc/[id] — toggle isPaid or update amount/dueDate */
+/** PATCH /api/tdc/[id] — toggle isPaid, update fields, optionally deduct from account */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -10,23 +10,46 @@ export async function PATCH(
     const { id } = await params;
     const body   = await req.json();
 
-    const record = await prisma.creditCardStatement.update({
-      where: { id },
-      data: {
-        ...(body.isPaid          !== undefined && { isPaid:         body.isPaid }),
-        ...(body.totalAmountArs  !== undefined && {
-          totalAmountArs: parseFloat(body.totalAmountArs),
-          amountToPay:    parseFloat(body.totalAmountArs),
-        }),
-        ...(body.dueDate         !== undefined && { dueDate: new Date(body.dueDate) }),
-        ...(body.minimumPayment  !== undefined && { minimumPayment: parseFloat(body.minimumPayment) }),
-        ...(body.customAmount    !== undefined && {
-          customAmount: parseFloat(body.customAmount),
-          amountToPay:  parseFloat(body.customAmount),
-        }),
-      },
-    });
+    const statementData = {
+      ...(body.isPaid          !== undefined && {
+        isPaid:        body.isPaid,
+        paidAt:        body.isPaid ? new Date() : null,
+        paymentSource: body.isPaid ? (body.paymentSource ?? null) : null,
+      }),
+      ...(body.totalAmountArs  !== undefined && {
+        totalAmountArs: parseFloat(body.totalAmountArs),
+        amountToPay:    parseFloat(body.totalAmountArs),
+      }),
+      ...(body.usdAmount       !== undefined && { usdAmount: body.usdAmount ? parseFloat(body.usdAmount) : null }),
+      ...(body.dueDate         !== undefined && { dueDate: new Date(body.dueDate) }),
+      ...(body.minimumPayment  !== undefined && { minimumPayment: parseFloat(body.minimumPayment) }),
+      ...(body.customAmount    !== undefined && {
+        customAmount: parseFloat(body.customAmount),
+        amountToPay:  parseFloat(body.customAmount),
+        payMinimum:   true,
+      }),
+      ...(body.payMinimum !== undefined && typeof body.payMinimum === "boolean" && {
+        payMinimum: body.payMinimum,
+      }),
+      ...("committedOverride" in body && {
+        committedOverride: body.committedOverride != null ? parseFloat(body.committedOverride) : null,
+      }),
+    };
 
+    // If paying and an accountId is provided, deduct atomically
+    if (body.isPaid && body.accountId && body.deductAmount !== undefined) {
+      const deductAmt = parseFloat(body.deductAmount);
+      const [record] = await prisma.$transaction([
+        prisma.creditCardStatement.update({ where: { id }, data: statementData }),
+        prisma.account.update({
+          where: { id: body.accountId },
+          data: { balance: { decrement: deductAmt } },
+        }),
+      ]);
+      return NextResponse.json({ ok: true, isPaid: record.isPaid });
+    }
+
+    const record = await prisma.creditCardStatement.update({ where: { id }, data: statementData });
     return NextResponse.json({ ok: true, isPaid: record.isPaid });
   } catch (err) {
     console.error("[api/tdc PATCH]", err);

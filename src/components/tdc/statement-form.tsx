@@ -9,31 +9,25 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
-
-const KNOWN_CARDS = [
-  "VISA MARIA BBVA",
-  "VISA MARIA CP",
-  "VISA AVELINO BN",
-  "MC AVELINO BN",
-  "VISA AVELINO BK",
-  "MC AVELINO MP",
-];
+import { CardBrandIcon, cleanCardName } from "./card-brand";
 
 interface StatementFormProps {
   month: string;
   year: number;
+  cards: string[];
   onClose: () => void;
   /** If provided, we're editing an existing statement */
   initial?: {
     id: string;
     cardName: string;
     totalAmountArs: number;
+    usdAmount?: number | null;
     dueDate: string;
     minimumPayment?: number;
   };
 }
 
-export function StatementForm({ month, year, onClose, initial }: StatementFormProps) {
+export function StatementForm({ month, year, cards, onClose, initial }: StatementFormProps) {
   const router    = useRouter();
   const isEditing = !!initial;
 
@@ -46,17 +40,17 @@ export function StatementForm({ month, year, onClose, initial }: StatementFormPr
     return `${nextY}-${String(nextM + 1).padStart(2, "0")}-10`;
   }
 
-  const [cardName, setCardName]   = useState(initial?.cardName ?? "");
+  const [cardName, setCardName]     = useState(initial?.cardName ?? "");
   const [customCard, setCustomCard] = useState(
-    initial?.cardName && !KNOWN_CARDS.includes(initial.cardName) ? initial.cardName : ""
+    initial?.cardName && !cards.includes(initial.cardName) ? initial.cardName : ""
   );
-  const [amount, setAmount]       = useState(initial ? String(initial.totalAmountArs) : "");
-  const [dueDate, setDueDate]     = useState(
-    initial ? initial.dueDate.slice(0, 10) : defaultDue()
-  );
+  const [amount, setAmount]         = useState(initial ? String(initial.totalAmountArs) : "");
+  const [usdAmount, setUsdAmount]   = useState(initial?.usdAmount ? String(initial.usdAmount) : "");
+  const [hasUsd, setHasUsd]         = useState(!!initial?.usdAmount);
+  const [dueDate, setDueDate]       = useState(initial ? initial.dueDate.slice(0, 10) : defaultDue());
   const [minPayment, setMinPayment] = useState(initial?.minimumPayment ? String(initial.minimumPayment) : "");
-  const [saving, setSaving]       = useState(false);
-  const [error, setError]         = useState<string | null>(null);
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState<string | null>(null);
 
   const effectiveCard = cardName === "__custom__" ? customCard : cardName;
 
@@ -74,8 +68,9 @@ export function StatementForm({ month, year, onClose, initial }: StatementFormPr
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cardName:      effectiveCard,
+          cardName:       effectiveCard,
           totalAmountArs: amount,
+          usdAmount:      hasUsd && usdAmount ? usdAmount : undefined,
           dueDate,
           minimumPayment: minPayment || undefined,
           month,
@@ -97,13 +92,13 @@ export function StatementForm({ month, year, onClose, initial }: StatementFormPr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full max-w-lg rounded-t-2xl p-5 space-y-4"
-        style={{ backgroundColor: "var(--bg-card)", borderTop: "1px solid var(--border)" }}
+        className="w-full max-w-sm rounded-2xl p-5 space-y-4"
+        style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -123,7 +118,14 @@ export function StatementForm({ month, year, onClose, initial }: StatementFormPr
               <SelectValue placeholder="Seleccioná una tarjeta" />
             </SelectTrigger>
             <SelectContent>
-              {KNOWN_CARDS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {cards.map((c) => (
+                <SelectItem key={c} value={c}>
+                  <span className="inline-flex items-center gap-2">
+                    <CardBrandIcon name={c} size={20} showBank />
+                    {cleanCardName(c) && <span>{cleanCardName(c)}</span>}
+                  </span>
+                </SelectItem>
+              ))}
               <SelectItem value="__custom__">Otra tarjeta…</SelectItem>
             </SelectContent>
           </Select>
@@ -150,6 +152,42 @@ export function StatementForm({ month, year, onClose, initial }: StatementFormPr
             className="text-lg font-semibold tabular-nums h-12"
             style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
           />
+        </div>
+
+        {/* USD toggle + amount */}
+        <div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div
+              onClick={() => { setHasUsd(!hasUsd); if (hasUsd) setUsdAmount(""); }}
+              className="w-9 h-5 rounded-full relative transition-colors"
+              style={{ backgroundColor: hasUsd ? "var(--accent)" : "var(--border)" }}
+            >
+              <div
+                className="absolute top-0.5 w-4 h-4 rounded-full transition-transform"
+                style={{
+                  backgroundColor: "#fff",
+                  transform: hasUsd ? "translateX(18px)" : "translateX(2px)",
+                }}
+              />
+            </div>
+            <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              Incluye monto en USD
+            </span>
+          </label>
+          {hasUsd && (
+            <div className="mt-2">
+              <Label className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Monto en USD</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="0"
+                value={usdAmount}
+                onChange={(e) => setUsdAmount(e.target.value)}
+                className="text-lg font-semibold tabular-nums h-12"
+                style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Due date + minimum */}

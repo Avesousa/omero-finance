@@ -17,6 +17,13 @@ type ExpenseTarget = "casa" | "personal";
 type ExpenseCategory = "mercado" | "general" | "fijo";
 type Currency = "ARS" | "USD";
 
+interface FixedTemplate {
+  id: string;
+  concept: string;
+  amount: number;
+  currency: "ARS" | "USD";
+}
+
 interface FormState {
   amount: string;
   currency: Currency;
@@ -25,6 +32,7 @@ interface FormState {
   expenseType: "NECESSARY" | "UNNECESSARY";
   cardName: string;
   convertToArs: boolean;
+  fixedTemplateId: string;
 }
 
 const DEFAULT_FORM: FormState = {
@@ -35,6 +43,7 @@ const DEFAULT_FORM: FormState = {
   expenseType: "UNNECESSARY",
   cardName: "",
   convertToArs: false,
+  fixedTemplateId: "",
 };
 
 const CARDS = [
@@ -54,10 +63,11 @@ type UserId = (typeof USERS)[number]["id"];
 
 interface ExpenseFormProps {
   currentRate: number;
+  fixedTemplates: FixedTemplate[];
   onSubmit: (data: FormState & { target: ExpenseTarget; userId: UserId }) => Promise<void>;
 }
 
-export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
+export function ExpenseForm({ currentRate, fixedTemplates, onSubmit }: ExpenseFormProps) {
   const [target, setTarget] = useState<ExpenseTarget>("casa");
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [userId, setUserId] = useState<UserId>("cm_user_avelino");
@@ -82,6 +92,17 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
 
   const update = (patch: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
+
+  function selectFixedTemplate(id: string | null) {
+    const tpl = fixedTemplates.find((t) => t.id === id);
+    if (!tpl) { update({ fixedTemplateId: "" }); return; }
+    update({
+      fixedTemplateId: id ?? "",
+      description:     tpl.concept,
+      amount:          String(tpl.amount),
+      currency:        tpl.currency,
+    });
+  }
 
   function dismissVoice() {
     setVoiceTranscript(null);
@@ -386,7 +407,7 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
                 <button
                   key={c}
                   type="button"
-                  onClick={() => update({ category: c })}
+                  onClick={() => update({ category: c, fixedTemplateId: "", description: "", amount: "" })}
                   className="flex-1 py-2 rounded-xl text-sm font-medium border transition-colors capitalize"
                   style={{
                     backgroundColor: form.category === c ? "var(--accent)" : "var(--bg-elevated)",
@@ -398,6 +419,43 @@ export function ExpenseForm({ currentRate, onSubmit }: ExpenseFormProps) {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Fixed template selector — shown when category = fijo */}
+        {target === "casa" && form.category === "fijo" && fixedTemplates.length > 0 && (
+          <div>
+            <Label className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
+              Gasto fijo
+            </Label>
+            <Select
+              value={form.fixedTemplateId}
+              onValueChange={selectFixedTemplate}
+            >
+              <SelectTrigger
+                style={{
+                  backgroundColor: "var(--bg-elevated)",
+                  borderColor: form.fixedTemplateId ? "var(--accent)" : "var(--border)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                <SelectValue placeholder="Seleccioná el gasto fijo" />
+              </SelectTrigger>
+              <SelectContent>
+                {fixedTemplates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    <span className="flex items-center gap-2">
+                      <span>{t.concept}</span>
+                      <span className="tabular-nums text-xs" style={{ color: "var(--text-secondary)" }}>
+                        {t.currency === "ARS"
+                          ? new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(t.amount)
+                          : `USD ${t.amount}`}
+                      </span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 

@@ -2,10 +2,11 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { HOUSEHOLD_ID } from "../../../prisma/constants";
-import { MONTH_NAMES, type MonthName } from "@/lib/dashboard";
+import { MONTH_NAMES, type MonthName } from "@/lib/months";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { StatementsList, type StatementData } from "@/components/tdc/statements-list";
 import { CardExpenses, type CardExpense } from "@/components/tdc/card-expenses";
+import { TdcPageClient } from "@/components/tdc/tdc-page-client";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,20 @@ export default async function TdcPage({ searchParams }: PageProps) {
   const year = params.year ? parseInt(params.year, 10) : now.getFullYear();
   const tab  = params.tab === "gastos" ? "gastos" : "resumenes";
 
-  // Fetch users for name lookup
-  const users = await prisma.user.findMany({
-    where: { householdId: HOUSEHOLD_ID },
-    select: { id: true, name: true },
-  });
+  // Fetch cards catalog + users + current exchange rate
+  const [dbCards, users, latestRate] = await Promise.all([
+    prisma.card.findMany({
+      where: { householdId: HOUSEHOLD_ID },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.user.findMany({
+      where: { householdId: HOUSEHOLD_ID },
+      select: { id: true, name: true },
+    }),
+    prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } }),
+  ]);
+  const currentRate = latestRate ? Number(latestRate.usdArs) : 1477;
   const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
 
   // Fetch statements for the month
@@ -46,11 +56,19 @@ export default async function TdcPage({ searchParams }: PageProps) {
       id:             s.id,
       cardName:       s.cardName,
       totalAmountArs: Number(s.totalAmountArs),
+      usdAmount:      s.usdAmount ? Number(s.usdAmount) : null,
       amountToPay:    Number(s.amountToPay),
       dueDate:        s.dueDate.toISOString(),
-      minimumPayment: s.minimumPayment ? Number(s.minimumPayment) : null,
+      minimumPayment:     s.minimumPayment ? Number(s.minimumPayment) : null,
+      dollarRateSnapshot: s.dollarRateSnapshot ? Number(s.dollarRateSnapshot) : null,
+      payMinimum:         s.payMinimum,
+      committedOverride:  s.committedOverride ? Number(s.committedOverride) : null,
       isPaid:         s.isPaid,
+      paidAt:         s.paidAt ? s.paidAt.toISOString() : null,
+      paymentSource:  s.paymentSource ?? null,
       daysUntilDue,
+      month,
+      year,
     };
   });
 
@@ -112,6 +130,8 @@ export default async function TdcPage({ searchParams }: PageProps) {
     return `/tdc?${p.toString()}`;
   }
 
+  const cardNames = dbCards.map((c) => c.name);
+
   return (
     <div className="flex flex-col gap-5 px-4 py-4 max-w-lg mx-auto">
       {/* Header */}
@@ -155,6 +175,8 @@ export default async function TdcPage({ searchParams }: PageProps) {
           statements={statementsData}
           month={month}
           year={year}
+          cards={cardNames}
+          currentRate={currentRate}
         />
       ) : (
         <CardExpenses
@@ -162,6 +184,9 @@ export default async function TdcPage({ searchParams }: PageProps) {
           cards={cardsWithExpenses}
         />
       )}
+
+      {/* Card management button */}
+      <TdcPageClient cards={dbCards} />
     </div>
   );
 }
