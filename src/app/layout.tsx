@@ -55,18 +55,24 @@ export default function RootLayout({
         <ThemeProvider>
           {/* Header */}
           <header
-            className="sticky top-0 z-40 flex items-center justify-between px-4 h-14 border-b"
+            className="glass sticky top-0 z-40 flex items-center justify-between px-5 h-14"
             style={{
-              backgroundColor: "var(--bg-card)",
-              borderColor: "var(--border)",
+              backgroundColor: "rgba(9,9,11,0.75)",
+              borderBottom: "1px solid var(--border)",
             }}
           >
-            <span
-              className="text-lg font-semibold tracking-tight"
-              style={{ color: "var(--text-primary)" }}
-            >
-              omero
-            </span>
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-6 h-6 rounded-lg gradient-strip"
+                style={{ flexShrink: 0 }}
+              />
+              <span
+                className="text-base font-bold tracking-tight"
+                style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
+              >
+                omero
+              </span>
+            </div>
             <ThemeToggle />
           </header>
 

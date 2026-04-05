@@ -4,95 +4,165 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─────────────────────────────────────────────
-   Design Tokens — Omero Finance
-   ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   Design System — Omero Finance
+   Inspired by Untitled UI · Zinc + Violet
+   ═══════════════════════════════════════════════ */
 
 :root {
-  /* Dark mode (default) */
-  --bg-primary: #0A0A0F;
-  --bg-card: #13131A;
-  --bg-elevated: #1C1C27;
-  --text-primary: #F0F0FF;
-  --text-secondary: #8888AA;
-  --accent: #6366F1;
-  --accent-foreground: #FFFFFF;
-  --accent-green: #22C55E;
-  --accent-red: #EF4444;
-  --accent-amber: #F59E0B;
-  --border: #2A2A3D;
-  --radius: 1rem;
+  /* ── Surfaces ──────────────────────────────── */
+  --bg-primary:  #09090B;   /* page background   */
+  --bg-card:     #111113;   /* card surfaces      */
+  --bg-elevated: #1C1C1F;   /* chips, pills       */
+  --bg-surface:  #28282C;   /* inputs, dropdowns  */
 
-  /* shadcn compatibility */
-  --background: var(--bg-primary);
-  --foreground: var(--text-primary);
-  --card: var(--bg-card);
-  --card-foreground: var(--text-primary);
-  --popover: var(--bg-elevated);
-  --popover-foreground: var(--text-primary);
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
-  --secondary: var(--bg-elevated);
+  /* ── Text ──────────────────────────────────── */
+  --text-primary:   #FAFAFA;
+  --text-secondary: #A0A0AB;
+
+  /* ── Brand / Accent ────────────────────────── */
+  --accent:            #A78BFA;           /* violet-400        */
+  --accent-foreground: #09090B;
+  --accent-subtle:     rgba(167,139,250,0.12);
+  --accent-border:     rgba(167,139,250,0.25);
+
+  /* ── Semantic ──────────────────────────────── */
+  --accent-green:        #4ADE80;
+  --accent-green-subtle: rgba(74,222,128,0.10);
+  --accent-red:          #F87171;
+  --accent-red-subtle:   rgba(248,113,113,0.10);
+  --accent-amber:        #FBBF24;
+  --accent-amber-subtle: rgba(251,191,36,0.10);
+
+  /* ── Structure ─────────────────────────────── */
+  --border:        #27272A;
+  --border-strong: #3F3F46;
+  --radius:        0.75rem;
+
+  /* ── Shadows ───────────────────────────────── */
+  --shadow-xs:   0 1px 2px rgba(0,0,0,0.6);
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.6);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.5);
+  --shadow-card: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-nav:  0 -8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05) inset;
+
+  /* shadcn compat */
+  --background:           var(--bg-primary);
+  --foreground:           var(--text-primary);
+  --card:                 var(--bg-card);
+  --card-foreground:      var(--text-primary);
+  --popover:              var(--bg-elevated);
+  --popover-foreground:   var(--text-primary);
+  --primary:              var(--accent);
+  --primary-foreground:   var(--accent-foreground);
+  --secondary:            var(--bg-elevated);
   --secondary-foreground: var(--text-primary);
-  --muted: var(--bg-elevated);
-  --muted-foreground: var(--text-secondary);
-  --destructive: var(--accent-red);
-  --border: var(--border);
-  --input: var(--bg-elevated);
-  --ring: var(--accent);
+  --muted:                var(--bg-elevated);
+  --muted-foreground:     var(--text-secondary);
+  --destructive:          var(--accent-red);
+  --input:                var(--bg-surface);
+  --ring:                 var(--accent);
 }
 
 .light {
-  --bg-primary: #F8F9FF;
-  --bg-card: #FFFFFF;
-  --bg-elevated: #EEF0FF;
-  --text-primary: #0F0F1A;
-  --text-secondary: #6B7280;
-  --accent: #4F46E5;
+  /* ── Surfaces ──────────────────────────────── */
+  --bg-primary:  #F7F7F9;
+  --bg-card:     #FFFFFF;
+  --bg-elevated: #EDEDF0;
+  --bg-surface:  #E2E2E8;
+
+  /* ── Text ──────────────────────────────────── */
+  --text-primary:   #0A0A0F;
+  --text-secondary: #6B6B80;
+
+  /* ── Brand / Accent ────────────────────────── */
+  --accent:            #7C3AED;
   --accent-foreground: #FFFFFF;
-  --accent-green: #16A34A;
-  --accent-red: #DC2626;
-  --accent-amber: #D97706;
-  --border: #E5E7F0;
+  --accent-subtle:     rgba(124,58,237,0.07);
+  --accent-border:     rgba(124,58,237,0.18);
 
-  --background: var(--bg-primary);
-  --foreground: var(--text-primary);
-  --card: var(--bg-card);
-  --card-foreground: var(--text-primary);
-  --popover: var(--bg-elevated);
-  --popover-foreground: var(--text-primary);
-  --primary: var(--accent);
-  --primary-foreground: var(--accent-foreground);
-  --secondary: var(--bg-elevated);
+  /* ── Semantic ──────────────────────────────── */
+  --accent-green:        #16A34A;
+  --accent-green-subtle: rgba(22,163,74,0.07);
+  --accent-red:          #DC2626;
+  --accent-red-subtle:   rgba(220,38,38,0.07);
+  --accent-amber:        #B45309;
+  --accent-amber-subtle: rgba(180,83,9,0.07);
+
+  /* ── Structure ─────────────────────────────── */
+  --border:        #E2E2EC;
+  --border-strong: #CBCBD8;
+
+  /* ── Shadows ───────────────────────────────── */
+  --shadow-xs:   0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
+  --shadow-nav:  0 -4px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06);
+
+  /* shadcn compat */
+  --background:           var(--bg-primary);
+  --foreground:           var(--text-primary);
+  --card:                 var(--bg-card);
+  --card-foreground:      var(--text-primary);
+  --popover:              var(--bg-elevated);
+  --popover-foreground:   var(--text-primary);
+  --primary:              var(--accent);
+  --primary-foreground:   var(--accent-foreground);
+  --secondary:            var(--bg-elevated);
   --secondary-foreground: var(--text-primary);
-  --muted: var(--bg-elevated);
-  --muted-foreground: var(--text-secondary);
-  --destructive: var(--accent-red);
-  --input: var(--bg-elevated);
-  --ring: var(--accent);
+  --muted:                var(--bg-elevated);
+  --muted-foreground:     var(--text-secondary);
+  --destructive:          var(--accent-red);
+  --input:                var(--bg-surface);
+  --ring:                 var(--accent);
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ── Reset & Base ───────────────────────────────── */
+* { box-sizing: border-box; }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-geist-sans, system-ui), sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
 }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
+/* ── Typography utilities ───────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
 
-/* Safe area for iOS bottom nav */
+/* ── Safe area / Nav spacing ────────────────────── */
 .pb-safe {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 .mb-nav {
-  margin-bottom: max(5rem, calc(4rem + env(safe-area-inset-bottom)));
+  margin-bottom: max(6rem, calc(5rem + env(safe-area-inset-bottom)));
+}
+
+/* ── Card utility ───────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Gradient accent strip (for hero cards) ─────── */
+.gradient-strip {
+  background: linear-gradient(90deg, #A78BFA 0%, #818CF8 40%, #38BDF8 100%);
+}
+
+.light .gradient-strip {
+  background: linear-gradient(90deg, #7C3AED 0%, #6366F1 40%, #0EA5E9 100%);
+}
+
+/* ── Glass surface ──────────────────────────────── */
+.glass {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
 }

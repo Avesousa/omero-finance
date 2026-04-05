@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Banknote, PiggyBank, Smartphone, TrendingUp, Wallet } from "lucide-react";
+import { ArrowRight, Banknote, PiggyBank, Smartphone, TrendingUp, Wallet } from "lucide-react";
 
 const fmtArs = (n: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -41,9 +41,9 @@ interface BalanceCardProps {
 export function BalanceCard({
   availableArs, committed, actualSpent, totalIncomeUsd, accounts, month, year,
 }: BalanceCardProps) {
-  const isNegative  = availableArs < 0;
-  const projected   = availableArs - committed;
-  const projIsNeg   = projected < 0;
+  const isNegative = availableArs < 0;
+  const projected  = availableArs - committed;
+  const projIsNeg  = projected < 0;
 
   const arsAccounts = accounts.filter((a) => a.currency === "ARS");
   const usdAccounts = accounts.filter((a) => a.currency === "USD");
@@ -52,71 +52,111 @@ export function BalanceCard({
 
   return (
     <div
-      className="rounded-2xl border space-y-0 overflow-hidden"
-      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
+      className="rounded-2xl overflow-hidden"
+      style={{
+        backgroundColor: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        boxShadow: "var(--shadow-card)",
+      }}
     >
+      {/* ── Gradient accent strip ── */}
+      <div className="gradient-strip h-1 w-full" />
+
       {/* ── Main balance ── */}
-      <div className="px-5 pt-5 pb-4 space-y-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: "var(--text-secondary)" }}>
-            Disponible · {month} {year}
+      <div className="px-5 pt-4 pb-5 space-y-4">
+        {/* Label + month */}
+        <div className="flex items-center justify-between">
+          <p
+            className="text-[11px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Disponible
           </p>
+          <span
+            className="text-[11px] font-medium px-2 py-0.5 rounded-full capitalize"
+            style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
+          >
+            {month} {year}
+          </span>
+        </div>
 
-          {/* ARS + USD side by side */}
-          <div className="flex items-end gap-4">
+        {/* Primary balance */}
+        <div>
+          <p
+            className="text-[2.75rem] font-bold tabular-nums leading-none tracking-tight"
+            style={{
+              color: isNegative ? "var(--accent-red)" : "var(--text-primary)",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            {fmtArs(availableArs)}
+          </p>
+          {totalIncomeUsd > 0 && (
             <p
-              className="text-4xl font-bold tabular-nums leading-none"
-              style={{ color: isNegative ? "var(--accent-red)" : "var(--text-primary)" }}
+              className="text-base font-semibold tabular-nums mt-1"
+              style={{ color: "var(--accent-green)" }}
             >
-              {fmtArs(availableArs)}
+              {fmtUsd(totalIncomeUsd)} USD
             </p>
-            {totalIncomeUsd > 0 && (
-              <p className="text-lg font-semibold tabular-nums leading-none pb-0.5"
-                style={{ color: "var(--accent-green)" }}>
-                {fmtUsd(totalIncomeUsd)} USD
-              </p>
-            )}
-          </div>
-
-          <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>
-            Ingreso del mes menos lo ya gastado/pagado
+          )}
+          <p className="text-xs mt-2" style={{ color: "var(--text-secondary)" }}>
+            Ingreso − gastos del mes
           </p>
         </div>
 
-        {/* Comprometido + Proyectado */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-elevated)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--text-secondary)" }}>
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-2.5">
+          {/* Comprometido */}
+          <div
+            className="rounded-xl px-3.5 py-3"
+            style={{
+              backgroundColor: "var(--accent-amber-subtle)",
+              border: "1px solid rgba(251,191,36,0.15)",
+            }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "var(--accent-amber)" }}>
               Comprometido
             </p>
-            <p className="text-sm font-bold tabular-nums" style={{ color: "var(--accent-amber)" }}>
+            <p className="text-base font-bold tabular-nums leading-none" style={{ color: "var(--accent-amber)", letterSpacing: "-0.02em" }}>
               {fmtArs(committed)}
             </p>
-            <p className="text-[10px] mt-0.5" style={{ color: "var(--text-secondary)" }}>
+            <p className="text-[10px] mt-1.5" style={{ color: "var(--text-secondary)" }}>
               Fijos + TDC pendiente
             </p>
           </div>
-          <div className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--bg-elevated)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--text-secondary)" }}>
-              Proyectado libre
+
+          {/* Proyectado */}
+          <div
+            className="rounded-xl px-3.5 py-3"
+            style={{
+              backgroundColor: projIsNeg ? "var(--accent-red-subtle)" : "var(--accent-green-subtle)",
+              border: `1px solid ${projIsNeg ? "rgba(248,113,113,0.15)" : "rgba(74,222,128,0.15)"}`,
+            }}
+          >
+            <p
+              className="text-[10px] font-semibold uppercase tracking-widest mb-1.5"
+              style={{ color: projIsNeg ? "var(--accent-red)" : "var(--accent-green)" }}
+            >
+              Proyectado
             </p>
-            <p className="text-sm font-bold tabular-nums"
-              style={{ color: projIsNeg ? "var(--accent-red)" : "var(--accent-green)" }}>
+            <p
+              className="text-base font-bold tabular-nums leading-none"
+              style={{ color: projIsNeg ? "var(--accent-red)" : "var(--accent-green)", letterSpacing: "-0.02em" }}
+            >
               {fmtArs(projected)}
             </p>
-            <p className="text-[10px] mt-0.5" style={{ color: "var(--text-secondary)" }}>
-              Disponible − comprometido
+            <p className="text-[10px] mt-1.5" style={{ color: "var(--text-secondary)" }}>
+              Disp. − comprometido
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Accounts strip ── */}
+      {/* ── Accounts section ── */}
       {accounts.length > 0 && (
         <div style={{ borderTop: "1px solid var(--border)" }}>
-          {/* Totals row */}
-          <div className="flex items-center justify-between px-5 py-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
+          <div className="flex items-center justify-between px-5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
               Cuentas
             </p>
             <div className="flex items-center gap-3">
@@ -132,15 +172,14 @@ export function BalanceCard({
               )}
               <Link
                 href="/mas/cuentas"
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg"
-                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
+                className="flex items-center gap-0.5 text-[11px] font-semibold"
+                style={{ color: "var(--accent)" }}
               >
-                Ver →
+                Ver <ArrowRight size={11} />
               </Link>
             </div>
           </div>
 
-          {/* Account pills */}
           <div className="flex gap-2 overflow-x-auto px-5 pb-4" style={{ scrollbarWidth: "none" }}>
             {accounts.map((a) => {
               const Icon = TYPE_ICONS[a.type as AccountType] ?? Wallet;
@@ -148,22 +187,38 @@ export function BalanceCard({
                 <Link
                   key={a.id}
                   href="/mas/cuentas"
-                  className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl"
-                  style={{ backgroundColor: "var(--bg-elevated)", minWidth: 120 }}
+                  className="flex-shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-colors"
+                  style={{
+                    backgroundColor: "var(--bg-elevated)",
+                    border: "1px solid var(--border)",
+                    minWidth: 128,
+                  }}
                 >
-                  <Icon size={14} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{a.name}</p>
-                    <p className="text-[10px] tabular-nums" style={{ color: a.currency === "USD" ? "var(--accent-green)" : "var(--text-secondary)" }}>
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: "var(--bg-surface)" }}
+                  >
+                    <Icon size={13} style={{ color: "var(--text-secondary)" }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                      {a.name}
+                    </p>
+                    <p
+                      className="text-[11px] font-semibold tabular-nums"
+                      style={{ color: a.currency === "USD" ? "var(--accent-green)" : "var(--text-secondary)" }}
+                    >
                       {a.currency === "ARS" ? fmtArs(a.balance) : fmtUsd(a.balance) + " USD"}
                     </p>
                   </div>
                   {a.user && (
                     <div
-                      className="w-3.5 h-3.5 rounded-full flex-shrink-0 ml-auto"
-                      style={{ backgroundColor: a.user.avatarColor }}
+                      className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center text-white"
+                      style={{ backgroundColor: a.user.avatarColor, fontSize: 8, fontWeight: 700 }}
                       title={a.user.name}
-                    />
+                    >
+                      {a.user.name[0]}
+                    </div>
                   )}
                 </Link>
               );
@@ -176,11 +231,12 @@ export function BalanceCard({
         <div style={{ borderTop: "1px solid var(--border)" }}>
           <Link
             href="/mas/cuentas"
-            className="flex items-center justify-center gap-2 px-5 py-3"
-            style={{ color: "var(--text-secondary)" }}
+            className="flex items-center justify-center gap-2 px-5 py-3.5"
+            style={{ color: "var(--accent)" }}
           >
-            <Wallet size={14} />
-            <span className="text-xs">Configurar cuentas →</span>
+            <Wallet size={13} />
+            <span className="text-xs font-semibold">Configurar cuentas</span>
+            <ArrowRight size={12} />
           </Link>
         </div>
       )}
