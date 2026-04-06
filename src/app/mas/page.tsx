@@ -1,9 +1,15 @@
 import Link from "next/link";
-import { ChevronRight, PiggyBank, Wallet, Zap } from "lucide-react";
+import { ChevronRight, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const MENU_ITEMS = [
+  {
+    href:  "/movimientos",
+    icon:  ListOrdered,
+    label: "Movimientos",
+    desc:  "Todos los gastos e ingresos del mes para conciliar",
+  },
   {
     href:  "/mas/presupuesto",
     icon:  PiggyBank,

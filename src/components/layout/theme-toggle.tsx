@@ -8,7 +8,8 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setDark(document.documentElement.classList.contains("dark"));
+    // CSS uses .light for light mode; absence = dark mode
+    setDark(!document.documentElement.classList.contains("light"));
     setMounted(true);
   }, []);
 
@@ -17,7 +18,8 @@ export function ThemeToggle() {
   function toggle() {
     const next = !dark;
     setDark(next);
-    document.documentElement.classList.toggle("dark", next);
+    // dark mode = no class; light mode = .light class
+    document.documentElement.classList.toggle("light", !next);
     try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
   }
 
