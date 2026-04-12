@@ -1,9 +1,15 @@
 import Link from "next/link";
-import { Banknote, ChevronRight, Home, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const MENU_ITEMS = [
+  {
+    href:  "/mas/dashboard",
+    icon:  BarChart2,
+    label: "Dashboard mensual",
+    desc:  "Resumen del mes: ingresos, presupuesto y gastos por categoría",
+  },
   {
     href:  "/movimientos",
     icon:  ListOrdered,
