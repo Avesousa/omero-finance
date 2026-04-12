@@ -7,16 +7,30 @@ import { ChevronLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+const MONTH_NAMES = [
+  "enero","febrero","marzo","abril","mayo","junio",
+  "julio","agosto","septiembre","octubre","noviembre","diciembre",
+];
+
 export default async function GastosFijosPage() {
   const session = await getServerSession();
   if (!session) redirect("/login");
 
   const { householdId } = session.user;
 
-  const templates = await prisma.fixedExpenseTemplate.findMany({
-    where: { householdId },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-  });
+  const now   = new Date();
+  const month = MONTH_NAMES[now.getMonth()];
+  const year  = now.getFullYear();
+
+  const [templates, existingCount] = await Promise.all([
+    prisma.fixedExpenseTemplate.findMany({
+      where: { householdId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.fixedExpense.count({
+      where: { householdId, month, year },
+    }),
+  ]);
 
   const initial = templates.map((t) => ({
     id:       t.id,
@@ -45,7 +59,12 @@ export default async function GastosFijosPage() {
         Configurá los gastos recurrentes (alquiler, expensas, servicios…). Los activos se suman automáticamente en el presupuesto.
       </p>
 
-      <FixedExpenseManager initial={initial} />
+      <FixedExpenseManager
+        initial={initial}
+        month={month}
+        year={year}
+        hasExistingExpenses={existingCount > 0}
+      />
     </div>
   );
 }
