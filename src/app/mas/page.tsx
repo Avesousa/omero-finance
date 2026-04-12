@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, TrendingUp, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,12 @@ const MENU_ITEMS = [
     icon:  PiggyBank,
     label: "Presupuesto mensual",
     desc:  "Distribuí el ingreso por categoría",
+  },
+  {
+    href:  "/mas/ingresos",
+    icon:  TrendingUp,
+    label: "Ingresos",
+    desc:  "Registrá sueldos, freelance e ingresos del mes",
   },
   {
     href:  "/mas/gastos-fijos",
