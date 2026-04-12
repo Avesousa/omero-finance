@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth";
 import { getDashboardData, MONTH_NAMES, type MonthName } from "@/lib/dashboard";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
@@ -13,6 +15,9 @@ interface PageProps {
 }
 
 export default async function MasDashboardPage({ searchParams }: PageProps) {
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+
   const params = await searchParams;
   const now = new Date();
 
@@ -24,7 +29,7 @@ export default async function MasDashboardPage({ searchParams }: PageProps) {
 
   const year = params.year ? parseInt(params.year, 10) : now.getFullYear();
 
-  const data = await getDashboardData(month, year);
+  const data = await getDashboardData(month, year, session.user.householdId);
 
   return (
     <div className="flex flex-col gap-5 px-4 py-4 max-w-lg mx-auto">

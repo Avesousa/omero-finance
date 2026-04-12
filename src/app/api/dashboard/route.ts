@@ -1,10 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireSession, unauthorized } from "@/lib/auth";
 import { getDashboardData, MONTH_NAMES, type MonthName } from "@/lib/dashboard";
 
 /** GET /api/dashboard?month=abril&year=2026
  *  Returns aggregated dashboard data for the given month/year.
  */
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const { searchParams } = new URL(req.url);
   const monthParam = searchParams.get("month");
   const yearParam  = searchParams.get("year");
@@ -17,7 +25,7 @@ export async function GET(req: Request) {
   ) as MonthName;
   const year = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
 
-  const data = await getDashboardData(month, year);
+  const data = await getDashboardData(month, year, session.user.householdId);
 
   const totalBudgeted = data.categories.reduce((s, c) => s + c.budgetedArs, 0);
   const totalSpent    = data.categories.reduce((s, c) => s + c.usedArs, 0);

@@ -276,11 +276,8 @@ async function main() {
     "MC AVELINO MP",
   ];
   for (const name of KNOWN_CARDS) {
-    await prisma.card.upsert({
-      where:  { householdId_name: { householdId: HOUSEHOLD_ID, name } },
-      update: {},
-      create: { householdId: HOUSEHOLD_ID, name },
-    });
+    const exists = await prisma.card.findFirst({ where: { householdId: HOUSEHOLD_ID, name } });
+    if (!exists) await prisma.card.create({ data: { householdId: HOUSEHOLD_ID, name } });
   }
   console.log("✓ Card catalog");
 
