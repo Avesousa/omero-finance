@@ -29,6 +29,12 @@ const MENU_ITEMS = [
     desc:  "Saldos, transferencias y cuenta default por perfil",
   },
   {
+    href:  "/mas/ahorros",
+    icon:  PiggyBank,
+    label: "Ahorros",
+    desc:  "Registrá ahorros, viajes e inversiones",
+  },
+  {
     href:  "/mas/alquiler",
     icon:  Home,
     label: "Alquiler y expensas",
