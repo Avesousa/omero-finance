@@ -1,18 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
 const MONTH_NAMES = [
   "enero","febrero","marzo","abril","mayo","junio",
   "julio","agosto","septiembre","octubre","noviembre","diciembre",
 ];
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const body = await req.json();
-    const { userId, type, currency, amount, description } = body;
+    const { type, currency, amount, description, targetUserId, isPersonal } = body;
 
-    if (!userId || !type || !amount) {
+    if (!type || !amount) {
       return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
     }
 
@@ -21,13 +28,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
     }
 
+    const { householdId, id: createdById } = session.user;
     const now   = new Date();
     const month = MONTH_NAMES[now.getMonth()];
     const year  = now.getFullYear();
 
+    // targetUserId allows assigning income to another household member
+    const ownerId = targetUserId ?? createdById;
+
     let amountArs: number | undefined;
     let dollarRateSnapshot: number | undefined;
-
     if (currency === "USD") {
       const latestRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
       if (latestRate) {
@@ -38,16 +48,17 @@ export async function POST(req: Request) {
 
     await prisma.income.create({
       data: {
-        householdId:        HOUSEHOLD_ID,
-        createdById:        userId,
+        householdId,
+        createdById: ownerId,
         month,
         year,
         type,
-        currency:           currency ?? "ARS",
-        amount:             parsed,
-        amountArs:          currency === "ARS" ? parsed : amountArs,
-        dollarRateSnapshot: dollarRateSnapshot,
-        description:        description || null,
+        currency: currency ?? "ARS",
+        amount: parsed,
+        amountArs: currency === "ARS" ? parsed : amountArs,
+        dollarRateSnapshot,
+        description: description || null,
+        isPersonal: isPersonal === true,
       },
     });
 

@@ -241,8 +241,8 @@ async function main() {
   // 1. Household
   await prisma.household.upsert({
     where:  { id: HOUSEHOLD_ID },
-    update: {},
-    create: { id: HOUSEHOLD_ID, name: "Casa Figueira" },
+    update: { type: "SHARED" },
+    create: { id: HOUSEHOLD_ID, name: "Casa Figueira", type: "SHARED" },
   });
 
   // 2. Users

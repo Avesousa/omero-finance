@@ -13,11 +13,13 @@ datasource db {
 // ─────────────────────────────────────────────
 
 model Household {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   name      String
-  createdAt DateTime @default(now())
+  type      HouseholdType @default(PERSONAL)
+  createdAt DateTime      @default(now())
 
   users             User[]
+  invitations       HouseholdInvitation[]
   incomes           Income[]
   creditCards       CreditCardStatement[]
   cards             Card[]
@@ -91,6 +93,7 @@ model Income {
   amountArs          Decimal?   @db.Decimal(14, 2)
   dollarRateSnapshot Decimal?   @db.Decimal(10, 4)
   description        String?
+  isPersonal         Boolean    @default(false)
   createdAt          DateTime   @default(now())
 
   household Household @relation(fields: [householdId], references: [id])
@@ -152,11 +155,12 @@ model Card {
   id          String   @id @default(cuid())
   householdId String
   name        String
+  entity      String?
+  cardType    String?
+  ownerName   String?
   createdAt   DateTime @default(now())
 
   household Household @relation(fields: [householdId], references: [id])
-
-  @@unique([householdId, name])
 }
 
 // ─────────────────────────────────────────────
@@ -542,4 +546,35 @@ enum AccountType {
   INVESTMENT
   CASH
   DIGITAL
+}
+
+enum HouseholdType {
+  PERSONAL
+  SHARED
+  ORGANIZATION
+  MULTIPLE
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+// ─────────────────────────────────────────────
+// Household Invitations (for SHARED households)
+// ─────────────────────────────────────────────
+
+model HouseholdInvitation {
+  id          String           @id @default(cuid())
+  householdId String
+  email       String?
+  code        String           @unique
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+  acceptedAt  DateTime?
+
+  household Household @relation(fields: [householdId], references: [id])
 }

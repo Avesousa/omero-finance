@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
-// TODO: replace HOUSEHOLD_ID + userId with real auth session once wired
+const MONTH_NAMES = [
+  "enero","febrero","marzo","abril","mayo","junio",
+  "julio","agosto","septiembre","octubre","noviembre","diciembre",
+];
 
 export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const body = await req.json();
 
@@ -13,20 +23,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
     }
 
-    const { target, category, description, currency, expenseType, cardName, convertToArs, userId } = body;
+    const { target, category, description, currency, expenseType, cardName, convertToArs } = body;
 
-    const now     = new Date();
-    const month   = MONTH_NAMES[now.getMonth()];
-    const year    = now.getFullYear();
-    const createdById: string = userId ?? "cm_user_avelino";
+    const { householdId, id: createdById } = session.user;
+    const now   = new Date();
+    const month = MONTH_NAMES[now.getMonth()];
+    const year  = now.getFullYear();
 
-    // Resolve amountArs and dollarRateSnapshot when USD
     let amountArs: number | undefined;
     let dollarRateSnapshot: number | undefined;
     if (currency === "USD" && convertToArs) {
-      const rate = await prisma.exchangeRate.findFirst({
-        orderBy: { date: "desc" },
-      });
+      const rate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
       dollarRateSnapshot = rate ? Number(rate.usdArs) : undefined;
       if (dollarRateSnapshot) amountArs = amount * dollarRateSnapshot;
     }
@@ -36,12 +43,12 @@ export async function POST(req: NextRequest) {
     if (target === "personal") {
       const record = await prisma.personalExpense.create({
         data: {
-          householdId: HOUSEHOLD_ID,
-          userId:      createdById,
+          householdId,
+          userId: createdById,
           createdById,
           month,
           year,
-          concept:  description || "Personal",
+          concept: description || "Personal",
           cardName: cardName || undefined,
           currency,
           amount,
@@ -53,7 +60,7 @@ export async function POST(req: NextRequest) {
     } else if (category === "mercado") {
       const record = await prisma.groceryExpense.create({
         data: {
-          householdId: HOUSEHOLD_ID,
+          householdId,
           createdById,
           month,
           year,
@@ -69,11 +76,11 @@ export async function POST(req: NextRequest) {
     } else if (category === "fijo") {
       const record = await prisma.fixedExpense.create({
         data: {
-          householdId: HOUSEHOLD_ID,
+          householdId,
           createdById,
           month,
           year,
-          concept:     description || "Gasto fijo",
+          concept: description || "Gasto fijo",
           subcategory: cardName || undefined,
           currency,
           amount,
@@ -83,10 +90,9 @@ export async function POST(req: NextRequest) {
       });
       id = record.id;
     } else {
-      // "general" household expense
       const record = await prisma.householdExpense.create({
         data: {
-          householdId: HOUSEHOLD_ID,
+          householdId,
           createdById,
           month,
           year,
@@ -108,8 +114,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
-
-const MONTH_NAMES = [
-  "enero","febrero","marzo","abril","mayo","junio",
-  "julio","agosto","septiembre","octubre","noviembre","diciembre",
-];

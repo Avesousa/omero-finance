@@ -7,6 +7,8 @@ import { ExpenseForm } from "./expense-form";
 import { IncomeForm } from "./income-form";
 import { RecentExpenses, type RecentExpense } from "./recent-expenses";
 import { RecentIncomes, type RecentIncome } from "./recent-incomes";
+import type { ViewMode } from "./home-client";
+import { type CardItem } from "@/components/tdc/card-management";
 
 export interface FixedTemplate {
   id: string;
@@ -16,13 +18,17 @@ export interface FixedTemplate {
 }
 
 interface ExpenseFormContainerProps {
+  mode: ViewMode;
   currentRate: number;
+  userId: string;
   recentExpenses: RecentExpense[];
+  myRecentExpenses: RecentExpense[];
   recentIncomes: RecentIncome[];
   fixedTemplates: FixedTemplate[];
+  cards: CardItem[];
 }
 
-export function ExpenseFormContainer({ currentRate, recentExpenses, recentIncomes, fixedTemplates }: ExpenseFormContainerProps) {
+export function ExpenseFormContainer({ mode, currentRate, userId, recentExpenses, myRecentExpenses, recentIncomes, fixedTemplates, cards }: ExpenseFormContainerProps) {
   const router = useRouter();
   const [tab, setTab] = useState<"gasto" | "ingreso">("gasto");
 
@@ -47,7 +53,7 @@ export function ExpenseFormContainer({ currentRate, recentExpenses, recentIncome
     const res = await fetch("/api/income", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, isPersonal: data.isPersonal }),
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
@@ -89,8 +95,8 @@ export function ExpenseFormContainer({ currentRate, recentExpenses, recentIncome
 
       {/* Form */}
       {tab === "gasto"
-        ? <ExpenseForm currentRate={currentRate} fixedTemplates={fixedTemplates} onSubmit={handleExpense} />
-        : <IncomeForm  currentRate={currentRate} onSubmit={handleIncome} />
+        ? <ExpenseForm currentRate={currentRate} fixedTemplates={fixedTemplates} userId={userId} cards={cards} onSubmit={handleExpense} />
+        : <IncomeForm  currentRate={currentRate} userId={userId} onSubmit={handleIncome} />
       }
 
       {/* Recent activity */}
@@ -102,7 +108,7 @@ export function ExpenseFormContainer({ currentRate, recentExpenses, recentIncome
           {tab === "gasto" ? "Últimos gastos" : "Últimos ingresos"}
         </h2>
         {tab === "gasto"
-          ? <RecentExpenses expenses={recentExpenses} />
+          ? <RecentExpenses expenses={mode === "personal" ? myRecentExpenses : recentExpenses} />
           : <RecentIncomes  incomes={recentIncomes} />
         }
       </section>

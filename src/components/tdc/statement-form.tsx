@@ -9,12 +9,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
-import { CardBrandIcon, cleanCardName } from "./card-brand";
+import { CardBrandIcon } from "./card-brand";
+import { type CardItem, cardDisplayLabel } from "./card-management";
 
 interface StatementFormProps {
   month: string;
   year: number;
-  cards: string[];
+  cards: CardItem[];
   onClose: () => void;
   /** If provided, we're editing an existing statement */
   initial?: {
@@ -42,7 +43,7 @@ export function StatementForm({ month, year, cards, onClose, initial }: Statemen
 
   const [cardName, setCardName]     = useState(initial?.cardName ?? "");
   const [customCard, setCustomCard] = useState(
-    initial?.cardName && !cards.includes(initial.cardName) ? initial.cardName : ""
+    initial?.cardName && !cards.some((c) => c.name === initial.cardName) ? initial.cardName : ""
   );
   const [amount, setAmount]         = useState(initial ? String(initial.totalAmountArs) : "");
   const [usdAmount, setUsdAmount]   = useState(initial?.usdAmount ? String(initial.usdAmount) : "");
@@ -113,16 +114,36 @@ export function StatementForm({ month, year, cards, onClose, initial }: Statemen
         {/* Card selector */}
         <div>
           <Label className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Tarjeta</Label>
-          <Select value={cardName} onValueChange={(v) => setCardName(v ?? "")} disabled={isEditing}>
-            <SelectTrigger style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}>
-              <SelectValue placeholder="Seleccioná una tarjeta" />
+          <Select value={cardName || "__none__"} onValueChange={(v) => setCardName(v === "__none__" ? "" : (v ?? ""))} disabled={isEditing}>
+            <SelectTrigger
+              className="w-full overflow-hidden"
+              style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+            >
+              <span className="flex items-center gap-2 min-w-0 overflow-hidden">
+                {(() => {
+                  if (!cardName) return <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Seleccioná una tarjeta</span>;
+                  if (cardName === "__custom__") return <span className="text-sm">Otra tarjeta…</span>;
+                  const sel = cards.find((c) => c.name === cardName);
+                  return sel?.entity && sel?.cardType ? (
+                    <>
+                      <CardBrandIcon cardType={sel.cardType} entity={sel.entity} size={16} showBank />
+                      <span className="truncate text-sm" style={{ color: "var(--text-secondary)" }}>
+                        {sel.ownerName ?? sel.name}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="truncate text-sm">{cardName}</span>
+                  );
+                })()}
+              </span>
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__" disabled>Seleccioná una tarjeta</SelectItem>
               {cards.map((c) => (
-                <SelectItem key={c} value={c}>
+                <SelectItem key={c.id} value={c.name}>
                   <span className="inline-flex items-center gap-2">
-                    <CardBrandIcon name={c} size={20} showBank />
-                    {cleanCardName(c) && <span>{cleanCardName(c)}</span>}
+                    <CardBrandIcon cardType={c.cardType} entity={c.entity} size={20} showBank />
+                    <span>{cardDisplayLabel(c)}</span>
                   </span>
                 </SelectItem>
               ))}

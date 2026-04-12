@@ -1,8 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const { id: fromAccountId } = await params;
   const { toAccountId, amount, description } = await req.json();
 
@@ -20,7 +27,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 });
   }
 
-  // Execute transfer atomically
   const [updatedFrom, updatedTo, transfer] = await prisma.$transaction([
     prisma.account.update({
       where: { id: fromAccountId },
@@ -32,7 +38,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }),
     prisma.accountTransfer.create({
       data: {
-        householdId:   HOUSEHOLD_ID,
+        householdId:   session.user.householdId,
         fromAccountId,
         toAccountId,
         amount:        parsedAmount,

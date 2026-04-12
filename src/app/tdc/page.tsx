@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../prisma/constants";
+import { getServerSession } from "@/lib/auth";
 import { MONTH_NAMES, type MonthName } from "@/lib/months";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { StatementsList, type StatementData } from "@/components/tdc/statements-list";
@@ -15,6 +16,10 @@ interface PageProps {
 }
 
 export default async function TdcPage({ searchParams }: PageProps) {
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+
+  const { householdId } = session.user;
   const params = await searchParams;
   const now    = new Date();
 
@@ -29,12 +34,12 @@ export default async function TdcPage({ searchParams }: PageProps) {
   // Fetch cards catalog + users + current exchange rate
   const [dbCards, users, latestRate] = await Promise.all([
     prisma.card.findMany({
-      where: { householdId: HOUSEHOLD_ID },
+      where: { householdId: householdId },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, entity: true, cardType: true, ownerName: true },
     }),
     prisma.user.findMany({
-      where: { householdId: HOUSEHOLD_ID },
+      where: { householdId: householdId },
       select: { id: true, name: true },
     }),
     prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } }),
@@ -44,7 +49,7 @@ export default async function TdcPage({ searchParams }: PageProps) {
 
   // Fetch statements for the month
   const statements = await prisma.creditCardStatement.findMany({
-    where: { householdId: HOUSEHOLD_ID, month, year },
+    where: { householdId: householdId, month, year },
     orderBy: { cardName: "asc" },
   });
 
@@ -75,15 +80,15 @@ export default async function TdcPage({ searchParams }: PageProps) {
   // Fetch card expenses for the month (expenses with a cardName set)
   const [householdExps, groceryExps, personalExps] = await Promise.all([
     prisma.householdExpense.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year, cardName: { not: null } },
+      where: { householdId: householdId, month, year, cardName: { not: null } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.groceryExpense.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year, cardName: { not: null } },
+      where: { householdId: householdId, month, year, cardName: { not: null } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.personalExpense.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year, cardName: { not: null } },
+      where: { householdId: householdId, month, year, cardName: { not: null } },
       orderBy: { createdAt: "desc" },
     }),
   ]);
@@ -130,7 +135,7 @@ export default async function TdcPage({ searchParams }: PageProps) {
     return `/tdc?${p.toString()}`;
   }
 
-  const cardNames = dbCards.map((c) => c.name);
+  const cardNames = dbCards;
 
   return (
     <div className="flex flex-col gap-5 px-4 py-4 max-w-lg mx-auto">

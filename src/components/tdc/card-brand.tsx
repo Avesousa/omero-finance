@@ -1,26 +1,15 @@
 /**
  * Card brand + bank detection and logo component.
- * Card names follow the convention: "[BRAND] [BANK] [extra]"
- * e.g. "Visa Galicia", "MC BN", "AMEX MP"
+ * Accepts either structured fields (cardType/entity) or a legacy name string.
  */
 
 type Brand = "VISA" | "MC" | "AMEX" | null;
-type Bank  = "Galicia" | "BN" | "MP" | "CP" | null;
 
 export function detectBrand(name: string): Brand {
   const up = name.toUpperCase();
   if (up.includes("AMEX") || up.includes("AMERICAN EXPRESS")) return "AMEX";
   if (up.includes("MASTERCARD") || /\bMC\b/.test(up)) return "MC";
   if (up.includes("VISA")) return "VISA";
-  return null;
-}
-
-export function detectBank(name: string): Bank {
-  const up = name.toUpperCase();
-  if (up.includes("GALICIA"))                              return "Galicia";
-  if (up.includes("BANCO NACION") || /\bBN\b/.test(up))   return "BN";
-  if (up.includes("MERCADOPAGO") || /\bMP\b/.test(up))    return "MP";
-  if (up.includes("CENCOPAY") || /\bCP\b/.test(up))       return "CP";
   return null;
 }
 
@@ -40,16 +29,12 @@ export function cleanCardName(name: string): string {
     .replace(/\bbn\b/gi, "")
     .replace(/\bmp\b/gi, "")
     .replace(/\bcp\b/gi, "")
+    .replace(/\bbbva\b/gi, "")
+    .replace(/\bbrubank\b/gi, "")
+    .replace(/\bbk\b/gi, "")
     .replace(/\scencopay\b/gi, "")
     .trim();
 }
-
-const BANK_LABELS: Record<NonNullable<Bank>, string> = {
-  Galicia: "Galicia",
-  BN:      "Banco Nación",
-  MP:      "MercadoPago",
-  CP:      "Cencopay",
-};
 
 // ── SVG brand logos ────────────────────────────────────────────────
 
@@ -117,14 +102,22 @@ function AmexLogo({ size = 28 }: { size?: number }) {
 // ── Main component ─────────────────────────────────────────────────
 
 interface CardBrandIconProps {
-  name:      string;
-  size?:     number;
+  /** Legacy name string — used when structured fields are unavailable */
+  name?: string;
+  /** Structured card type: "VISA" | "MC" | "AMEX" — takes priority over name detection */
+  cardType?: string | null;
+  /** Structured entity name — shown as label when showBank is true */
+  entity?: string | null;
+  size?: number;
   showBank?: boolean;
 }
 
-export function CardBrandIcon({ name, size = 28, showBank = true }: CardBrandIconProps) {
-  const brand = detectBrand(name);
-  const bank  = detectBank(name);
+export function CardBrandIcon({ name = "", cardType, entity, size = 28, showBank = true }: CardBrandIconProps) {
+  const brand: Brand = cardType
+    ? (cardType.toUpperCase() as Brand)
+    : detectBrand(name);
+
+  const bankLabel = entity ?? null;
 
   return (
     <span className="inline-flex items-center gap-1.5 flex-shrink-0">
@@ -139,12 +132,12 @@ export function CardBrandIcon({ name, size = 28, showBank = true }: CardBrandIco
           TDC
         </span>
       )}
-      {showBank && bank && (
+      {showBank && bankLabel && (
         <span
           className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
           style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}
         >
-          {BANK_LABELS[bank]}
+          {bankLabel}
         </span>
       )}
     </span>

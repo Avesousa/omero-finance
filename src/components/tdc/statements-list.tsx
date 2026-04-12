@@ -5,7 +5,8 @@ import { CheckCircle2, CreditCard, DollarSign, Edit2, Plus, RotateCcw, Trash2 } 
 import { useRouter } from "next/navigation";
 import { StatementForm } from "./statement-form";
 import { PaymentModal } from "./payment-modal";
-import { CardBrandIcon, cleanCardName } from "./card-brand";
+import { CardBrandIcon } from "./card-brand";
+import { type CardItem, cardDisplayLabel } from "./card-management";
 
 export interface StatementData {
   id: string;
@@ -30,7 +31,7 @@ interface StatementsListProps {
   statements: StatementData[];
   month: string;
   year: number;
-  cards: string[];
+  cards: CardItem[];
   currentRate: number;
 }
 
@@ -75,7 +76,7 @@ function getInitialMode(s: StatementData): CommitMode {
 function StatementRow({
   s, month, year, cards, currentRate,
 }: {
-  s: StatementData; month: string; year: number; cards: string[];
+  s: StatementData; month: string; year: number; cards: CardItem[];
   currentRate: number;
 }) {
   const router                    = useRouter();
@@ -168,12 +169,24 @@ function StatementRow({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <CardBrandIcon name={s.cardName} size={24} showBank />
-              {cleanCardName(s.cardName) && (
-                <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
-                  {cleanCardName(s.cardName)}
-                </p>
-              )}
+              {(() => {
+                const cardObj = cards.find((c) => c.name === s.cardName);
+                return cardObj?.entity && cardObj?.cardType ? (
+                  <>
+                    <CardBrandIcon cardType={cardObj.cardType} size={24} showBank={false} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                        {cardObj.entity}
+                      </p>
+                      <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                        {[cardObj.cardType, cardObj.ownerName].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <CardBrandIcon name={s.cardName} size={24} showBank />
+                );
+              })()}
             </div>
             <p className="text-xs" style={{ color: due.color }}>{due.text}</p>
           </div>

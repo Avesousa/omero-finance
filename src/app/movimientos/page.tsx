@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../prisma/constants";
+import { getServerSession } from "@/lib/auth";
 import { MONTH_NAMES, type MonthName } from "@/lib/months";
 import { MovimientosList } from "@/components/movimientos/movimientos-list";
 import { ChevronLeft } from "lucide-react";
@@ -13,7 +14,7 @@ interface PageProps {
 
 export type Movimiento = {
   id:          string;
-  date:        string;    // ISO createdAt
+  date:        string;
   description: string;
   amount:      number;
   currency:    "ARS" | "USD";
@@ -23,6 +24,10 @@ export type Movimiento = {
 };
 
 export default async function MovimientosPage({ searchParams }: PageProps) {
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+
+  const { householdId } = session.user;
   const params = await searchParams;
   const now    = new Date();
 
@@ -34,85 +39,25 @@ export default async function MovimientosPage({ searchParams }: PageProps) {
   const year = params.year ? parseInt(params.year, 10) : now.getFullYear();
 
   const users = await prisma.user.findMany({
-    where: { householdId: HOUSEHOLD_ID },
+    where: { householdId },
     select: { id: true, name: true },
   });
   const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
 
   const [groceries, household, fixed, personal, incomes] = await Promise.all([
-    prisma.groceryExpense.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.householdExpense.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.fixedExpense.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.personalExpense.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.income.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
-      orderBy: { createdAt: "desc" },
-    }),
+    prisma.groceryExpense.findMany({ where: { householdId, month, year }, orderBy: { createdAt: "desc" } }),
+    prisma.householdExpense.findMany({ where: { householdId, month, year }, orderBy: { createdAt: "desc" } }),
+    prisma.fixedExpense.findMany({ where: { householdId, month, year }, orderBy: { createdAt: "desc" } }),
+    prisma.personalExpense.findMany({ where: { householdId, month, year }, orderBy: { createdAt: "desc" } }),
+    prisma.income.findMany({ where: { householdId, month, year }, orderBy: { createdAt: "desc" } }),
   ]);
 
   const movimientos: Movimiento[] = [
-    ...groceries.map((e) => ({
-      id:          e.id,
-      date:        e.createdAt.toISOString(),
-      description: e.description,
-      amount:      Number(e.amount),
-      currency:    e.currency as "ARS" | "USD",
-      amountArs:   e.amountArs ? Number(e.amountArs) : null,
-      category:    "mercado" as const,
-      createdBy:   userMap[e.createdById] ?? "?",
-    })),
-    ...household.map((e) => ({
-      id:          e.id,
-      date:        e.createdAt.toISOString(),
-      description: e.description,
-      amount:      Number(e.amount),
-      currency:    e.currency as "ARS" | "USD",
-      amountArs:   e.amountArs ? Number(e.amountArs) : null,
-      category:    "general" as const,
-      createdBy:   userMap[e.createdById] ?? "?",
-    })),
-    ...fixed.map((e) => ({
-      id:          e.id,
-      date:        e.createdAt.toISOString(),
-      description: e.concept,
-      amount:      Number(e.amount),
-      currency:    e.currency as "ARS" | "USD",
-      amountArs:   e.amountArs ? Number(e.amountArs) : null,
-      category:    "fijo" as const,
-      createdBy:   userMap[e.createdById] ?? "?",
-    })),
-    ...personal.map((e) => ({
-      id:          e.id,
-      date:        e.createdAt.toISOString(),
-      description: e.concept,
-      amount:      Number(e.amount),
-      currency:    e.currency as "ARS" | "USD",
-      amountArs:   e.amountArs ? Number(e.amountArs) : null,
-      category:    "personal" as const,
-      createdBy:   userMap[e.createdById] ?? "?",
-    })),
-    ...incomes.map((e) => ({
-      id:          e.id,
-      date:        e.createdAt.toISOString(),
-      description: e.description ?? e.type,
-      amount:      Number(e.amount),
-      currency:    e.currency as "ARS" | "USD",
-      amountArs:   e.amountArs ? Number(e.amountArs) : null,
-      category:    "ingreso" as const,
-      createdBy:   userMap[e.createdById] ?? "?",
-    })),
+    ...groceries.map((e) => ({ id: e.id, date: e.createdAt.toISOString(), description: e.description, amount: Number(e.amount), currency: e.currency as "ARS" | "USD", amountArs: e.amountArs ? Number(e.amountArs) : null, category: "mercado" as const, createdBy: userMap[e.createdById] ?? "?" })),
+    ...household.map((e) => ({ id: e.id, date: e.createdAt.toISOString(), description: e.description, amount: Number(e.amount), currency: e.currency as "ARS" | "USD", amountArs: e.amountArs ? Number(e.amountArs) : null, category: "general" as const, createdBy: userMap[e.createdById] ?? "?" })),
+    ...fixed.map((e) => ({ id: e.id, date: e.createdAt.toISOString(), description: e.concept, amount: Number(e.amount), currency: e.currency as "ARS" | "USD", amountArs: e.amountArs ? Number(e.amountArs) : null, category: "fijo" as const, createdBy: userMap[e.createdById] ?? "?" })),
+    ...personal.map((e) => ({ id: e.id, date: e.createdAt.toISOString(), description: e.concept, amount: Number(e.amount), currency: e.currency as "ARS" | "USD", amountArs: e.amountArs ? Number(e.amountArs) : null, category: "personal" as const, createdBy: userMap[e.createdById] ?? "?" })),
+    ...incomes.map((e) => ({ id: e.id, date: e.createdAt.toISOString(), description: e.description ?? e.type, amount: Number(e.amount), currency: e.currency as "ARS" | "USD", amountArs: e.amountArs ? Number(e.amountArs) : null, category: "ingreso" as const, createdBy: userMap[e.createdById] ?? "?" })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
@@ -135,11 +80,7 @@ export default async function MovimientosPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <MovimientosList
-        movimientos={movimientos}
-        month={month}
-        year={year}
-      />
+      <MovimientosList movimientos={movimientos} month={month} year={year} />
     </div>
   );
 }

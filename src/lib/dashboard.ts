@@ -10,7 +10,6 @@ import {
   calculateGastosLibres,
 } from "./budget";
 import { prisma } from "./prisma";
-import { HOUSEHOLD_ID } from "../../prisma/constants";
 import { MONTH_NAMES, type MonthName, isMonthInFuture, isCurrentMonth } from "./months";
 export { MONTH_NAMES, type MonthName, isMonthInFuture, isCurrentMonth };
 
@@ -89,11 +88,12 @@ const LABELS: Record<string, string> = {
 export async function getDashboardData(
   month: MonthName,
   year: number,
+  householdId: string,
 ): Promise<DashboardData> {
   const isFuture = isMonthInFuture(month, year);
 
   const incomeCount = await prisma.income.count({
-    where: { householdId: HOUSEHOLD_ID, month, year },
+    where: { householdId: householdId, month, year },
   });
   const hasData = !isFuture && incomeCount > 0;
 
@@ -126,39 +126,39 @@ export async function getDashboardData(
     latestRate,
     budgetConfigs,
   ] = await Promise.all([
-    prisma.user.findMany({ where: { householdId: HOUSEHOLD_ID } }),
+    prisma.user.findMany({ where: { householdId: householdId } }),
 
-    prisma.income.findMany({ where: { householdId: HOUSEHOLD_ID, month, year } }),
+    prisma.income.findMany({ where: { householdId: householdId, month, year } }),
 
     prisma.creditCardStatement.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
+      where: { householdId: householdId, month, year },
     }),
 
     // Fixed expense TEMPLATES (active ARS) — defines the budget line (what's committed)
     prisma.fixedExpenseTemplate.findMany({
-      where: { householdId: HOUSEHOLD_ID, isActive: true, currency: "ARS" },
+      where: { householdId: householdId, isActive: true, currency: "ARS" },
       select: { amount: true },
     }),
 
     // Actual fixed expense records logged this month — what's been used
     prisma.fixedExpense.aggregate({
-      where: { householdId: HOUSEHOLD_ID, month, year },
+      where: { householdId: householdId, month, year },
       _sum: { amount: true },
     }),
 
     prisma.groceryExpense.aggregate({
-      where: { householdId: HOUSEHOLD_ID, month, year },
+      where: { householdId: householdId, month, year },
       _sum: { amount: true },
     }),
 
     prisma.householdExpense.aggregate({
-      where: { householdId: HOUSEHOLD_ID, month, year },
+      where: { householdId: householdId, month, year },
       _sum: { amount: true },
     }),
 
     prisma.personalExpense.groupBy({
       by: ["userId"],
-      where: { householdId: HOUSEHOLD_ID, month, year },
+      where: { householdId: householdId, month, year },
       _sum: { amount: true },
     }),
 
@@ -166,7 +166,7 @@ export async function getDashboardData(
     prisma.saving.groupBy({
       by: ["type"],
       where: {
-        householdId: HOUSEHOLD_ID,
+        householdId: householdId,
         currency: "ARS",
         date: { gte: monthStart, lte: monthEnd },
       },
@@ -176,7 +176,7 @@ export async function getDashboardData(
     prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } }),
 
     prisma.budgetConfig.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
+      where: { householdId: householdId, month, year },
     }),
   ]);
 

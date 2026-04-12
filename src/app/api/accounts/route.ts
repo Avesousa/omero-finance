@@ -1,13 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const accounts = await prisma.account.findMany({
-    where: { householdId: HOUSEHOLD_ID },
+    where: { householdId: session.user.householdId },
     orderBy: { createdAt: "asc" },
     include: { user: { select: { id: true, name: true, avatarColor: true } } },
   });
+
   return NextResponse.json(
     accounts.map((a) => ({
       id:        a.id,
@@ -22,29 +30,37 @@ export async function GET() {
   );
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const { name, type, currency, balance, userId } = await req.json();
   if (!name?.trim()) {
     return NextResponse.json({ error: "Nombre requerido" }, { status: 400 });
   }
 
-  // If new account is marked default for a user, clear other defaults for that user
+  const { householdId } = session.user;
+
   if (userId) {
     await prisma.account.updateMany({
-      where: { householdId: HOUSEHOLD_ID, userId, isDefault: true },
+      where: { householdId, userId, isDefault: true },
       data: { isDefault: false },
     });
   }
 
   const account = await prisma.account.create({
     data: {
-      householdId: HOUSEHOLD_ID,
+      householdId,
       userId:    userId ?? null,
       name:      name.trim(),
-      type:      type      ?? "CHECKING",
-      currency:  currency  ?? "ARS",
+      type:      type     ?? "CHECKING",
+      currency:  currency ?? "ARS",
       balance:   parseFloat(balance ?? "0"),
-      isDefault: !!userId, // first account per user is default
+      isDefault: !!userId,
     },
     include: { user: { select: { id: true, name: true, avatarColor: true } } },
   });

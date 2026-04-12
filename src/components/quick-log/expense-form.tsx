@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Mic, MicOff, Loader2, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CardBrandIcon } from "@/components/tdc/card-brand";
+import { type CardItem, cardDisplayLabel } from "@/components/tdc/card-management";
 
 type ExpenseTarget = "casa" | "personal";
 type ExpenseCategory = "mercado" | "general" | "fijo";
@@ -46,31 +48,17 @@ const DEFAULT_FORM: FormState = {
   fixedTemplateId: "",
 };
 
-const CARDS = [
-  "VISA MARIA BBVA",
-  "VISA MARIA CP",
-  "VISA AVELINO BN",
-  "MC AVELINO BN",
-  "VISA AVELINO BK",
-  "MC AVELINO MP",
-];
-
-const USERS = [
-  { id: "cm_user_avelino", name: "Avelino", color: "#6366F1" },
-  { id: "cm_user_maria",   name: "Maria",   color: "#EC4899" },
-] as const;
-type UserId = (typeof USERS)[number]["id"];
-
 interface ExpenseFormProps {
   currentRate: number;
   fixedTemplates: FixedTemplate[];
-  onSubmit: (data: FormState & { target: ExpenseTarget; userId: UserId }) => Promise<void>;
+  userId: string;
+  cards: CardItem[];
+  onSubmit: (data: FormState & { target: ExpenseTarget; userId: string }) => Promise<void>;
 }
 
-export function ExpenseForm({ currentRate, fixedTemplates, onSubmit }: ExpenseFormProps) {
+export function ExpenseForm({ currentRate, fixedTemplates, userId, cards, onSubmit }: ExpenseFormProps) {
   const [target, setTarget] = useState<ExpenseTarget>("casa");
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
-  const [userId, setUserId] = useState<UserId>("cm_user_avelino");
   const [isListening, setIsListening] = useState(false);
   const [isParsingVoice, setIsParsingVoice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,16 +67,6 @@ export function ExpenseForm({ currentRate, fixedTemplates, onSubmit }: ExpenseFo
   const [pendingConfirm, setPendingConfirm] = useState(false);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-
-  // Persist last-used user in localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("omero_userId") as UserId | null;
-    if (saved && USERS.some((u) => u.id === saved)) setUserId(saved);
-  }, []);
-  function selectUser(id: UserId) {
-    setUserId(id);
-    localStorage.setItem("omero_userId", id);
-  }
 
   const update = (patch: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
@@ -185,7 +163,7 @@ export function ExpenseForm({ currentRate, fixedTemplates, onSubmit }: ExpenseFo
     }
   }
 
-  const showCard = target === "casa" && form.category !== "fijo";
+  const showCard = cards.length > 0;
   const showExpenseType = target === "casa" && form.category === "general";
 
   return (
@@ -210,35 +188,6 @@ export function ExpenseForm({ currentRate, fixedTemplates, onSubmit }: ExpenseFo
             {t === "casa" ? "🏠 Casa" : "👤 Personal"}
           </button>
         ))}
-      </div>
-
-      {/* User picker */}
-      <div
-        className="flex items-center gap-2 px-4 py-2 border-b"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
-      >
-        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>¿Quién?</span>
-        <div className="flex gap-1.5 ml-auto">
-          {USERS.map((u) => (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => selectUser(u.id)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
-              style={{
-                borderColor:     userId === u.id ? u.color : "var(--border)",
-                backgroundColor: userId === u.id ? `${u.color}22` : "transparent",
-                color:           userId === u.id ? u.color : "var(--text-secondary)",
-              }}
-            >
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: u.color }}
-              />
-              {u.name}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -520,23 +469,42 @@ export function ExpenseForm({ currentRate, fixedTemplates, onSubmit }: ExpenseFo
               Tarjeta <span style={{ color: "var(--text-secondary)" }}>(opcional)</span>
             </Label>
             <Select
-              value={form.cardName}
-              onValueChange={(v) => update({ cardName: v ?? "" })}
+              value={form.cardName || "__none__"}
+              onValueChange={(v) => update({ cardName: v === "__none__" ? "" : (v ?? "") })}
             >
               <SelectTrigger
+                className="w-full overflow-hidden"
                 style={{
                   backgroundColor: "var(--bg-elevated)",
                   borderColor: "var(--border)",
                   color: "var(--text-primary)",
                 }}
               >
-                <SelectValue placeholder="Sin tarjeta" />
+                <span className="flex items-center gap-2 min-w-0 overflow-hidden">
+                  {(() => {
+                    if (!form.cardName) return <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Sin tarjeta</span>;
+                    const sel = cards.find((c) => c.name === form.cardName);
+                    return sel?.cardType ? (
+                      <>
+                        <CardBrandIcon cardType={sel.cardType} entity={sel.entity} size={16} showBank />
+                        <span className="truncate text-sm" style={{ color: "var(--text-secondary)" }}>
+                          {sel.ownerName ?? sel.name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="truncate text-sm">{form.cardName}</span>
+                    );
+                  })()}
+                </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin tarjeta</SelectItem>
-                {CARDS.map((card) => (
-                  <SelectItem key={card} value={card}>
-                    {card}
+                <SelectItem value="__none__">Sin tarjeta</SelectItem>
+                {cards.map((card) => (
+                  <SelectItem key={card.id} value={card.name}>
+                    <span className="inline-flex items-center gap-2">
+                      <CardBrandIcon cardType={card.cardType} entity={card.entity} size={18} showBank />
+                      <span>{cardDisplayLabel(card)}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

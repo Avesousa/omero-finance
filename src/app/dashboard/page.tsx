@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { getDashboardData, MONTH_NAMES, type MonthName } from "@/lib/dashboard";
+import { getServerSession } from "@/lib/auth";
 import { MonthSelector } from "@/components/dashboard/month-selector";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { TdcAlerts } from "@/components/dashboard/tdc-alerts";
@@ -11,6 +13,9 @@ interface PageProps {
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+
   const params = await searchParams;
   const now = new Date();
 
@@ -22,11 +27,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const year = params.year ? parseInt(params.year, 10) : now.getFullYear();
 
-  const data = await getDashboardData(month, year);
+  const data = await getDashboardData(month, year, session.user.householdId);
 
   return (
     <div className="flex flex-col gap-5 px-4 py-4 max-w-lg mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
           Presupuesto
@@ -43,18 +47,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Suspense>
       </div>
 
-      {/* Empty state: future or no data */}
       {!data.hasData ? (
         <EmptyState month={month} year={year} isFuture={data.isFuture} />
       ) : (
         <>
-          {/* TDC alerts */}
           {data.tdcAlerts.length > 0 && <TdcAlerts alerts={data.tdcAlerts} />}
-
-          {/* Summary cards */}
           <SummaryCards data={data} />
-
-          {/* Budget table */}
           <BudgetTable categories={data.categories} users={data.users} />
         </>
       )}

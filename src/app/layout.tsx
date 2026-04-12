@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -44,14 +45,8 @@ export default function RootLayout({
       className={geistSans.variable}
       suppressHydrationWarning
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.add('light')}else{document.documentElement.classList.remove('light')}}catch(e){}})()`,
-          }}
-        />
-      </head>
       <body className="min-h-svh flex flex-col">
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
         <ThemeProvider>
           {/* Header */}
           <header

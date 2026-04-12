@@ -6,12 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const USERS = [
-  { id: "cm_user_avelino", name: "Avelino", color: "#6366F1" },
-  { id: "cm_user_maria",   name: "Maria",   color: "#EC4899" },
-] as const;
-type UserId = (typeof USERS)[number]["id"];
-
 const INCOME_TYPES = [
   { value: "SUELDO",      label: "Sueldo" },
   { value: "FREELANCE",   label: "Freelance" },
@@ -24,21 +18,22 @@ const INCOME_TYPES = [
 
 interface IncomeFormProps {
   currentRate: number;
+  userId: string;
   onSubmit: (data: {
-    userId: UserId;
     type: string;
     currency: "ARS" | "USD";
     amount: string;
     description: string;
+    isPersonal: boolean;
   }) => Promise<void>;
 }
 
-export function IncomeForm({ currentRate, onSubmit }: IncomeFormProps) {
-  const [userId, setUserId]       = useState<UserId>("cm_user_avelino");
+export function IncomeForm({ currentRate, userId, onSubmit }: IncomeFormProps) {
   const [type, setType]           = useState("SUELDO");
   const [currency, setCurrency]   = useState<"ARS" | "USD">("ARS");
   const [amount, setAmount]       = useState("");
   const [description, setDescription] = useState("");
+  const [isPersonal, setIsPersonal] = useState(false);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState<string | null>(null);
   const [success, setSuccess]     = useState(false);
@@ -56,7 +51,7 @@ export function IncomeForm({ currentRate, onSubmit }: IncomeFormProps) {
     setSaving(true);
     setError(null);
     try {
-      await onSubmit({ userId, type, currency, amount, description });
+      await onSubmit({ type, currency, amount, description, isPersonal });
       setAmount("");
       setDescription("");
       setSuccess(true);
@@ -73,28 +68,6 @@ export function IncomeForm({ currentRate, onSubmit }: IncomeFormProps) {
       className="rounded-2xl p-4 space-y-4 border"
       style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
     >
-      {/* User selector */}
-      <div className="flex gap-2">
-        {USERS.map((u) => (
-          <button
-            key={u.id}
-            onClick={() => setUserId(u.id)}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium border transition-colors"
-            style={{
-              borderColor:     userId === u.id ? u.color : "var(--border)",
-              backgroundColor: userId === u.id ? `${u.color}1A` : "var(--bg-elevated)",
-              color:           userId === u.id ? u.color : "var(--text-secondary)",
-            }}
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: u.color }}
-            />
-            {u.name}
-          </button>
-        ))}
-      </div>
-
       {/* Type selector */}
       <div>
         <Label className="text-xs mb-1.5 block" style={{ color: "var(--text-secondary)" }}>
@@ -116,6 +89,29 @@ export function IncomeForm({ currentRate, onSubmit }: IncomeFormProps) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Scope: hogar vs personal */}
+      <div
+        className="flex rounded-xl p-1 gap-1"
+        style={{ backgroundColor: "var(--bg-elevated)" }}
+      >
+        {([
+          { value: false, label: "Para el hogar" },
+          { value: true,  label: "Solo para mí"  },
+        ] as const).map((opt) => (
+          <button
+            key={String(opt.value)}
+            onClick={() => setIsPersonal(opt.value)}
+            className="flex-1 py-2 rounded-lg text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: isPersonal === opt.value ? "var(--bg-card)" : "transparent",
+              color:           isPersonal === opt.value ? "var(--text-primary)" : "var(--text-secondary)",
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {/* Currency + Amount */}

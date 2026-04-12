@@ -1,28 +1,52 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
-export async function GET() {
+function deriveName(entity: string, cardType: string, ownerName: string) {
+  return `${cardType} ${entity} ${ownerName}`;
+}
+
+export async function GET(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const cards = await prisma.card.findMany({
-    where: { householdId: HOUSEHOLD_ID },
+    where: { householdId: session.user.householdId },
     orderBy: { name: "asc" },
-    select: { id: true, name: true },
+    select: { id: true, name: true, entity: true, cardType: true, ownerName: true },
   });
+
   return NextResponse.json(cards);
 }
 
-export async function POST(req: Request) {
-  const { name } = await req.json();
-  if (!name?.trim()) {
-    return NextResponse.json({ error: "Nombre requerido" }, { status: 400 });
-  }
+export async function POST(req: NextRequest) {
+  let session;
   try {
-    const card = await prisma.card.create({
-      data: { householdId: HOUSEHOLD_ID, name: name.trim() },
-      select: { id: true, name: true },
-    });
-    return NextResponse.json(card, { status: 201 });
+    session = await requireSession(req);
   } catch {
-    return NextResponse.json({ error: "Ya existe una tarjeta con ese nombre" }, { status: 409 });
+    return unauthorized();
   }
+
+  const { entity, cardType, ownerName } = await req.json();
+  if (!entity?.trim() || !cardType?.trim() || !ownerName?.trim()) {
+    return NextResponse.json({ error: "Entidad, tipo y dueño son requeridos" }, { status: 400 });
+  }
+
+  const name = deriveName(entity.trim(), cardType.trim(), ownerName.trim());
+
+  const card = await prisma.card.create({
+    data: {
+      householdId: session.user.householdId,
+      name,
+      entity:    entity.trim(),
+      cardType:  cardType.trim(),
+      ownerName: ownerName.trim(),
+    },
+    select: { id: true, name: true, entity: true, cardType: true, ownerName: true },
+  });
+  return NextResponse.json(card, { status: 201 });
 }

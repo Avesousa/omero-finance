@@ -1,29 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession, unauthorized } from "@/lib/auth";
 
-/** PATCH /api/tdc/[id] — toggle isPaid, update fields, optionally deduct from account */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
+  try {
     const { id } = await params;
     const body   = await req.json();
 
     const statementData = {
-      ...(body.isPaid          !== undefined && {
+      ...(body.isPaid !== undefined && {
         isPaid:        body.isPaid,
         paidAt:        body.isPaid ? new Date() : null,
         paymentSource: body.isPaid ? (body.paymentSource ?? null) : null,
       }),
-      ...(body.totalAmountArs  !== undefined && {
+      ...(body.totalAmountArs !== undefined && {
         totalAmountArs: parseFloat(body.totalAmountArs),
         amountToPay:    parseFloat(body.totalAmountArs),
       }),
-      ...(body.usdAmount       !== undefined && { usdAmount: body.usdAmount ? parseFloat(body.usdAmount) : null }),
-      ...(body.dueDate         !== undefined && { dueDate: new Date(body.dueDate) }),
-      ...(body.minimumPayment  !== undefined && { minimumPayment: parseFloat(body.minimumPayment) }),
-      ...(body.customAmount    !== undefined && {
+      ...(body.usdAmount      !== undefined && { usdAmount: body.usdAmount ? parseFloat(body.usdAmount) : null }),
+      ...(body.dueDate        !== undefined && { dueDate: new Date(body.dueDate) }),
+      ...(body.minimumPayment !== undefined && { minimumPayment: parseFloat(body.minimumPayment) }),
+      ...(body.customAmount   !== undefined && {
         customAmount: parseFloat(body.customAmount),
         amountToPay:  parseFloat(body.customAmount),
         payMinimum:   true,
@@ -36,7 +42,6 @@ export async function PATCH(
       }),
     };
 
-    // If paying and an accountId is provided, deduct atomically
     if (body.isPaid && body.accountId && body.deductAmount !== undefined) {
       const deductAmt = parseFloat(body.deductAmount);
       const [record] = await prisma.$transaction([
@@ -57,11 +62,16 @@ export async function PATCH(
   }
 }
 
-/** DELETE /api/tdc/[id] */
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  try {
+    await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const { id } = await params;
     await prisma.creditCardStatement.delete({ where: { id } });

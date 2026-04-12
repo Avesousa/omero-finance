@@ -1,33 +1,33 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
 const MONTH_NAMES = [
   "enero","febrero","marzo","abril","mayo","junio",
   "julio","agosto","septiembre","octubre","noviembre","diciembre",
 ];
 
-/** GET /api/budget-config?month=X&year=Y
- *  Returns config for the month. If none exists, falls back to the most
- *  recent previous month that has config (so new months inherit the last one).
- */
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month")!;
   const year  = parseInt(searchParams.get("year")!, 10);
+  const { householdId } = session.user;
 
-  // Try the requested month first
   let configs = await prisma.budgetConfig.findMany({
-    where: { householdId: HOUSEHOLD_ID, month, year },
+    where: { householdId, month, year },
   });
 
   let inherited = false;
 
-  // Fall back: find the most recent month with any config
   if (configs.length === 0) {
     const monthIdx = MONTH_NAMES.indexOf(month);
-
-    // Build list of (month, year) pairs going backwards up to 12 months
     const candidates: { month: string; year: number }[] = [];
     let m = monthIdx - 1;
     let y = year;
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 
     for (const c of candidates) {
       const prev = await prisma.budgetConfig.findMany({
-        where: { householdId: HOUSEHOLD_ID, month: c.month, year: c.year },
+        where: { householdId, month: c.month, year: c.year },
       });
       if (prev.length > 0) {
         configs   = prev;
@@ -60,16 +60,21 @@ export async function GET(req: Request) {
   });
 }
 
-/** POST /api/budget-config
- *  Upserts all category configs for a given month/year.
- *  Body: { month, year, entries: [{ category, manualPercentage?, manualAmount?, isReserved }] }
- */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const { month, year, entries } = await req.json();
     if (!month || !year || !Array.isArray(entries)) {
       return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
     }
+
+    const { householdId } = session.user;
 
     await Promise.all(
       entries.map((e: {
@@ -80,12 +85,7 @@ export async function POST(req: Request) {
       }) =>
         prisma.budgetConfig.upsert({
           where: {
-            householdId_month_year_category: {
-              householdId: HOUSEHOLD_ID,
-              month,
-              year,
-              category: e.category as never,
-            },
+            householdId_month_year_category: { householdId, month, year, category: e.category as never },
           },
           update: {
             manualPercentage: e.manualPercentage ?? null,
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
             isReserved:       e.isReserved       ?? true,
           },
           create: {
-            householdId:      HOUSEHOLD_ID,
+            householdId,
             month,
             year,
             category:         e.category as never,
