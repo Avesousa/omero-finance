@@ -28,6 +28,12 @@ const MENU_ITEMS = [
     label: "Cuentas",
     desc:  "Saldos, transferencias y cuenta default por perfil",
   },
+  {
+    href:  "/mas/ahorros",
+    icon:  PiggyBank,
+    label: "Ahorros",
+    desc:  "Registrá ahorros, viajes e inversiones",
+  },
 ];
 
 export default function MasPage() {
