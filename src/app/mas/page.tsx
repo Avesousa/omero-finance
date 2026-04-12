@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, User, Wallet, Zap } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, User, TrendingUp, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,12 @@ const MENU_ITEMS = [
     icon:  PiggyBank,
     label: "Presupuesto mensual",
     desc:  "Distribuí el ingreso por categoría",
+  },
+  {
+    href:  "/mas/ingresos",
+    icon:  TrendingUp,
+    label: "Ingresos",
+    desc:  "Registrá sueldos, freelance e ingresos del mes",
   },
   {
     href:  "/mas/gastos-fijos",
@@ -57,6 +63,12 @@ const MENU_ITEMS = [
     icon:  User,
     label: "Gastos propios",
     desc:  "Gastos personales de cada integrante del hogar",
+  },
+  {
+    href:  "/mas/tipo-cambio",
+    icon:  DollarSign,
+    label: "Tipo de cambio",
+    desc:  "Configurá el tipo de cambio USD/ARS manualmente",
   },
 ];
 
