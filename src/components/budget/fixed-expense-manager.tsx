@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Edit2, Loader2, Plus, Trash2, X, Check, ToggleLeft, ToggleRight } from "lucide-react";
+import { Edit2, Loader2, Plus, Trash2, X, Check, ToggleLeft, ToggleRight, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +20,14 @@ function fmt(n: number, currency: "ARS" | "USD" = "ARS") {
   }).format(n);
 }
 
-export function FixedExpenseManager({ initial }: { initial: FixedTemplate[] }) {
+interface FixedExpenseManagerProps {
+  initial: FixedTemplate[];
+  month?: string;
+  year?: number;
+  hasExistingExpenses?: boolean;
+}
+
+export function FixedExpenseManager({ initial, month, year, hasExistingExpenses }: FixedExpenseManagerProps) {
   const router = useRouter();
   const [items, setItems]       = useState<FixedTemplate[]>(initial);
   const [editId, setEditId]     = useState<string | null>(null);
@@ -32,11 +39,42 @@ export function FixedExpenseManager({ initial }: { initial: FixedTemplate[] }) {
   const [newAmount, setNA]      = useState("");
   const [newCurrency, setNCur]  = useState<"ARS" | "USD">("ARS");
   const [saving, setSaving]     = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generateMsg, setGenerateMsg] = useState<string | null>(null);
   const [error, setError]       = useState<string | null>(null);
 
   const activeTotal = items
     .filter((t) => t.isActive)
     .reduce((s, t) => s + (t.currency === "ARS" ? t.amount : 0), 0);
+
+  const activeTemplates = items.filter((t) => t.isActive);
+  const showGenerateButton = month && year && !hasExistingExpenses && activeTemplates.length > 0;
+
+  async function handleGenerate() {
+    if (!month || !year) return;
+    setGenerating(true);
+    setGenerateMsg(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/fixed-expenses/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month, year }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al generar");
+      if (data.generated > 0) {
+        setGenerateMsg(`Se generaron ${data.generated} gastos para ${month} ${year}`);
+        router.refresh();
+      } else {
+        setGenerateMsg(data.message ?? "Sin cambios");
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   async function handleAdd() {
     if (!newConcept.trim() || !newAmount) return;
@@ -209,6 +247,40 @@ export function FixedExpenseManager({ initial }: { initial: FixedTemplate[] }) {
       </div>
 
       {error && <p className="text-xs" style={{ color: "var(--accent-red)" }}>{error}</p>}
+
+      {/* Generate from templates */}
+      {showGenerateButton && (
+        <div
+          className="rounded-xl px-4 py-3 flex items-center justify-between gap-3"
+          style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+              Generar gastos de {month} {year}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+              Crea un registro por cada plantilla activa ({activeTemplates.length})
+            </p>
+          </div>
+          <Button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="h-9 px-3 rounded-xl flex items-center gap-1.5 flex-shrink-0"
+            style={{ backgroundColor: "var(--accent)", color: "var(--accent-foreground)" }}
+          >
+            {generating
+              ? <Loader2 size={14} className="animate-spin" />
+              : <Sparkles size={14} />}
+            <span className="text-xs font-semibold">
+              {generating ? "Generando…" : "Generar"}
+            </span>
+          </Button>
+        </div>
+      )}
+
+      {generateMsg && (
+        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{generateMsg}</p>
+      )}
 
       {/* Add new */}
       <div
