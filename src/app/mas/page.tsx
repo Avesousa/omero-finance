@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart2, ChevronRight, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,24 @@ const MENU_ITEMS = [
     icon:  Wallet,
     label: "Cuentas",
     desc:  "Saldos, transferencias y cuenta default por perfil",
+  },
+  {
+    href:  "/mas/ahorros",
+    icon:  PiggyBank,
+    label: "Ahorros",
+    desc:  "Registrá ahorros, viajes e inversiones",
+  },
+  {
+    href:  "/mas/alquiler",
+    icon:  Home,
+    label: "Alquiler y expensas",
+    desc:  "Registrá alquiler, expensas y trabajos del departamento",
+  },
+  {
+    href:  "/mas/prestamos",
+    icon:  Banknote,
+    label: "Préstamos y deudas",
+    desc:  "Préstamos dados y tomados, deudas a cobrar",
   },
 ];
 
