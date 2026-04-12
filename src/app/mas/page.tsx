@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Banknote, ChevronRight, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
+import { Banknote, ChevronRight, Home, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +27,12 @@ const MENU_ITEMS = [
     icon:  Wallet,
     label: "Cuentas",
     desc:  "Saldos, transferencias y cuenta default por perfil",
+  },
+  {
+    href:  "/mas/alquiler",
+    icon:  Home,
+    label: "Alquiler y expensas",
+    desc:  "Registrá alquiler, expensas y trabajos del departamento",
   },
   {
     href:  "/mas/prestamos",
