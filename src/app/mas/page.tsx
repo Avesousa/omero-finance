@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, Wallet, Zap } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, User, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +51,12 @@ const MENU_ITEMS = [
     icon:  Banknote,
     label: "Préstamos y deudas",
     desc:  "Préstamos dados y tomados, deudas a cobrar",
+  },
+  {
+    href:  "/mas/gastos-propios",
+    icon:  User,
+    label: "Gastos propios",
+    desc:  "Gastos personales de cada integrante del hogar",
   },
 ];
 
