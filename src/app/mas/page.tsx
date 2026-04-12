@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart2, Banknote, ChevronRight, Home, ListOrdered, PiggyBank, TrendingUp, Wallet, Zap } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, TrendingUp, Wallet, Zap } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +57,12 @@ const MENU_ITEMS = [
     icon:  Banknote,
     label: "Préstamos y deudas",
     desc:  "Préstamos dados y tomados, deudas a cobrar",
+  },
+  {
+    href:  "/mas/tipo-cambio",
+    icon:  DollarSign,
+    label: "Tipo de cambio",
+    desc:  "Configurá el tipo de cambio USD/ARS manualmente",
   },
 ];
 
