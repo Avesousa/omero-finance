@@ -330,9 +330,9 @@ export async function getDashboardData(
 
   // ── TDC alerts: cards due within 7 days ───────────────────────────────────
   const now  = new Date();
-  const in7  = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const in3  = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   const tdcAlerts: TdcAlert[] = cardStatements
-    .filter((c) => !c.isPaid && new Date(c.dueDate) <= in7)
+    .filter((c) => !c.isPaid && new Date(c.dueDate) <= in3)
     .map((c) => {
       const msLeft = new Date(c.dueDate).getTime() - now.getTime();
       return {

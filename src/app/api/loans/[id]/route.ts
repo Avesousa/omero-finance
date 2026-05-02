@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession, unauthorized } from "@/lib/auth";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  try {
+    await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const { id } = await params;
     const body   = await req.json();
@@ -38,9 +45,15 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  try {
+    await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const { id } = await params;
     await prisma.loan.delete({ where: { id } });

@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID, AVELINO_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  let session;
   try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
+  try {
+    const { householdId } = session.user;
     const loans = await prisma.loan.findMany({
-      where: { householdId: HOUSEHOLD_ID },
+      where: { householdId },
       include: { installmentRecords: { orderBy: { installmentNumber: "asc" } } },
       orderBy: { createdAt: "desc" },
     });
@@ -34,6 +42,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const body = await req.json();
     const {
@@ -63,6 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     const amountPerInstallment = totalAmountNum / installmentsNum;
+    const { householdId, id: userId } = session.user;
 
     // Generate installment records
     const now = new Date();
@@ -85,9 +101,9 @@ export async function POST(req: NextRequest) {
 
     const loan = await prisma.loan.create({
       data: {
-        householdId:    HOUSEHOLD_ID,
-        ownerUserId:    AVELINO_ID,
-        createdById:    AVELINO_ID,
+        householdId,
+        ownerUserId:    userId,
+        createdById:    userId,
         direction,
         counterpart:    counterpart.trim(),
         paymentMethod:  paymentMethod?.trim() || undefined,
