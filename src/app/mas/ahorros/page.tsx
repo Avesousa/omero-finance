@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { getServerSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { AhorrosClient } from "@/components/savings/ahorros-client";
@@ -7,11 +8,15 @@ import { AhorrosClient } from "@/components/savings/ahorros-client";
 export const dynamic = "force-dynamic";
 
 export default async function AhorrosPage() {
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+
+  const { householdId } = session.user;
   const currentYear = new Date().getFullYear();
 
   const savings = await prisma.saving.findMany({
     where: {
-      householdId: HOUSEHOLD_ID,
+      householdId,
       date: {
         gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
         lt:  new Date(`${currentYear + 1}-01-01T00:00:00.000Z`),

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { getServerSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { PrestamosClient } from "@/components/loans/prestamos-client";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -7,14 +8,18 @@ import { ChevronLeft } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function PrestamosPage() {
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+
+  const { householdId } = session.user;
   const [loansRaw, debtsRaw] = await Promise.all([
     prisma.loan.findMany({
-      where: { householdId: HOUSEHOLD_ID },
+      where: { householdId },
       include: { installmentRecords: { orderBy: { installmentNumber: "asc" } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.debt.findMany({
-      where: { householdId: HOUSEHOLD_ID },
+      where: { householdId },
       orderBy: { date: "desc" },
     }),
   ]);

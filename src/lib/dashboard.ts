@@ -50,6 +50,7 @@ export interface DashboardData {
   isFuture: boolean;
   hasData: boolean;
   totalIncomeArs: number;
+  totalIncomeUsd: number;
   totalUsd: number;
   exchangeRate: number;
   surplusArs: number;
@@ -101,7 +102,7 @@ export async function getDashboardData(
     const fallbackRate = await prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } });
     return {
       month, year, isFuture, hasData,
-      totalIncomeArs: 0, totalUsd: 0,
+      totalIncomeArs: 0, totalIncomeUsd: 0, totalUsd: 0,
       exchangeRate: fallbackRate ? Number(fallbackRate.usdArs) : 1477.20,
       surplusArs: 0, users: [], categories: [], tdcAlerts: [],
     };
@@ -162,15 +163,13 @@ export async function getDashboardData(
       _sum: { amount: true },
     }),
 
-    // Savings for this month, grouped by type (ARS only for budget purposes)
-    prisma.saving.groupBy({
-      by: ["type"],
+    // Savings for this month — all currencies, converted to ARS via snapshot
+    prisma.saving.findMany({
       where: {
         householdId: householdId,
-        currency: "ARS",
         date: { gte: monthStart, lte: monthEnd },
       },
-      _sum: { amount: true },
+      select: { type: true, currency: true, amount: true, amountArs: true },
     }),
 
     prisma.exchangeRate.findFirst({ orderBy: { date: "desc" } }),
@@ -183,8 +182,13 @@ export async function getDashboardData(
   const exchangeRate = latestRate ? Number(latestRate.usdArs) : 1477.20;
 
   // ── Income & users ─────────────────────────────────────────────────────────
-  // Count all income types (not just SUELDO) for the total budget
-  const totalIncomeArs = incomes.reduce((s, i) => s + Number(i.amountArs ?? i.amount), 0);
+  const totalIncomeArs = incomes
+    .filter((i) => i.currency === "ARS")
+    .reduce((s, i) => s + Number(i.amountArs ?? i.amount), 0);
+
+  const totalIncomeUsd = incomes
+    .filter((i) => i.currency === "USD")
+    .reduce((s, i) => s + Number(i.amount), 0);
 
   // Per-user split based on SUELDO only (for proportional breakdown)
   const incomeByUser: Record<string, number> = {};
@@ -224,10 +228,13 @@ export async function getDashboardData(
     .filter((c) => c.isPaid)
     .reduce((s, c) => s + tdcEffective(c), 0);
 
-  // ── Savings used this month (by saving type) ───────────────────────────────
+  // ── Savings used this month (by saving type, all currencies converted to ARS)
   const savingsMap: Record<string, number> = {};
   for (const s of savingsByType) {
-    savingsMap[s.type] = Number(s._sum.amount ?? 0);
+    const arsValue = s.currency === "ARS"
+      ? Number(s.amount)
+      : Number(s.amountArs ?? (Number(s.amount) * exchangeRate));
+    savingsMap[s.type] = (savingsMap[s.type] ?? 0) + arsValue;
   }
 
   // ── Used amounts (actual spending per category) ────────────────────────────
@@ -351,6 +358,7 @@ export async function getDashboardData(
     isFuture: false,
     hasData:  true,
     totalIncomeArs,
+    totalIncomeUsd,
     totalUsd: 0,
     exchangeRate,
     surplusArs,

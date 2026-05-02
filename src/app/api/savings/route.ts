@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID, AVELINO_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const { searchParams } = new URL(req.url);
   const yearParam = searchParams.get("year");
+  const { householdId } = session.user;
 
-  const where: Record<string, unknown> = { householdId: HOUSEHOLD_ID };
+  const where: Record<string, unknown> = { householdId };
 
   if (yearParam) {
     const year = parseInt(yearParam, 10);
@@ -41,6 +49,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const body = await req.json();
     const { date, description, type, currency, amount, platform } = body;
@@ -59,10 +74,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Tipo inválido" }, { status: 400 });
     }
 
+    const { householdId, id: createdById } = session.user;
+
     const saving = await prisma.saving.create({
       data: {
-        householdId: HOUSEHOLD_ID,
-        createdById: AVELINO_ID,
+        householdId,
+        createdById,
         date:        new Date(date),
         description: description.trim(),
         type,

@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID, AVELINO_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  let session;
   try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
+  try {
+    const { householdId } = session.user;
     const debts = await prisma.debt.findMany({
-      where: { householdId: HOUSEHOLD_ID },
+      where: { householdId },
       orderBy: { date: "desc" },
     });
 
@@ -27,6 +35,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const body = await req.json();
     const { date, concept, debtor, currency, totalAmount, amountPaid } = body;
@@ -42,10 +57,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
     }
 
+    const { householdId, id: createdById } = session.user;
+
     const debt = await prisma.debt.create({
       data: {
-        householdId: HOUSEHOLD_ID,
-        createdById: AVELINO_ID,
+        householdId,
+        createdById,
         date:        new Date(date),
         concept:     concept.trim(),
         debtor:      debtor.trim(),

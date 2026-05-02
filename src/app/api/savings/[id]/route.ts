@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const { id } = await params;
     const body = await req.json();
     const { date, description, type, currency, amount, platform } = body;
 
-    // Ensure it belongs to this household
     const existing = await prisma.saving.findFirst({
-      where: { id, householdId: HOUSEHOLD_ID },
+      where: { id, householdId: session.user.householdId },
     });
     if (!existing) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -55,11 +61,18 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const { id } = await params;
 
     const existing = await prisma.saving.findFirst({
-      where: { id, householdId: HOUSEHOLD_ID },
+      where: { id, householdId: session.user.householdId },
     });
     if (!existing) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });

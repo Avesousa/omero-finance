@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID } from "../../../../prisma/constants";
+import { getServerSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { AlquilerClient } from "@/components/rent/alquiler-client";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -12,12 +13,16 @@ const MONTH_NAMES = [
 ];
 
 export default async function AlquilerPage() {
+  const session = await getServerSession();
+  if (!session) redirect("/login");
+
+  const { householdId } = session.user;
   const now   = new Date();
   const month = MONTH_NAMES[now.getMonth()];
   const year  = now.getFullYear();
 
   const payments = await prisma.rentPayment.findMany({
-    where: { householdId: HOUSEHOLD_ID, month, year },
+    where: { householdId, month, year },
     orderBy: [{ type: "asc" }, { createdAt: "asc" }],
   });
 
