@@ -32,7 +32,7 @@ export async function PATCH(
       ...(body.customAmount   !== undefined && {
         customAmount: parseFloat(body.customAmount),
         amountToPay:  parseFloat(body.customAmount),
-        payMinimum:   true,
+        payMinimum:   false,
       }),
       ...(body.payMinimum !== undefined && typeof body.payMinimum === "boolean" && {
         payMinimum: body.payMinimum,
