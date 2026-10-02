@@ -7,6 +7,53 @@ const MONTH_NAMES = [
   "julio","agosto","septiembre","octubre","noviembre","diciembre",
 ];
 
+export async function GET(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const month = searchParams.get("month");
+    const yearStr = searchParams.get("year");
+    const year = yearStr ? parseInt(yearStr, 10) : null;
+
+    const { householdId } = session.user;
+
+    const incomes = await prisma.income.findMany({
+      where: {
+        householdId,
+        ...(month && { month }),
+        ...(year && { year }),
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(
+      incomes.map((i) => ({
+        id:                i.id,
+        type:              i.type,
+        currency:          i.currency,
+        amount:            Number(i.amount),
+        amountArs:         i.amountArs != null ? Number(i.amountArs) : null,
+        dollarRateSnapshot: i.dollarRateSnapshot != null ? Number(i.dollarRateSnapshot) : null,
+        description:       i.description,
+        isPersonal:        i.isPersonal,
+        month:             i.month,
+        year:              i.year,
+        createdById:       i.createdById,
+        createdAt:         i.createdAt.toISOString(),
+      }))
+    );
+  } catch (err) {
+    console.error("[api/income GET]", err);
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   let session;
   try {
@@ -17,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { type, currency, amount, description, targetUserId, isPersonal } = body;
+    const { type, currency, amount, description, targetUserId, isPersonal, month, year } = body;
 
     if (!type || !amount) {
       return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
@@ -30,8 +77,8 @@ export async function POST(req: NextRequest) {
 
     const { householdId, id: createdById } = session.user;
     const now   = new Date();
-    const month = MONTH_NAMES[now.getMonth()];
-    const year  = now.getFullYear();
+    const resolvedMonth = month ?? MONTH_NAMES[now.getMonth()];
+    const resolvedYear  = year ?? now.getFullYear();
 
     // targetUserId allows assigning income to another household member
     const ownerId = targetUserId ?? createdById;
@@ -50,8 +97,8 @@ export async function POST(req: NextRequest) {
       data: {
         householdId,
         createdById: ownerId,
-        month,
-        year,
+        month:  resolvedMonth,
+        year:   resolvedYear,
         type,
         currency: currency ?? "ARS",
         amount: parsed,

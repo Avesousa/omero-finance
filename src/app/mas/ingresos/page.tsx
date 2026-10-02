@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth";
-import { FixedExpenseManager } from "@/components/budget/fixed-expense-manager";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { IngresosClient } from "@/components/income/ingresos-client";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ const MONTH_NAMES = [
   "julio","agosto","septiembre","octubre","noviembre","diciembre",
 ];
 
-export default async function GastosFijosPage() {
+export default async function IngresosPage() {
   const session = await getServerSession();
   if (!session) redirect("/login");
 
@@ -22,22 +22,24 @@ export default async function GastosFijosPage() {
   const month = MONTH_NAMES[now.getMonth()];
   const year  = now.getFullYear();
 
-  const [templates, existingCount] = await Promise.all([
-    prisma.fixedExpenseTemplate.findMany({
-      where: { householdId },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    }),
-    prisma.fixedExpense.count({
-      where: { householdId, month, year },
-    }),
-  ]);
+  const incomes = await prisma.income.findMany({
+    where: { householdId, month, year },
+    orderBy: { createdAt: "desc" },
+  });
 
-  const initial = templates.map((t) => ({
-    id:       t.id,
-    concept:  t.concept,
-    currency: t.currency as "ARS" | "USD",
-    amount:   Number(t.amount),
-    isActive: t.isActive,
+  const initialIncomes = incomes.map((i) => ({
+    id:                 i.id,
+    type:               i.type as string,
+    currency:           i.currency as "ARS" | "USD",
+    amount:             Number(i.amount),
+    amountArs:          i.amountArs != null ? Number(i.amountArs) : null,
+    dollarRateSnapshot: i.dollarRateSnapshot != null ? Number(i.dollarRateSnapshot) : null,
+    description:        i.description ?? null,
+    isPersonal:         i.isPersonal,
+    month:              i.month,
+    year:               i.year,
+    createdById:        i.createdById,
+    createdAt:          i.createdAt.toISOString(),
   }));
 
   return (
@@ -51,19 +53,14 @@ export default async function GastosFijosPage() {
           <ChevronLeft size={16} />
         </Link>
         <h1 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-          Gastos fijos
+          Ingresos
         </h1>
       </div>
 
-      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-        Configurá los gastos recurrentes (alquiler, expensas, servicios…). Los activos se suman automáticamente en el presupuesto.
-      </p>
-
-      <FixedExpenseManager
-        initial={initial}
-        month={month}
-        year={year}
-        hasExistingExpenses={existingCount > 0}
+      <IngresosClient
+        initialIncomes={initialIncomes}
+        initialMonth={month}
+        initialYear={year}
       />
     </div>
   );
