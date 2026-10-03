@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, CreditCard, HandCoins, Hourglass, Pencil, Repeat, ShoppingBag } from "lucide-react";
+import {
+  ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, CreditCard, HandCoins, Hourglass, Pencil, PiggyBank, Repeat, ShoppingBag, Wallet,
+} from "lucide-react";
 import {
   addDays, addMonths, buildSummary, cardLines, fmtArs, fmtMoney, numberToInput, parseMoney, periodLabel, toArs,
   type Currency, type Kind,
@@ -12,7 +14,7 @@ import { BudgetRowView } from "./budget-rows";
 import { EntrySheet } from "./entry-sheet";
 import {
   ErrorText, Field, ListCard, MoneyInput, PlanHeader, PrimaryButton, SectionTitle, Sheet, Switch,
-  api, cardStyle, useAction, withPeriod,
+  api, cardStyle, useAction, useStoredChoice, withPeriod,
 } from "./plan-ui";
 
 export function MonthClient({ data }: { data: PlanData }) {
@@ -214,7 +216,20 @@ function StartRow({ row, onChange }: {
 
 // ─── Resumen del mes ──────────────────────────────────────────────────────────
 
+type MonthView = "available" | "free";
+
+const VIEWS: readonly { value: MonthView; label: string }[] = [
+  { value: "available", label: "Disponible" },
+  { value: "free", label: "Libre" },
+];
+const VIEW_VALUES = VIEWS.map((v) => v.value);
+const DETAIL_VALUES = ["open", "closed"] as const;
+
 function MonthSummary({ data }: { data: PlanData }) {
+  // Qué número va grande arriba: se recuerda en el dispositivo.
+  const [view, setView] = useStoredChoice<MonthView>("omero_month_view", VIEW_VALUES, "available");
+  // El detalle de lo reservado, abierto o cerrado: también se recuerda.
+  const [detail, setDetail] = useStoredChoice<(typeof DETAIL_VALUES)[number]>("omero_reserved_detail", DETAIL_VALUES, "open");
   const [sheet, setSheet] = useState<Kind | null>(null);
   const [editRate, setEditRate] = useState(false);
 
@@ -313,29 +328,93 @@ function MonthSummary({ data }: { data: PlanData }) {
   ];
   const freeNegative = summary.freeArs < -0.5;
 
+  // Vista "Libre": del disponible, lo que todavía va a salir.
+  const budgetLeft = summary.budgetLeftArs;
+  const pendingParts = [
+    summary.fixedArs - summary.fixedPaidArs > 0.5 ? `fijos ${fmtArs(summary.fixedArs - summary.fixedPaidArs)}` : null,
+    summary.loansArs - summary.loansPaidArs > 0.5 ? `préstamos ${fmtArs(summary.loansArs - summary.loansPaidArs)}` : null,
+    summary.cardsArs - summary.cardsPaidArs > 0.5
+      ? `tarjetas ${fmtArs(summary.cardsArs - summary.cardsPaidArs)}${summary.cardsHasEstimate ? " (estimado)" : ""}`
+      : null,
+  ].filter(Boolean).join(" · ");
+  const freeRows: typeof rows = [
+    { label: "Disponible", value: summary.availableArs, sign: "", icon: Wallet, href: href("/plan/gastos"), tone: "var(--accent-green)" },
+    {
+      label: "Pendiente de pago", value: summary.pendingArs, sign: "−", icon: Hourglass, href: href("/plan/gastos"), tone: "var(--text-secondary)",
+      note: pendingParts || null,
+    },
+    ...(hasBudget || budgetLeft > 0.5
+      ? [{ label: "Presupuesto por gastar", value: budgetLeft, sign: "−", icon: PiggyBank, href: href("/plan/presupuesto"), tone: "var(--text-secondary)" }]
+      : []),
+  ];
+
+  const isFree = view === "free";
+  const main = isFree
+    ? {
+        value: summary.freeArs,
+        color: freeNegative ? "var(--accent-red)" : "var(--accent-green)",
+        text: freeNegative
+          ? "No alcanza para cubrir lo reservado. Mirá qué se puede mover."
+          : "Lo que queda del disponible después de reservar lo pendiente de pago y el presupuesto por gastar.",
+        rows: freeRows,
+      }
+    : {
+        value: summary.availableArs,
+        color: negative ? "var(--accent-red)" : "var(--text-primary)",
+        text: negative
+          ? "Ya pagaste más de lo que entró este mes."
+          : "Lo que entró menos lo que ya pagaste. Lo que todavía no pagaste sigue acá.",
+        rows,
+      };
+  // El otro número queda a mano abajo; tocarlo cambia la vista.
+  const other = isFree
+    ? { view: "available" as const, label: "Disponible", value: summary.availableArs, color: negative ? "var(--accent-red)" : "var(--text-primary)", text: "Lo que entró menos lo que ya pagaste." }
+    : {
+        view: "free" as const, label: "Libre", value: summary.freeArs, color: freeNegative ? "var(--accent-red)" : "var(--accent-green)",
+        text: summary.reservedArs > 0.5
+          ? `Disponible menos ${fmtArs(summary.reservedArs)} reservados. Tocá para ver en qué.`
+          : "Nada reservado: todo el disponible está libre.",
+      };
+
   return (
     <>
-      {/* Disponible y libre */}
+      {/* Disponible o Libre, a elección */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
         <div className="gradient-strip h-1 w-full" />
         <div className="px-5 pt-4 pb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
-            Disponible
-          </p>
-          <p
-            className="text-4xl font-bold tabular-nums mt-1"
-            style={{ color: negative ? "var(--accent-red)" : "var(--text-primary)", letterSpacing: "-0.02em" }}
+          <div
+            role="group"
+            aria-label="Qué número ver"
+            className="inline-flex rounded-full p-0.5"
+            style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}
           >
-            {fmtArs(summary.availableArs)}
+            {VIEWS.map((v) => (
+              <button
+                key={v.value}
+                type="button"
+                aria-pressed={view === v.value}
+                onClick={() => setView(v.value)}
+                className="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-widest transition-colors"
+                style={{
+                  backgroundColor: view === v.value ? "var(--accent)" : "transparent",
+                  color: view === v.value ? "var(--accent-foreground)" : "var(--text-secondary)",
+                }}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <p
+            data-testid="main-amount"
+            className="text-4xl font-bold tabular-nums mt-2"
+            style={{ color: main.color, letterSpacing: "-0.02em" }}
+          >
+            {fmtArs(main.value)}
           </p>
-          <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>
-            {negative
-              ? "Ya pagaste más de lo que entró este mes."
-              : "Lo que entró menos lo que ya pagaste. Lo que todavía no pagaste sigue acá."}
-          </p>
+          <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>{main.text}</p>
         </div>
         <div className="border-t divide-y" style={{ borderColor: "var(--border)" }}>
-          {rows.map(({ label, value, sign, icon: Icon, href: to, tone, note, muted }) => (
+          {main.rows.map(({ label, value, sign, icon: Icon, href: to, tone, note, muted }) => (
             <Link key={label} href={to} className="flex items-center gap-3 px-5 py-2.5" style={{ borderColor: "var(--border)" }}>
               <Icon size={15} style={{ color: tone, flexShrink: 0 }} />
               <span className="flex-1 min-w-0">
@@ -352,29 +431,71 @@ function MonthSummary({ data }: { data: PlanData }) {
             </Link>
           ))}
         </div>
-        {/* Libre: lo que queda después de reservar presupuesto y pagos pendientes */}
-        <Link
-          href={href("/plan/presupuesto")}
-          className="block border-t px-5 py-4"
+        {isFree && summary.reservedRows.length > 0 && (
+          <div className="border-t" style={{ borderColor: "var(--border)" }}>
+            <button
+              type="button"
+              onClick={() => setDetail(detail === "open" ? "closed" : "open")}
+              aria-expanded={detail === "open"}
+              className="flex w-full items-center gap-3 px-5 py-2.5 text-left"
+            >
+              <span className="flex-1 text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
+                En qué está reservado
+              </span>
+              <span data-testid="reserved-total" className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                {fmtArs(summary.reservedArs)}
+              </span>
+              <ChevronDown
+                size={14}
+                style={{ color: "var(--border-strong)", transform: detail === "open" ? "rotate(180deg)" : undefined }}
+              />
+            </button>
+            {detail === "open" && (
+              <ul data-testid="reserved-rows" className="pb-2">
+                {summary.reservedRows.map((r) => (
+                  <li key={`${r.categoryId ?? "none"}-${r.isCards ? "cards" : "cat"}`}>
+                    <Link
+                      href={href(r.isCards ? "/plan/tarjetas" : "/plan/presupuesto")}
+                      className="flex items-start gap-3 px-5 py-1.5"
+                    >
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm truncate" style={{ color: "var(--text-primary)" }}>{r.name}</span>
+                        <span className="block text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                          {[
+                            r.pending > 0.5 ? `falta pagar ${fmtArs(r.pending)}` : null,
+                            r.budgetLeft > 0.5 ? `presupuesto sin gastar ${fmtArs(r.budgetLeft)}` : null,
+                          ].filter(Boolean).join(" + ")}
+                        </span>
+                      </span>
+                      <span className="text-sm tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(r.reserved)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setView(other.view)}
+          aria-label={`Ver ${other.label}`}
+          className="block w-full text-left border-t px-5 py-3.5"
           style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
         >
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
-              Libre
-            </p>
-            <p
-              className="text-2xl font-bold tabular-nums"
-              style={{ color: freeNegative ? "var(--accent-red)" : "var(--accent-green)", letterSpacing: "-0.01em" }}
+          <span className="flex items-baseline justify-between gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
+              {other.label}
+            </span>
+            <span
+              data-testid="other-amount"
+              className="text-xl font-bold tabular-nums"
+              style={{ color: other.color, letterSpacing: "-0.01em" }}
             >
-              {fmtArs(summary.freeArs)}
-            </p>
-          </div>
-          <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
-            {summary.reservedArs > 0.5
-              ? <>Disponible menos <strong className="tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(summary.reservedArs)}</strong> reservados: {hasBudget ? "lo que falta gastar del presupuesto y lo pendiente de pago" : "lo cargado que todavía no pagaste"}.</>
-              : "Nada reservado: todo el disponible está libre."}
-          </p>
-        </Link>
+              {fmtArs(other.value)}
+            </span>
+          </span>
+          <span className="block text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{other.text}</span>
+        </button>
       </div>
 
       {/* Carga rápida */}

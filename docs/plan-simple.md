@@ -23,7 +23,7 @@ Las categorías por defecto se crean solas la primera vez que el hogar entra a `
 
 | Ruta | Qué hace |
 |---|---|
-| `/plan` | **Mi mes**: arriba se elige qué número ver en grande, **Disponible** o **Libre** (se recuerda en el dispositivo); el otro queda debajo. Desglose, alertas y presupuesto vs. gasto. Si el mes no está iniciado muestra el **inicio de mes guiado**. |
+| `/plan` | **Mi mes**: arriba se elige qué número ver en grande, **Disponible** o **Libre** (se recuerda en el dispositivo); el otro queda debajo. En Libre, **En qué está reservado** lista cada categoría con lo que falta pagar y el presupuesto sin gastar. Desglose, alertas y presupuesto vs. gasto. Si el mes no está iniciado muestra el **inicio de mes guiado**. |
 | `/plan/ingresos` | Ingresos fijos (con regla de recurrencia) y otros ingresos del mes. |
 | `/plan/gastos` | Gastos fijos (tildables como pagados) y gastos del mes. |
 | `/plan/tarjetas` | Resúmenes a pagar (total, mínimo, USD, vencimiento), compras en cuotas y cuotas a futuro. |
@@ -67,6 +67,9 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
   si lo cargado lo supera (o no hay presupuesto), lo que falta pagar. Equivale a
   ingresos − Σ máx(presupuesto, cargado). Pagar algo ya previsto baja el disponible y no el libre;
   pasarse del presupuesto o gastar fuera de él baja los dos.
+  Reservado = pendiente de pago + presupuesto por gastar; `Summary.reservedRows` lo detalla por categoría
+  (suma exacta) y también sale en el resumen para exportar. Un presupuesto en una categoría y el gasto
+  cargado en otra reservan las dos cosas: el detalle es donde se ve.
 - **Tarjetas** cuentan por lo que se paga en el mes: el resumen si está cargado
   (total, mínimo u otro monto) o, si todavía no llegó, la suma de cuotas cargadas (estimado).
   Las compras con tarjeta no suman en otras categorías, para no contar dos veces.

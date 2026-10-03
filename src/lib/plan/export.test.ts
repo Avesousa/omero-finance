@@ -69,6 +69,12 @@ describe("exportar el resumen del mes", () => {
     });
   });
 
+  it("detalla en qué está lo reservado", () => {
+    expect(x.reservadoPorCategoria.reduce((t, r) => t + r.reservado, 0)).toBe(x.resumen.reservado);
+    expect(x.resumen.pendienteDePago + x.resumen.presupuestoPorGastar).toBe(x.resumen.reservado);
+    expect(exportToMarkdown(x)).toContain("## En qué está lo reservado");
+  });
+
   it("lista solo los movimientos del mes, con su estado", () => {
     expect(x.ingresos.map((i) => i.nombre)).toEqual(["Sueldo", "Freelance", "Préstamo a Juan"]);
     expect(x.ingresos[0]).toMatchObject({ tipo: "fijo", categoria: "Sueldo", estado: "cobrado" });

@@ -53,6 +53,8 @@ export interface PlanExport {
     libre: number;
     yaPagado: number;
     pendienteDePago: number;
+    /** La parte de lo reservado que es presupuesto todavía sin cargar. */
+    presupuestoPorGastar: number;
     ingresos: number;
     porCobrar: number;
     gastosFijos: number;
@@ -63,6 +65,13 @@ export interface PlanExport {
     presupuestado: number;
     sinDestino: number;
   };
+  /** En qué está lo reservado, de mayor a menor. Suma `resumen.reservado`. */
+  reservadoPorCategoria: {
+    categoria: string;
+    pendienteDePago: number;
+    presupuestoPorGastar: number;
+    reservado: number;
+  }[];
   ingresos: (Movimiento & { destino: string | null })[];
   gastos: Movimiento[];
   tarjetas: {
@@ -166,6 +175,7 @@ export function buildExport(data: ExportInput, balanceItems: BalanceItemDTO[]): 
       libre: round2(summary.freeArs),
       yaPagado: round2(summary.paidArs),
       pendienteDePago: round2(summary.pendingArs),
+      presupuestoPorGastar: round2(summary.budgetLeftArs),
       ingresos: round2(summary.incomeArs),
       porCobrar: round2(summary.receivableArs),
       gastosFijos: round2(summary.fixedArs),
@@ -176,6 +186,12 @@ export function buildExport(data: ExportInput, balanceItems: BalanceItemDTO[]): 
       presupuestado: round2(summary.budgetTotalArs),
       sinDestino: round2(summary.unassignedArs),
     },
+    reservadoPorCategoria: summary.reservedRows.map((r) => ({
+      categoria: r.name,
+      pendienteDePago: round2(r.pending),
+      presupuestoPorGastar: round2(r.budgetLeft),
+      reservado: round2(r.reserved),
+    })),
     ingresos: entries
       .filter((e) => e.kind === "INCOME")
       .map((e) => ({ ...movimiento(e), destino: categoryName(e.targetCategoryId) })),
@@ -265,7 +281,7 @@ export function exportToMarkdown(x: PlanExport): string {
   out.push("## Resumen");
   out.push([
     `- **Disponible: ${fmtArs(r.disponible)}** (ingresos − lo ya pagado)`,
-    `- **Libre: ${fmtArs(r.libre)}** (disponible − ${fmtArs(r.reservado)} reservados para presupuesto y pagos pendientes)`,
+    `- **Libre: ${fmtArs(r.libre)}** (disponible − ${fmtArs(r.reservado)} reservados: ${fmtArs(r.pendienteDePago)} pendientes de pago + ${fmtArs(r.presupuestoPorGastar)} de presupuesto por gastar)`,
     `- Ya pagado: ${fmtArs(r.yaPagado)} · pendiente de pago: ${fmtArs(r.pendienteDePago)}`,
     `- Ingresos: ${fmtArs(r.ingresos)}`,
     ...(r.porCobrar > 0 ? [`- Por cobrar (no suma todavía): ${fmtArs(r.porCobrar)}`] : []),
@@ -277,6 +293,19 @@ export function exportToMarkdown(x: PlanExport): string {
       ? [`- Presupuestado: ${fmtArs(r.presupuestado)} · ${r.sinDestino >= 0 ? "sin destino" : "presupuestado de más"}: ${fmtArs(Math.abs(r.sinDestino))}`]
       : []),
   ].join("\n"));
+
+  if (x.reservadoPorCategoria.length > 0) {
+    out.push("## En qué está lo reservado");
+    out.push(table(
+      ["Categoría", "Pendiente de pago", "Presupuesto por gastar", "Reservado"],
+      x.reservadoPorCategoria.map((p) => [
+        p.categoria,
+        p.pendienteDePago > 0 ? fmtArs(p.pendienteDePago) : null,
+        p.presupuestoPorGastar > 0 ? fmtArs(p.presupuestoPorGastar) : null,
+        fmtArs(p.reservado),
+      ]),
+    ));
+  }
 
   if (x.ingresos.length > 0) {
     out.push("## Ingresos");
