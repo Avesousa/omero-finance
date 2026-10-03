@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, CreditCard, Pencil, Repeat, ShoppingBag } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, CreditCard, HandCoins, Pencil, Repeat, ShoppingBag } from "lucide-react";
 import {
-  addDays, addMonths, buildSummary, cardLines, fmtArs, fmtMoney, numberToInput, parseMoney, periodLabel,
-  type Kind, type ProposalRow,
+  addDays, addMonths, buildSummary, cardLines, fmtArs, fmtMoney, numberToInput, parseMoney, periodLabel, toArs,
+  type Currency, type Kind,
 } from "@/lib/plan/core";
 import type { PlanData } from "@/lib/plan/server";
 import { BudgetRowView } from "./budget-rows";
@@ -32,11 +32,14 @@ function StartMonth({ data }: { data: PlanData }) {
   const [rows, setRows] = useState(() =>
     data.proposal.map((p) => ({ ...p, include: true, text: numberToInput(p.amount) })),
   );
+  const [loanRows, setLoanRows] = useState(() =>
+    data.loanProposal.map((p) => ({ ...p, include: true, text: numberToInput(p.amount) })),
+  );
   const [copyBudget, setCopyBudget] = useState(data.previousBudgets.length > 0);
   const [updateRules, setUpdateRules] = useState(true);
 
   const month = periodLabel(data.period);
-  const isFirstTime = rows.length === 0 && data.previousBudgets.length === 0;
+  const isFirstTime = rows.length === 0 && loanRows.length === 0 && data.previousBudgets.length === 0;
   const edited = rows.some((r) => r.include && parseMoney(r.text) !== r.amount);
   const prevBudgetTotal = data.previousBudgets.reduce((s, b) => s + b.amount, 0);
 
@@ -44,21 +47,30 @@ function StartMonth({ data }: { data: PlanData }) {
     setRows((list) => list.map((r) => (r.recurringId === id ? { ...r, ...patch } : r)));
   }
 
+  function setLoanRow(id: string, patch: Partial<{ include: boolean; text: string }>) {
+    setLoanRows((list) => list.map((r) => (r.loanId === id ? { ...r, ...patch } : r)));
+  }
+
+  const ars = (r: { text: string; currency: Currency }) => (parseMoney(r.text) || 0) * (r.currency === "USD" ? parseMoney(rate) || 0 : 1);
+
   function total(kind: Kind) {
-    return rows
-      .filter((r) => r.kind === kind && r.include)
-      .reduce((s, r) => s + (parseMoney(r.text) || 0) * (r.currency === "USD" ? parseMoney(rate) || 0 : 1), 0);
+    return rows.filter((r) => r.kind === kind && r.include).reduce((s, r) => s + ars(r), 0);
   }
 
   function start() {
     const included = rows.filter((r) => r.include);
+    const includedLoans = loanRows.filter((r) => r.include);
     if (included.some((r) => !(parseMoney(r.text) >= 0))) {
       return action.setError("Revisá los montos: hay alguno vacío o inválido");
+    }
+    if (includedLoans.some((r) => !(parseMoney(r.text) > 0))) {
+      return action.setError("Revisá las cuotas: hay alguna vacía o en cero");
     }
     return action.run(() => api("POST", "/api/plan/month", {
       period: data.period,
       usdRate: parseMoney(rate) || 0,
       entries: included.map((r) => ({ recurringId: r.recurringId, amount: parseMoney(r.text) })),
+      loans: includedLoans.map((r) => ({ loanId: r.loanId, amount: parseMoney(r.text) })),
       budgets: copyBudget ? data.previousBudgets : [],
       updateRules: edited && updateRules,
     }));
@@ -73,8 +85,47 @@ function StartMonth({ data }: { data: PlanData }) {
           {title}
         </SectionTitle>
         <ListCard>
-          {list.map((r) => <StartRow key={r.recurringId} row={r} onChange={(patch) => setRow(r.recurringId, patch)} />)}
+          {list.map((r) => (
+            <StartRow
+              key={r.recurringId}
+              row={{ ...r, detail: r.occurrences > 1 ? `${r.occurrences} × ${fmtMoney(r.unitAmount, r.currency)}` : null }}
+              onChange={(patch) => setRow(r.recurringId, patch)}
+            />
+          ))}
         </ListCard>
+      </section>
+    );
+  }
+
+  function loanGroup() {
+    if (loanRows.length === 0) return null;
+    const net = loanRows
+      .filter((r) => r.include)
+      .reduce((s, r) => s + (r.kind === "INCOME" ? ars(r) : -ars(r)), 0);
+    return (
+      <section className="space-y-2">
+        <SectionTitle right={<span className="text-xs font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(Math.abs(net))}</span>}>
+          Cuotas de préstamos
+        </SectionTitle>
+        <ListCard>
+          {loanRows.map((r) => (
+            <StartRow
+              key={r.loanId}
+              row={{
+                ...r,
+                detail: [
+                  r.kind === "INCOME" ? "a cobrar" : "a pagar",
+                  r.number ? `cuota ${r.number}/${r.of}` : null,
+                  r.interest ? `interés ${fmtMoney(r.interest, r.currency)}` : null,
+                ].filter(Boolean).join(" · "),
+              }}
+              onChange={(patch) => setLoanRow(r.loanId, patch)}
+            />
+          ))}
+        </ListCard>
+        <p className="text-[11px] px-1" style={{ color: "var(--text-secondary)" }}>
+          Te propongo la cuota del mes pasado. Cambiala si este mes es distinta.
+        </p>
       </section>
     );
   }
@@ -97,6 +148,7 @@ function StartMonth({ data }: { data: PlanData }) {
 
       {group("INCOME", "Ingresos fijos")}
       {group("EXPENSE", "Gastos fijos")}
+      {loanGroup()}
 
       {data.previousBudgets.length > 0 && (
         <div className="rounded-2xl p-4" style={cardStyle}>
@@ -128,7 +180,7 @@ function StartMonth({ data }: { data: PlanData }) {
 }
 
 function StartRow({ row, onChange }: {
-  row: ProposalRow & { include: boolean; text: string };
+  row: { name: string; currency: Currency; include: boolean; text: string; detail: string | null };
   onChange: (patch: Partial<{ include: boolean; text: string }>) => void;
 }) {
   return (
@@ -143,10 +195,8 @@ function StartRow({ row, onChange }: {
       />
       <div className="flex-1 min-w-0" style={{ opacity: row.include ? 1 : 0.45 }}>
         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{row.name}</p>
-        {row.occurrences > 1 && (
-          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
-            {row.occurrences} × {fmtMoney(row.unitAmount, row.currency)}
-          </p>
+        {row.detail && (
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{row.detail}</p>
         )}
       </div>
       <div className="w-36 flex-shrink-0" style={{ opacity: row.include ? 1 : 0.45 }}>
@@ -208,12 +258,29 @@ function MonthSummary({ data }: { data: PlanData }) {
       });
     }
   }
+  for (const e of data.entries) {
+    if (!e.loanId || e.isDone || !e.date || e.date > soon) continue;
+    const [, m, d] = e.date.split("-");
+    const income = e.kind === "INCOME";
+    notices.push({
+      key: `loan-${e.id}`,
+      tone: income ? "var(--accent-green)" : "var(--accent-amber)",
+      href: href("/plan/prestamos"),
+      text: <>
+        {income ? "Cobro de " : "Cuota de "}<strong>{e.name}</strong> {e.date < data.today ? "venció" : "vence"} el {Number(d)}/{Number(m)}:{" "}
+        {fmtArs(toArs(e.amount, e.currency, data.usdRate))}.
+      </>,
+    });
+  }
   const fixedPending = summary.fixedArs - summary.fixedPaidArs;
 
   const breakdown = [
     { label: "Ingresos", value: summary.incomeArs, sign: "+", icon: ArrowDownLeft, href: href("/plan/ingresos"), tone: "var(--accent-green)" },
     { label: "Gastos fijos", value: summary.fixedArs, sign: "−", icon: Repeat, href: href("/plan/gastos"), tone: "var(--text-secondary)" },
     { label: "Gastos del mes", value: summary.variableArs, sign: "−", icon: ShoppingBag, href: href("/plan/gastos"), tone: "var(--text-secondary)" },
+    ...(summary.loansArs > 0
+      ? [{ label: "Préstamos y deudas", value: summary.loansArs, sign: "−", icon: HandCoins, href: href("/plan/prestamos"), tone: "var(--text-secondary)" }]
+      : []),
     { label: summary.cardsHasEstimate ? "Tarjetas (estimado)" : "Tarjetas", value: summary.cardsArs, sign: "−", icon: CreditCard, href: href("/plan/tarjetas"), tone: "var(--text-secondary)" },
   ];
 
@@ -235,7 +302,7 @@ function MonthSummary({ data }: { data: PlanData }) {
           <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>
             {negative
               ? "Este mes sale más de lo que entra. Mirá qué se puede mover."
-              : "Lo que queda después de fijos, gastos y tarjetas."}
+              : `Lo que queda después de fijos, gastos${summary.loansArs > 0 ? ", préstamos" : ""} y tarjetas.`}
           </p>
         </div>
         <div className="border-t divide-y" style={{ borderColor: "var(--border)" }}>

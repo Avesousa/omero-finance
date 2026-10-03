@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Plus } from "lucide-react";
 import {
-  addMonths, balanceAt, fmtArs, fmtMoney, netWorth, numberToInput, parseMoney, periodLabel, periodShort,
-  type BalanceItemDTO, type BalanceType, type Currency,
+  addMonths, balanceAt, fmtArs, fmtMoney, loanBalanceItem, netWorth, numberToInput, parseMoney, periodLabel, periodShort,
+  type BalanceItemDTO, type BalanceType, type Currency, type LoanDTO,
 } from "@/lib/plan/core";
 import {
   EmptyHint, ErrorText, Field, ListCard, MoneyInput, Pill, PlanHeader, PrimaryButton, SecondaryButton,
@@ -18,31 +19,66 @@ const CURRENCIES: readonly { value: Currency; label: string }[] = [
   { value: "USD", label: "Dólares" },
 ];
 
-export function BalanceClient({ items, period, usdRate }: { items: BalanceItemDTO[]; period: string; usdRate: number }) {
+export function BalanceClient({ items: manualItems, loans, period, usdRate }: {
+  items: BalanceItemDTO[];
+  loans: LoanDTO[];
+  period: string;
+  usdRate: number;
+}) {
   const [sheet, setSheet] = useState<SheetState>(null);
 
-  const active = items.filter((i) => !i.isArchived);
+  // Préstamos y deudas: su saldo sale de las cuotas pagadas, no se carga a mano.
+  const loanItems = loans.map(loanBalanceItem);
+  const visibleLoans = loanItems.filter((i, idx) => {
+    const value = balanceAt(i, period);
+    return value != null && (!loans[idx].isClosed || value > 0.5);
+  });
+  const items = [...manualItems, ...loanItems];
+  const active = manualItems.filter((i) => !i.isArchived);
   const now = netWorth(items, period, usdRate);
   const prevPeriod = addMonths(period, -1);
-  const hasPrev = active.some((i) => balanceAt(i, prevPeriod) != null);
+  const hasPrev = items.some((i) => !i.isArchived && balanceAt(i, prevPeriod) != null);
   const prev = netWorth(items, prevPeriod, usdRate);
   const delta = now.netArs - prev.netArs;
 
   const history = Array.from({ length: 6 }, (_, i) => addMonths(period, i - 5)).map((p) => ({
     period: p,
     net: netWorth(items, p, usdRate).netArs,
-    hasData: active.some((i) => balanceAt(i, p) != null),
+    hasData: items.some((i) => !i.isArchived && balanceAt(i, p) != null),
   }));
   const maxAbs = Math.max(...history.map((h) => Math.abs(h.net)), 1);
 
   function group(type: BalanceType, title: string, empty: string) {
     const list = active.filter((i) => i.type === type);
+    const fromLoans = visibleLoans.filter((i) => i.type === type);
     return (
       <section className="space-y-2">
         <SectionTitle right={<SmallAction onClick={() => setSheet({ type })}><Plus size={12} /> Agregar</SmallAction>}>
           {title}
         </SectionTitle>
-        {list.length === 0 ? <EmptyHint>{empty}</EmptyHint> : (
+        {fromLoans.length > 0 && (
+          <ListCard>
+            {fromLoans.map((item) => {
+              const value = balanceAt(item, period);
+              return (
+                <Link key={item.id} href={withPeriod("/plan/prestamos", period)} className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{item.name}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Pill tone="accent">{type === "DEBT" ? "préstamo" : "me deben"}</Pill>
+                      <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>se actualiza con las cuotas</span>
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold tabular-nums flex-shrink-0" style={{ color: "var(--text-primary)" }}>
+                    {value != null ? fmtMoney(value, item.currency) : "—"}
+                  </p>
+                  <ChevronRight size={14} style={{ color: "var(--border-strong)", flexShrink: 0 }} />
+                </Link>
+              );
+            })}
+          </ListCard>
+        )}
+        {list.length === 0 ? (fromLoans.length > 0 ? null : <EmptyHint>{empty}</EmptyHint>) : (
           <ListCard>
             {list.map((item) => {
               const value = balanceAt(item, period);

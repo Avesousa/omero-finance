@@ -47,6 +47,7 @@ model Household {
   planCardPurchases  PlanCardPurchase[]
   planCardStatements PlanCardStatement[]
   planBalanceItems   PlanBalanceItem[]
+  planLoans          PlanLoan[]
 }
 
 model User {
@@ -620,6 +621,19 @@ enum PlanBalanceType {
   DEBT
 }
 
+/// OWE = lo debo yo (gasto) · OWED = me lo deben (ingreso).
+enum PlanLoanDirection {
+  OWE
+  OWED
+}
+
+/// FIXED = cuota fija × N · SCHEDULE = cuotas cargadas a mano · OPEN = saldo sin cuotas fijas.
+enum PlanLoanMode {
+  FIXED
+  SCHEDULE
+  OPEN
+}
+
 /// Un mes "iniciado": guarda el tipo de cambio usado para ese mes.
 model PlanMonth {
   id          String   @id @default(cuid())
@@ -652,6 +666,7 @@ model PlanCategory {
   entryTarget     PlanEntry[]        @relation("PlanEntryTarget")
   budgets         PlanBudget[]
   cardPurchases   PlanCardPurchase[]
+  loans           PlanLoan[]
 
   @@unique([householdId, kind, name])
 }
@@ -703,15 +718,75 @@ model PlanEntry {
   /// Fijos: cobrado / pagado.
   isDone           Boolean   @default(false)
   note             String?
+  /// Cuota de un préstamo o deuda (PlanLoan). Uno por préstamo y mes.
+  loanId           String?
+  /// Parte del monto que es interés (calculado al generar la cuota).
+  interestAmount   Decimal?  @db.Decimal(14, 2)
   createdAt        DateTime  @default(now())
 
   household      Household      @relation(fields: [householdId], references: [id])
+  loan           PlanLoan?      @relation(fields: [loanId], references: [id], onDelete: Cascade)
   recurring      PlanRecurring? @relation(fields: [recurringId], references: [id], onDelete: SetNull)
   category       PlanCategory?  @relation("PlanEntryCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   targetCategory PlanCategory?  @relation("PlanEntryTarget", fields: [targetCategoryId], references: [id], onDelete: SetNull)
 
   @@unique([recurringId, period])
+  @@unique([loanId, period])
   @@index([householdId, period])
+}
+
+/// Préstamo o deuda: lo que debo o lo que me deben.
+/// Cada mes iniciado genera un PlanEntry (la cuota) vinculado por `loanId`;
+/// al marcar pagadas todas las cuotas (o saldar el saldo) se cierra solo.
+model PlanLoan {
+  id                String             @id @default(cuid())
+  householdId       String
+  direction         PlanLoanDirection
+  mode              PlanLoanMode
+  name              String
+  /// Con quién: banco, persona, etc.
+  counterpart       String?
+  categoryId        String?
+  currency          Currency           @default(ARS)
+  /// FIXED: capital · OPEN: saldo inicial · SCHEDULE: suma de las cuotas.
+  principal         Decimal            @db.Decimal(14, 2)
+  /// FIXED: cantidad de cuotas.
+  installments      Int?
+  /// FIXED: cuota del primer mes (después se propone la del mes anterior).
+  /// OPEN: pago sugerido por mes.
+  installmentAmount Decimal?           @db.Decimal(14, 2)
+  /// Interés en % por `interestFrequency` (ej. 3.5 = 3,5 % mensual). Null = sin interés.
+  interestRate      Decimal?           @db.Decimal(8, 4)
+  interestFrequency PlanFrequency?
+  /// Primer mes en que cae una cuota ("YYYY-MM").
+  startPeriod       String
+  /// Día del mes en que vence la cuota.
+  dueDay            Int?
+  /// OPEN: fecha límite para saldarla.
+  endDate           DateTime?          @db.Date
+  isClosed          Boolean            @default(false)
+  closedAt          DateTime?
+  note              String?
+  createdAt         DateTime           @default(now())
+
+  household Household              @relation(fields: [householdId], references: [id])
+  category  PlanCategory?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  schedule  PlanLoanScheduleItem[]
+  entries   PlanEntry[]
+
+  @@index([householdId])
+}
+
+/// SCHEDULE: monto de la cuota de cada mes.
+model PlanLoanScheduleItem {
+  id     String  @id @default(cuid())
+  loanId String
+  period String
+  amount Decimal @db.Decimal(14, 2)
+
+  loan PlanLoan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@unique([loanId, period])
 }
 
 /// Presupuesto mensual por categoría de gasto.

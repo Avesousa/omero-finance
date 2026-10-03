@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { occurrencesInPeriod, round2, type Frequency } from "@/lib/plan/core";
+import { refreshLoanStatus } from "@/lib/plan/loans";
 import {
   ApiError, FREQUENCIES, categoryIdOrNull, readBody, v, withSession,
 } from "@/lib/plan/server";
@@ -16,6 +17,7 @@ async function findEntry(householdId: string, id: string) {
 /**
  * PATCH /api/plan/entries/[id]
  * Campos opcionales: name, amount, currency, categoryId, targetCategoryId, date, note, isDone.
+ * Si es la cuota de un préstamo, revisa si el préstamo quedó saldado.
  * Para fijos: `applyToRule: true` guarda el cambio también en la regla
  * (próximos meses) y permite cambiar `frequency`, `weekday` y `dueDay`.
  */
@@ -41,6 +43,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     await prisma.$transaction(async (tx) => {
       await tx.planEntry.update({ where: { id }, data });
+      // Cuota de un préstamo: al pagar la última se cierra; al destildarla se reabre.
+      if (entry.loanId) await refreshLoanStatus(tx, householdId, entry.loanId);
 
       if (body.applyToRule === true && entry.recurringId) {
         const rule = await tx.planRecurring.findUnique({ where: { id: entry.recurringId } });
@@ -89,6 +93,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
     await prisma.$transaction(async (tx) => {
       await tx.planEntry.delete({ where: { id } });
+      if (entry.loanId) await refreshLoanStatus(tx, householdId, entry.loanId);
       if (scope === "rule" && entry.recurringId) {
         await tx.planRecurring.update({ where: { id: entry.recurringId }, data: { isActive: false } });
       }
