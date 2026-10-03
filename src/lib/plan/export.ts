@@ -45,7 +45,14 @@ export interface PlanExport {
   dolar: number;
   notas: string[];
   resumen: {
+    /** Lo que tengo hoy: ingresos − lo ya pagado. */
     disponible: number;
+    /** Del disponible, lo que ya tiene destino (presupuesto por gastar y pagos pendientes). */
+    reservado: number;
+    /** Disponible − reservado. */
+    libre: number;
+    yaPagado: number;
+    pendienteDePago: number;
     ingresos: number;
     porCobrar: number;
     gastosFijos: number;
@@ -147,12 +154,18 @@ export function buildExport(data: ExportInput, balanceItems: BalanceItemDTO[]): 
     dolar: usdRate,
     notas: [
       "Montos en pesos argentinos (ARS) salvo que se indique otra moneda.",
-      "Disponible = ingresos − gastos fijos − gastos del mes − préstamos y deudas − tarjetas.",
+      "Disponible = ingresos − lo que ya pagué. Lo cargado y todavía sin pagar sigue en el disponible.",
+      "Libre = disponible − reservado. Reservado es, por categoría, lo que falta gastar del presupuesto o lo que falta pagar de lo cargado (lo mayor).",
+      "Gastos fijos, gastos del mes, préstamos y tarjetas son los totales cargados en el mes, pagados o no.",
       "Lo que me deben y todavía no cobré figura como \"por cobrar\" y no suma al disponible.",
       "Tarjetas cuenta lo que se paga en el mes: el resumen si está cargado o, si no, una estimación por cuotas.",
     ],
     resumen: {
       disponible: round2(summary.availableArs),
+      reservado: round2(summary.reservedArs),
+      libre: round2(summary.freeArs),
+      yaPagado: round2(summary.paidArs),
+      pendienteDePago: round2(summary.pendingArs),
       ingresos: round2(summary.incomeArs),
       porCobrar: round2(summary.receivableArs),
       gastosFijos: round2(summary.fixedArs),
@@ -251,7 +264,9 @@ export function exportToMarkdown(x: PlanExport): string {
   const r = x.resumen;
   out.push("## Resumen");
   out.push([
-    `- **Disponible este mes: ${fmtArs(r.disponible)}**`,
+    `- **Disponible: ${fmtArs(r.disponible)}** (ingresos − lo ya pagado)`,
+    `- **Libre: ${fmtArs(r.libre)}** (disponible − ${fmtArs(r.reservado)} reservados para presupuesto y pagos pendientes)`,
+    `- Ya pagado: ${fmtArs(r.yaPagado)} · pendiente de pago: ${fmtArs(r.pendienteDePago)}`,
     `- Ingresos: ${fmtArs(r.ingresos)}`,
     ...(r.porCobrar > 0 ? [`- Por cobrar (no suma todavía): ${fmtArs(r.porCobrar)}`] : []),
     `- Gastos fijos: ${fmtArs(r.gastosFijos)}`,

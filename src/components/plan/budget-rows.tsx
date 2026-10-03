@@ -47,6 +47,11 @@ export function BudgetRowView({ row }: { row: BudgetRow }) {
         </div>
       </div>
       <ProgressBar value={row.actual} max={row.budget} tone={tone} />
+      {row.pending > 0.5 && (
+        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          Pagado {fmtArs(row.paid)} · falta pagar {fmtArs(row.pending)}
+        </p>
+      )}
       {row.earmarked > 0 && (
         <p className="text-[11px]" style={{ color: "var(--accent)" }}>
           Ingresos destinados acá: {fmtArs(row.earmarked)}

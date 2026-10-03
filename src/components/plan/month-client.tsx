@@ -238,6 +238,14 @@ function MonthSummary({ data }: { data: PlanData }) {
       text: <><strong>{r.name}</strong>: gastaste {fmtArs(r.actual)} y el presupuesto es {fmtArs(r.budget)}. Te pasaste {fmtArs(-r.remaining)}.</>,
     });
   }
+  if (summary.freeArs < -0.5) {
+    notices.push({
+      key: "free-negative",
+      tone: "var(--accent-red)",
+      href: href("/plan/presupuesto"),
+      text: <>Te faltan <strong>{fmtArs(-summary.freeArs)}</strong> para cubrir {hasBudget ? "el presupuesto y los pagos pendientes" : "los pagos pendientes"}.</>,
+    });
+  }
   if (hasBudget && summary.unassignedArs < -0.5) {
     notices.push({
       key: "overbudget",
@@ -275,28 +283,44 @@ function MonthSummary({ data }: { data: PlanData }) {
   }
   const fixedPending = summary.fixedArs - summary.fixedPaidArs;
 
-  const breakdown = [
+  // Lo que ya salió del disponible, con lo que todavía falta pagar de cada cosa.
+  const pendingNote = (pending: number, estimate = false) =>
+    pending > 0.5 ? `falta pagar ${fmtArs(pending)}${estimate ? " (estimado)" : ""}` : null;
+  const rows: {
+    label: string; value: number; sign: string; icon: React.ElementType; href: string; tone: string;
+    note?: string | null; muted?: boolean;
+  }[] = [
     { label: "Ingresos", value: summary.incomeArs, sign: "+", icon: ArrowDownLeft, href: href("/plan/ingresos"), tone: "var(--accent-green)" },
     // Lo que me deben y todavía no cobré: se muestra, pero no entra en la cuenta.
     ...(summary.receivableArs > 0
       ? [{ label: "Por cobrar (no suma todavía)", value: summary.receivableArs, sign: "", icon: Hourglass, href: href("/plan/ingresos"), tone: "var(--text-secondary)", muted: true }]
       : []),
-    { label: "Gastos fijos", value: summary.fixedArs, sign: "−", icon: Repeat, href: href("/plan/gastos"), tone: "var(--text-secondary)" },
+    {
+      label: "Gastos fijos pagados", value: summary.fixedPaidArs, sign: "−", icon: Repeat, href: href("/plan/gastos"), tone: "var(--text-secondary)",
+      note: pendingNote(summary.fixedArs - summary.fixedPaidArs),
+    },
     { label: "Gastos del mes", value: summary.variableArs, sign: "−", icon: ShoppingBag, href: href("/plan/gastos"), tone: "var(--text-secondary)" },
     ...(summary.loansArs > 0
-      ? [{ label: "Préstamos y deudas", value: summary.loansArs, sign: "−", icon: HandCoins, href: href("/plan/prestamos"), tone: "var(--text-secondary)" }]
+      ? [{
+          label: "Préstamos y deudas pagados", value: summary.loansPaidArs, sign: "−", icon: HandCoins, href: href("/plan/prestamos"), tone: "var(--text-secondary)",
+          note: pendingNote(summary.loansArs - summary.loansPaidArs),
+        }]
       : []),
-    { label: summary.cardsHasEstimate ? "Tarjetas (estimado)" : "Tarjetas", value: summary.cardsArs, sign: "−", icon: CreditCard, href: href("/plan/tarjetas"), tone: "var(--text-secondary)" },
+    {
+      label: "Tarjetas pagadas", value: summary.cardsPaidArs, sign: "−", icon: CreditCard, href: href("/plan/tarjetas"), tone: "var(--text-secondary)",
+      note: pendingNote(summary.cardsArs - summary.cardsPaidArs, summary.cardsHasEstimate),
+    },
   ];
+  const freeNegative = summary.freeArs < -0.5;
 
   return (
     <>
-      {/* Disponible */}
+      {/* Disponible y libre */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
         <div className="gradient-strip h-1 w-full" />
         <div className="px-5 pt-4 pb-4">
           <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
-            Disponible este mes
+            Disponible
           </p>
           <p
             className="text-4xl font-bold tabular-nums mt-1"
@@ -306,18 +330,21 @@ function MonthSummary({ data }: { data: PlanData }) {
           </p>
           <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>
             {negative
-              ? "Este mes sale más de lo que entra. Mirá qué se puede mover."
-              : `Lo que queda después de fijos, gastos${summary.loansArs > 0 ? ", préstamos" : ""} y tarjetas.`}
+              ? "Ya pagaste más de lo que entró este mes."
+              : "Lo que entró menos lo que ya pagaste. Lo que todavía no pagaste sigue acá."}
           </p>
         </div>
         <div className="border-t divide-y" style={{ borderColor: "var(--border)" }}>
-          {breakdown.map(({ label, value, sign, icon: Icon, href: to, tone, ...rest }) => (
+          {rows.map(({ label, value, sign, icon: Icon, href: to, tone, note, muted }) => (
             <Link key={label} href={to} className="flex items-center gap-3 px-5 py-2.5" style={{ borderColor: "var(--border)" }}>
               <Icon size={15} style={{ color: tone, flexShrink: 0 }} />
-              <span className="flex-1 text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
+                {note && <span className="block text-[11px]" style={{ color: "var(--accent-amber)" }}>{note}</span>}
+              </span>
               <span
                 className="text-sm font-semibold tabular-nums"
-                style={{ color: "muted" in rest ? "var(--text-secondary)" : "var(--text-primary)" }}
+                style={{ color: muted ? "var(--text-secondary)" : "var(--text-primary)" }}
               >
                 {sign} {fmtArs(value)}
               </span>
@@ -325,6 +352,29 @@ function MonthSummary({ data }: { data: PlanData }) {
             </Link>
           ))}
         </div>
+        {/* Libre: lo que queda después de reservar presupuesto y pagos pendientes */}
+        <Link
+          href={href("/plan/presupuesto")}
+          className="block border-t px-5 py-4"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-elevated)" }}
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
+              Libre
+            </p>
+            <p
+              className="text-2xl font-bold tabular-nums"
+              style={{ color: freeNegative ? "var(--accent-red)" : "var(--accent-green)", letterSpacing: "-0.01em" }}
+            >
+              {fmtArs(summary.freeArs)}
+            </p>
+          </div>
+          <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
+            {summary.reservedArs > 0.5
+              ? <>Disponible menos <strong className="tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(summary.reservedArs)}</strong> reservados: {hasBudget ? "lo que falta gastar del presupuesto y lo pendiente de pago" : "lo cargado que todavía no pagaste"}.</>
+              : "Nada reservado: todo el disponible está libre."}
+          </p>
+        </Link>
       </div>
 
       {/* Carga rápida */}

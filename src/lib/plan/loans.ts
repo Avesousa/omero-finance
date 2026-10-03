@@ -6,7 +6,8 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
-  isLoanFinished, loanDueDate, loanKind, proposeLoanPayment, round2,
+  addMonths, currentPeriod, isLoanFinished, loanDueDate, loanKind, loanState, monthlyRatePct, pastPaymentPlan,
+  proposeLoanPayment, round2,
   type LoanDTO, type LoanDirection, type LoanMode,
 } from "./core";
 import { ApiError, FREQUENCIES, categoryIdOrNull, loadLoans, v } from "./server";
@@ -166,4 +167,118 @@ export async function refreshLoanStatus(tx: Tx, householdId: string, loanId: str
       data: { isClosed: finished, closedAt: finished ? new Date() : null },
     });
   }
+}
+
+/**
+ * Recalcula el interés de las cuotas pendientes después de cambiar cuotas anteriores:
+ * el interés de cada mes sale del saldo que quedaba al empezarlo. Las cuotas ya
+ * pagadas no se tocan.
+ */
+async function rethreadInterest(tx: Tx, loan: LoanDTO): Promise<void> {
+  if (!loan.interestRate) return;
+  let running: LoanDTO = { ...loan, payments: [] };
+  for (const p of loan.payments) {
+    let interest = p.interest;
+    if (!p.isDone) {
+      interest = round2(loanState(running, p.period).balance * monthlyRatePct(loan, p.period) / 100);
+      if (Math.abs(interest - p.interest) > 0.005) {
+        await tx.planEntry.update({ where: { id: p.entryId }, data: { interestAmount: interest || null } });
+      }
+    }
+    running = { ...running, payments: [...running.payments, { ...p, interest }] };
+  }
+}
+
+/**
+ * Carga cuotas que ya estaban pagadas antes de que la app conociera el préstamo.
+ * Las crea como pagadas en los meses anteriores a la primera cuota existente (o a `before`
+ * si todavía no hay ninguna) y corre el inicio del préstamo si hace falta. Así el número
+ * de cuota y el saldo quedan como en la realidad, sin tocar el mes en curso.
+ * Devuelve cuántas cuotas cargó.
+ */
+export async function addPastPayments(
+  tx: Tx,
+  householdId: string,
+  loanId: string,
+  opts: { count: number; amount?: number; before?: string },
+): Promise<number> {
+  const [loan] = await loadLoans(householdId, { id: loanId }, tx);
+  if (!loan) throw new ApiError("No encontrado", 404);
+  if (loan.isClosed) throw new ApiError("Este préstamo ya está terminado");
+  if (loan.mode === "OPEN") throw new ApiError("En una deuda sin cuotas, ajustá el saldo pendiente");
+
+  const { periods, max } = pastPaymentPlan(loan, opts.count, opts.before ?? currentPeriod());
+  if (max === 0) {
+    throw new ApiError(loan.mode === "FIXED" ? "Ya están cargadas todas las cuotas" : "No hay cuotas anteriores para cargar");
+  }
+  if (loan.mode === "FIXED" && opts.count > max) {
+    throw new ApiError(`Como mucho podés cargar ${max} ${max === 1 ? "cuota" : "cuotas"} más`);
+  }
+  if (periods.length === 0) return 0;
+  if (periods[0] < addMonths(currentPeriod(), -120)) throw new ApiError("Son demasiados meses hacia atrás");
+
+  const startPeriod = periods[0] < loan.startPeriod ? periods[0] : loan.startPeriod;
+  if (startPeriod !== loan.startPeriod) {
+    await tx.planLoan.update({ where: { id: loan.id }, data: { startPeriod } });
+  }
+
+  // Se calculan en orden, desde un préstamo "vacío", para que cada cuota tome su interés
+  // sobre el saldo que había en ese momento. Después se insertan todas juntas.
+  let running: LoanDTO = { ...loan, startPeriod, payments: [] };
+  const fixedAmount = opts.amount ?? (loan.mode === "FIXED" ? loan.payments[0]?.amount : undefined);
+  const rows = [];
+  for (const period of periods) {
+    const proposal = proposeLoanPayment(running, period);
+    if (!proposal) continue;
+    const amount = fixedAmount ?? proposal.amount;
+    const due = loanDueDate(loan.dueDay, period);
+    rows.push({
+      householdId,
+      period,
+      kind: loanKind(loan.direction),
+      loanId: loan.id,
+      name: loan.name,
+      categoryId: loan.categoryId,
+      currency: loan.currency,
+      amount,
+      interestAmount: proposal.interest || null,
+      date: due ? new Date(`${due}T00:00:00Z`) : null,
+      isDone: true,
+    });
+    running = {
+      ...running,
+      payments: [...running.payments, { entryId: "", period, amount, interest: proposal.interest, isDone: true }],
+    };
+  }
+  if (rows.length > 0) await tx.planEntry.createMany({ data: rows });
+  const created = rows.length;
+
+  await rethreadInterest(tx, { ...running, payments: [...running.payments, ...loan.payments] });
+  await refreshLoanStatus(tx, householdId, loan.id);
+  return created;
+}
+
+/**
+ * Quita la cuota anterior más antigua (por si se cargó de más). Solo si está pagada y es de
+ * un mes que no se usa en la app: las de meses iniciados se manejan desde ese mes.
+ */
+export async function removeOldestPastPayment(tx: Tx, householdId: string, loanId: string): Promise<void> {
+  const [loan] = await loadLoans(householdId, { id: loanId }, tx);
+  if (!loan) throw new ApiError("No encontrado", 404);
+  const first = loan.payments[0];
+  if (!first) throw new ApiError("No hay cuotas cargadas");
+  const month = await tx.planMonth.findUnique({
+    where: { householdId_period: { householdId, period: first.period } },
+  });
+  if (month || !first.isDone) {
+    throw new ApiError("La cuota más antigua es de un mes que usás en la app: cambiala desde ese mes", 409);
+  }
+
+  await tx.planEntry.delete({ where: { id: first.entryId } });
+  const rest = loan.payments.slice(1);
+  if (loan.mode === "FIXED" && loan.startPeriod === first.period) {
+    await tx.planLoan.update({ where: { id: loan.id }, data: { startPeriod: addMonths(first.period, 1) } });
+  }
+  await rethreadInterest(tx, { ...loan, payments: rest });
+  await refreshLoanStatus(tx, householdId, loan.id);
 }

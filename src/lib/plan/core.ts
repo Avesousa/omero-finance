@@ -135,6 +135,8 @@ export interface LoanDTO {
   interestRate: number | null;
   interestFrequency: Frequency | null;
   startPeriod: string;
+  /** Mes en que se cargó en la app ("YYYY-MM"). La deuda existe desde ahí aunque la primera cuota sea después. */
+  createdPeriod?: string;
   dueDay: number | null;
   endDate: string | null;
   isClosed: boolean;
@@ -580,6 +582,32 @@ export function buildLoanProposal(loans: LoanDTO[], period: string): LoanProposa
   return rows;
 }
 
+/**
+ * Cuotas ya pagadas antes de que la app conociera el préstamo ("cuotas anteriores").
+ * Devuelve los meses en los que se cargarían, justo antes de `anchor`: la primera cuota
+ * que ya existe o, si todavía no hay ninguna, `fallbackAnchor` (el mes que se está viendo).
+ * - Cuota fija: los `count` meses anteriores a `anchor`.
+ * - Cuotas variables: las del cronograma anteriores a `anchor` que todavía no se generaron.
+ * - Sin cuotas: no aplica (se ajusta el saldo).
+ */
+export function pastPaymentPlan(
+  loan: LoanDTO,
+  count: number,
+  fallbackAnchor: string,
+): { anchor: string; periods: string[]; max: number } {
+  const anchor = loan.payments.length > 0 ? loan.payments[0].period : fallbackAnchor;
+  if (loan.mode === "SCHEDULE") {
+    const periods = loan.schedule
+      .map((s) => s.period)
+      .filter((p) => p < anchor && !loan.payments.some((x) => x.period === p));
+    return { anchor, periods, max: periods.length };
+  }
+  if (loan.mode === "OPEN") return { anchor, periods: [], max: 0 };
+  const max = Math.max(0, Math.max(1, loan.installments ?? 1) - loan.payments.length);
+  const n = Math.max(0, Math.min(Math.floor(count), max));
+  return { anchor, periods: Array.from({ length: n }, (_, i) => addMonths(anchor, i - n)), max };
+}
+
 /** Fecha de vencimiento de la cuota en `period` ("YYYY-MM-DD"), según el día pactado. */
 export function loanDueDate(dueDay: number | null, period: string): string | null {
   if (!dueDay) return null;
@@ -604,7 +632,10 @@ export function loanPaymentLabel(loan: LoanDTO, period: string): string | null {
  * Lo que debo cuenta como deuda; lo que me deben, como algo que tengo.
  */
 export function loanBalanceItem(loan: LoanDTO): BalanceItemDTO {
-  const values: Record<string, number> = { [loan.startPeriod]: loan.principal };
+  // La deuda cuenta desde que se cargó, no desde su primera cuota: un préstamo que
+  // empieza a pagarse el mes que viene ya es una deuda hoy.
+  const from = loan.createdPeriod && loan.createdPeriod < loan.startPeriod ? loan.createdPeriod : loan.startPeriod;
+  const values: Record<string, number> = { [from]: loan.principal };
   const periods = [...new Set(loan.payments.map((p) => p.period))].sort();
   for (const period of periods) {
     values[period] = loanState(loan, addMonths(period, 1)).balance;
@@ -630,7 +661,12 @@ export interface BudgetRow {
   name: string;
   isCards: boolean;
   budget: number;
+  /** Todo lo cargado en la categoría: lo ya pagado más lo pendiente de pago. */
   actual: number;
+  /** La parte de `actual` que ya salió (pagada). */
+  paid: number;
+  /** La parte de `actual` cargada pero todavía sin pagar. */
+  pending: number;
   /** Ingresos destinados a esta categoría. */
   earmarked: number;
   /** budget − actual (negativo = te pasaste). */
@@ -653,10 +689,27 @@ export interface Summary {
   loansArs: number;
   loansPaidArs: number;
   cardsArs: number;
+  /** Resúmenes de tarjeta ya marcados como pagados. */
+  cardsPaidArs: number;
   cardsHasEstimate: boolean;
+  /** Todo lo cargado en el mes, pagado o no: fijos + gastos del mes + préstamos + tarjetas. */
   spentArs: number;
-  /** Ingresos (sin lo que me deben y no cobré) − gastos fijos − gastos variables − préstamos − tarjetas. */
+  /** Lo que ya salió: fijos pagados + gastos del mes + cuotas pagadas + tarjetas pagadas. */
+  paidArs: number;
+  /** Cargado pero todavía sin pagar. */
+  pendingArs: number;
+  /**
+   * Disponible: lo que tengo hoy. Ingresos (sin lo que me deben y no cobré) − lo que ya pagué.
+   * Lo que todavía no pagué sigue estando acá.
+   */
   availableArs: number;
+  /**
+   * Lo que del disponible ya tiene destino: por categoría, lo que falta gastar del presupuesto
+   * o lo que falta pagar de lo cargado, lo que sea mayor.
+   */
+  reservedArs: number;
+  /** Libre: disponible − reservado. Equivale a ingresos − Σ máx(presupuesto, cargado) por categoría. */
+  freeArs: number;
   budgetTotalArs: number;
   /** Ingresos − total presupuestado (positivo = plata sin destino). */
   unassignedArs: number;
@@ -707,12 +760,19 @@ export function buildSummary(input: SummaryInput): Summary {
 
   const lines = cardLines(input.cards, input.statements, input.purchases, period, usdRate);
   const cardsArs = lines.reduce((s, l) => s + l.toPayArs, 0);
+  const cardsPaidArs = lines.filter((l) => l.isPaid).reduce((s, l) => s + l.toPayArs, 0);
+
+  // Un gasto ya salió si es del mes (se carga cuando ocurre) o si es un fijo o una cuota tildada.
+  const isPaid = (e: EntryDTO) => (e.recurringId || e.loanId ? e.isDone : true);
 
   const incomeArs = sum(incomes);
   const fixedArs = sum(fixedExpenses);
+  const fixedPaidArs = sum(fixedExpenses.filter(isPaid));
   const variableArs = sum(variableExpenses);
   const loansArs = sum(loanExpenses);
+  const loansPaidArs = sum(loanExpenses.filter(isPaid));
   const spentArs = fixedArs + variableArs + loansArs + cardsArs;
+  const paidArs = fixedPaidArs + variableArs + loansPaidArs + cardsPaidArs;
 
   // ── Presupuesto vs real, por categoría de gasto ──
   const expenseCats = categories
@@ -721,8 +781,10 @@ export function buildSummary(input: SummaryInput): Summary {
 
   const budgetBy = new Map(budgets.map((b) => [b.categoryId, b.amount]));
   const actualBy = new Map<string | null, number>();
+  const paidBy = new Map<string | null, number>();
   for (const e of expenses) {
     actualBy.set(e.categoryId, (actualBy.get(e.categoryId) ?? 0) + ars(e));
+    if (isPaid(e)) paidBy.set(e.categoryId, (paidBy.get(e.categoryId) ?? 0) + ars(e));
   }
   const earmarkBy = new Map<string, number>();
   for (const e of incomes) {
@@ -731,12 +793,23 @@ export function buildSummary(input: SummaryInput): Summary {
     }
   }
 
+  // Reservado: lo que todavía va a salir de cada categoría. Si hay presupuesto, lo que falta
+  // gastar de él; si lo cargado lo supera (o no hay presupuesto), lo que falta pagar.
+  let reservedArs = 0;
+  const reserve = (budget: number, actual: number, paid: number) => {
+    reservedArs += Math.max(budget, actual) - paid;
+  };
+
   const rows: BudgetRow[] = [];
+  let hasCardsRow = false;
   for (const c of expenseCats) {
     const isCards = c.systemKey === TDC_KEY;
     const budget = budgetBy.get(c.id) ?? 0;
     const actual = isCards ? cardsArs : actualBy.get(c.id) ?? 0;
+    const paid = isCards ? cardsPaidArs : paidBy.get(c.id) ?? 0;
     const earmarked = earmarkBy.get(c.id) ?? 0;
+    if (isCards) hasCardsRow = true;
+    reserve(budget, actual, paid);
     if (budget <= 0 && actual <= 0 && earmarked <= 0) continue;
     rows.push({
       categoryId: c.id,
@@ -744,12 +817,17 @@ export function buildSummary(input: SummaryInput): Summary {
       isCards,
       budget,
       actual,
+      paid,
+      pending: actual - paid,
       earmarked,
       remaining: budget - actual,
       status: budgetStatus(budget, actual),
     });
   }
   const uncategorized = actualBy.get(null) ?? 0;
+  const uncategorizedPaid = paidBy.get(null) ?? 0;
+  reserve(0, uncategorized, uncategorizedPaid);
+  if (!hasCardsRow) reserve(0, cardsArs, cardsPaidArs);
   if (uncategorized > 0) {
     rows.push({
       categoryId: null,
@@ -757,6 +835,8 @@ export function buildSummary(input: SummaryInput): Summary {
       isCards: false,
       budget: 0,
       actual: uncategorized,
+      paid: uncategorizedPaid,
+      pending: uncategorized - uncategorizedPaid,
       earmarked: 0,
       remaining: -uncategorized,
       status: "unbudgeted",
@@ -772,14 +852,19 @@ export function buildSummary(input: SummaryInput): Summary {
     incomeVariableArs: sum(incomes.filter((e) => !e.recurringId && !e.loanId)),
     incomeReceivedArs: sum(incomes.filter((e) => (!e.recurringId && !e.loanId) || e.isDone)),
     fixedArs,
-    fixedPaidArs: sum(fixedExpenses.filter((e) => e.isDone)),
+    fixedPaidArs,
     variableArs,
     loansArs,
-    loansPaidArs: sum(loanExpenses.filter((e) => e.isDone)),
+    loansPaidArs,
     cardsArs,
+    cardsPaidArs,
     cardsHasEstimate: lines.some((l) => l.isEstimate),
     spentArs,
-    availableArs: incomeArs - spentArs,
+    paidArs,
+    pendingArs: spentArs - paidArs,
+    availableArs: incomeArs - paidArs,
+    reservedArs,
+    freeArs: incomeArs - paidArs - reservedArs,
     budgetTotalArs,
     unassignedArs: incomeArs - budgetTotalArs,
     rows,
