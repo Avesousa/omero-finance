@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ChevronRight, Plus, Settings2 } from "lucide-react";
+import { CardBrandIcon } from "@/components/tdc/card-brand";
 import {
-  addMonths, cardLines, fmtArs, fmtMoney, fmtUsd, installmentFor, numberToInput, parseMoney,
+  addMonths, cardLabel, cardLines, cardSubtitle, cardTitle, fmtArs, fmtMoney, fmtUsd, installmentFor, numberToInput, parseMoney,
   periodLabel, periodShort, projectInstallments, round2, statementToPay, toArs,
-  type CardLine, type Currency, type PayMode, type PurchaseDTO, type StatementDTO,
+  type CardDTO, type CardLine, type Currency, type PayMode, type PurchaseDTO, type StatementDTO,
 } from "@/lib/plan/core";
 import type { PlanData } from "@/lib/plan/server";
 import {
@@ -18,7 +19,8 @@ type Tab = "pay" | "purchases" | "future";
 type SheetState =
   | { type: "statement"; cardId: string; statement: StatementDTO | null }
   | { type: "purchase"; purchase?: PurchaseDTO }
-  | { type: "card" }
+  | { type: "cards" }
+  | { type: "card"; card?: CardDTO; fromList?: boolean }
   | null;
 
 const TABS: readonly { value: Tab; label: string }[] = [
@@ -52,7 +54,11 @@ export function CardsClient({ data }: { data: PlanData }) {
   const lineByCard = new Map(lines.map((l) => [l.cardId, l]));
   const total = lines.reduce((s, l) => s + l.toPayArs, 0);
   const paid = lines.filter((l) => l.isPaid).reduce((s, l) => s + l.toPayArs, 0);
-  const cardName = (id: string) => data.cards.find((c) => c.id === id)?.name ?? "Tarjeta";
+  const cardById = (id: string) => data.cards.find((c) => c.id === id);
+  const cardName = (id: string) => {
+    const card = cardById(id);
+    return card ? cardLabel(card) : "Tarjeta";
+  };
 
   return (
     <>
@@ -89,7 +95,7 @@ export function CardsClient({ data }: { data: PlanData }) {
               {data.cards.map((card) => (
                 <StatementCard
                   key={card.id}
-                  name={card.name}
+                  card={card}
                   line={lineByCard.get(card.id)}
                   usdRate={data.usdRate}
                   onEdit={(statement) => setSheet({ type: "statement", cardId: card.id, statement })}
@@ -97,11 +103,11 @@ export function CardsClient({ data }: { data: PlanData }) {
               ))}
               <button
                 type="button"
-                onClick={() => setSheet({ type: "card" })}
-                className="text-xs font-semibold py-1 w-full"
+                onClick={() => setSheet({ type: "cards" })}
+                className="flex items-center justify-center gap-1.5 text-xs font-semibold py-1 w-full"
                 style={{ color: "var(--accent)" }}
               >
-                + Agregar otra tarjeta
+                <Settings2 size={13} /> Administrar tarjetas
               </button>
             </section>
           )}
@@ -122,7 +128,7 @@ export function CardsClient({ data }: { data: PlanData }) {
         <StatementSheet
           period={data.period}
           cardId={sheet.cardId}
-          cardName={cardName(sheet.cardId)}
+          card={cardById(sheet.cardId)}
           statement={sheet.statement}
           usdRate={data.usdRate}
           onClose={() => setSheet(null)}
@@ -131,15 +137,46 @@ export function CardsClient({ data }: { data: PlanData }) {
       {sheet?.type === "purchase" && (
         <PurchaseSheet data={data} purchase={sheet.purchase} onClose={() => setSheet(null)} />
       )}
-      {sheet?.type === "card" && <NewCardSheet onClose={() => setSheet(null)} />}
+      {sheet?.type === "cards" && (
+        <ManageCardsSheet
+          cards={data.cards}
+          onEdit={(card) => setSheet({ type: "card", card, fromList: true })}
+          onAdd={() => setSheet({ type: "card", fromList: true })}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet?.type === "card" && (
+        <CardSheet
+          key={sheet.card?.id ?? "new"}
+          card={sheet.card}
+          purchaseCount={sheet.card ? data.purchases.filter((p) => p.cardId === sheet.card!.id).length : 0}
+          statementCount={sheet.card ? data.cardStatementCounts[sheet.card.id] ?? 0 : 0}
+          onClose={() => setSheet(sheet.fromList ? { type: "cards" } : null)}
+        />
+      )}
     </>
   );
 }
 
 // ─── A pagar ──────────────────────────────────────────────────────────────────
 
-function StatementCard({ name, line, usdRate, onEdit }: {
-  name: string;
+/** Logo de la marca + banco + "Visa · Titular": lo que permite reconocer la tarjeta. */
+function CardIdentity({ card, extra }: { card: CardDTO; extra?: string }) {
+  const sub = cardSubtitle(card);
+  return (
+    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+      <CardBrandIcon name={card.name} cardType={card.cardType} size={26} showBank={false} />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{cardTitle(card)}</p>
+        {sub && <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{sub}</p>}
+        {extra && <p className="text-[11px] truncate" style={{ color: "var(--text-secondary)" }}>{extra}</p>}
+      </div>
+    </div>
+  );
+}
+
+function StatementCard({ card, line, usdRate, onEdit }: {
+  card: CardDTO;
   line: CardLine | undefined;
   usdRate: number;
   onEdit: (statement: StatementDTO | null) => void;
@@ -151,7 +188,7 @@ function StatementCard({ name, line, usdRate, onEdit }: {
     return (
       <div className="rounded-2xl p-4 space-y-3" style={cardStyle}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{name}</p>
+          <CardIdentity card={card} />
           <SmallAction onClick={() => onEdit(null)}><Plus size={12} /> Cargar resumen</SmallAction>
         </div>
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
@@ -179,15 +216,13 @@ function StatementCard({ name, line, usdRate, onEdit }: {
         <div className="flex items-center gap-3">
           <DoneToggle
             done={st.isPaid}
-            label={`Marcar ${name} como pagada`}
+            label={`Marcar ${cardLabel(card)} como pagada`}
             onToggle={() => action.run(() => api("PATCH", `/api/plan/card-statements/${st.id}`, { isPaid: !st.isPaid }))}
           />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{name}</p>
-            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              {st.isPaid ? "Pagada" : st.dueDate ? `Vence el ${shortDate(st.dueDate)}` : "Sin fecha de vencimiento"}
-            </p>
-          </div>
+          <CardIdentity
+            card={card}
+            extra={st.isPaid ? "Pagada" : st.dueDate ? `Vence el ${shortDate(st.dueDate)}` : "Sin fecha de vencimiento"}
+          />
           <div className="text-right flex-shrink-0">
             <p className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(toPay)}</p>
             <p className="text-[10px]" style={{ color: "var(--text-secondary)" }}>
@@ -222,10 +257,10 @@ function Mini({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatementSheet({ period, cardId, cardName, statement, usdRate, onClose }: {
+function StatementSheet({ period, cardId, card, statement, usdRate, onClose }: {
   period: string;
   cardId: string;
-  cardName: string;
+  card: CardDTO | undefined;
   statement: StatementDTO | null;
   usdRate: number;
   onClose: () => void;
@@ -260,7 +295,12 @@ function StatementSheet({ period, cardId, cardName, statement, usdRate, onClose 
   }
 
   return (
-    <Sheet title={`${cardName} · ${periodLabel(period)}`} onClose={onClose}>
+    <Sheet title={`Resumen de ${periodLabel(period)}`} onClose={onClose}>
+      {card && (
+        <div className="rounded-xl px-3 py-2.5 flex" style={{ backgroundColor: "var(--bg-elevated)" }}>
+          <CardIdentity card={card} />
+        </div>
+      )}
       <Field label="Monto total en pesos">
         <MoneyInput value={total} onChange={setTotal} large autoFocus={!statement} ariaLabel="Monto total en pesos" />
       </Field>
@@ -420,7 +460,7 @@ function PurchaseSheet({ data, purchase, onClose }: { data: PlanData; purchase?:
   return (
     <Sheet title={purchase ? "Editar compra" : "Compra con tarjeta"} onClose={onClose}>
       <Field label="Tarjeta">
-        <Chips options={data.cards.map((c) => ({ id: c.id, label: c.name }))} value={cardId} onChange={(id) => id && setCardId(id)} />
+        <Chips options={data.cards.map((c) => ({ id: c.id, label: cardLabel(c) }))} value={cardId} onChange={(id) => id && setCardId(id)} />
       </Field>
       <Field label="Monto total de la compra">
         <div className="space-y-2">
@@ -517,7 +557,37 @@ function FutureTab({ data }: { data: PlanData }) {
   );
 }
 
-// ─── Nueva tarjeta ────────────────────────────────────────────────────────────
+// ─── Mis tarjetas ─────────────────────────────────────────────────────────────
+
+function ManageCardsSheet({ cards, onEdit, onAdd, onClose }: {
+  cards: CardDTO[];
+  onEdit: (card: CardDTO) => void;
+  onAdd: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Sheet title="Mis tarjetas" onClose={onClose}>
+      <ListCard>
+        {cards.map((card) => (
+          <button
+            key={card.id}
+            type="button"
+            onClick={() => onEdit(card)}
+            aria-label={`Editar ${cardLabel(card)}`}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left"
+          >
+            <CardIdentity card={card} />
+            <ChevronRight size={16} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
+          </button>
+        ))}
+      </ListCard>
+      <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+        Tocá una tarjeta para cambiarle el banco, el tipo o el titular, o para eliminarla.
+      </p>
+      <PrimaryButton onClick={onAdd}>Agregar tarjeta</PrimaryButton>
+    </Sheet>
+  );
+}
 
 const CARD_TYPES = [
   { id: "VISA", label: "Visa" },
@@ -525,33 +595,98 @@ const CARD_TYPES = [
   { id: "AMEX", label: "Amex" },
 ];
 
-function NewCardSheet({ onClose }: { onClose: () => void }) {
+const BANKS = ["Banco Nación", "Galicia", "BBVA", "Santander", "MercadoPago", "Brubank", "Naranja X", "Cencopay"];
+
+function CardSheet({ card, purchaseCount, statementCount, onClose }: {
+  card?: CardDTO;
+  purchaseCount: number;
+  statementCount: number;
+  onClose: () => void;
+}) {
   const action = useAction();
-  const [entity, setEntity] = useState("");
-  const [cardType, setCardType] = useState<string | null>("VISA");
-  const [ownerName, setOwnerName] = useState("");
+  const [entity, setEntity] = useState(card?.entity ?? "");
+  const [cardType, setCardType] = useState<string | null>(card ? card.cardType?.toUpperCase() ?? null : "VISA");
+  const [ownerName, setOwnerName] = useState(card?.ownerName ?? "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const preset = BANKS.find((b) => b.toLowerCase() === entity.trim().toLowerCase()) ?? null;
+  const usage = [
+    purchaseCount > 0 ? `${purchaseCount} ${purchaseCount === 1 ? "compra" : "compras"}` : null,
+    statementCount > 0 ? `${statementCount} ${statementCount === 1 ? "resumen" : "resúmenes"}` : null,
+  ].filter(Boolean).join(" y ");
 
   function save() {
-    if (!entity.trim() || !cardType || !ownerName.trim()) return action.setError("Completá banco, tipo y titular");
-    return action.run(() => api("POST", "/api/cards", { entity, cardType, ownerName }), onClose);
+    if (!entity.trim() || !cardType || !ownerName.trim()) return action.setError("Completá tipo, banco y titular");
+    const body = { entity: entity.trim(), cardType, ownerName: ownerName.trim() };
+    return action.run(
+      () => card ? api("PATCH", `/api/plan/cards/${card.id}`, body) : api("POST", "/api/plan/cards", body),
+      onClose,
+    );
   }
 
   return (
-    <Sheet title="Nueva tarjeta" onClose={onClose}>
+    <Sheet title={card ? "Editar tarjeta" : "Nueva tarjeta"} onClose={onClose}>
+      {card && !card.entity && (
+        <p className="text-xs rounded-xl px-3 py-2" style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
+          Hoy figura como <strong style={{ color: "var(--text-primary)" }}>{card.name}</strong>. Completá los datos para reconocerla mejor.
+        </p>
+      )}
       <Field label="Tipo">
         <Chips options={CARD_TYPES} value={cardType} onChange={(id) => id && setCardType(id)} />
       </Field>
       <Field label="Banco o entidad">
-        <TextInput aria-label="Banco o entidad" placeholder="Ej: Galicia" value={entity} onChange={(e) => setEntity(e.target.value)} autoFocus />
+        <div className="space-y-2">
+          <Chips options={BANKS.map((b) => ({ id: b, label: b }))} value={preset} onChange={(id) => setEntity(id ?? "")} />
+          <TextInput
+            aria-label="Banco o entidad"
+            placeholder="O escribilo: Ej. Banco Ciudad"
+            maxLength={40}
+            value={entity}
+            onChange={(e) => setEntity(e.target.value)}
+          />
+        </div>
       </Field>
       <Field label="Titular">
-        <TextInput aria-label="Titular" placeholder="Nombre del titular" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+        <TextInput
+          aria-label="Titular"
+          placeholder="Nombre del titular"
+          maxLength={40}
+          value={ownerName}
+          onChange={(e) => setOwnerName(e.target.value)}
+        />
       </Field>
       <ErrorText error={action.error} />
-      <div className="flex gap-2">
-        <SecondaryButton onClick={onClose}>Cancelar</SecondaryButton>
-        <div className="flex-[2]"><PrimaryButton onClick={save} busy={action.busy}>Agregar tarjeta</PrimaryButton></div>
-      </div>
+      <PrimaryButton onClick={save} busy={action.busy}>{card ? "Guardar cambios" : "Agregar tarjeta"}</PrimaryButton>
+
+      {card && !confirmDelete && (
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          className="w-full text-xs font-semibold py-1"
+          style={{ color: "var(--accent-red)" }}
+        >
+          Eliminar tarjeta
+        </button>
+      )}
+      {card && confirmDelete && (
+        <div className="space-y-2">
+          <p className="text-xs" style={{ color: usage ? "var(--accent-red)" : "var(--text-secondary)" }}>
+            {usage
+              ? `Esta tarjeta tiene ${usage} en Plan simple. Si la eliminás, se borran con ella y no se puede deshacer.`
+              : "No tiene compras ni resúmenes cargados en Plan simple."}
+          </p>
+          <div className="flex gap-2">
+            <SecondaryButton onClick={() => setConfirmDelete(false)}>Cancelar</SecondaryButton>
+            <SecondaryButton
+              tone="danger"
+              disabled={action.busy}
+              onClick={() => action.run(() => api("DELETE", `/api/plan/cards/${card.id}?confirm=1`), onClose)}
+            >
+              {usage ? "Eliminar todo" : "Sí, eliminar"}
+            </SecondaryButton>
+          </div>
+        </div>
+      )}
     </Sheet>
   );
 }

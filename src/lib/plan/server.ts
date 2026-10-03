@@ -53,6 +53,8 @@ export interface PlanData {
   previousBudgets: BudgetDTO[];
   previousBudgetPeriod: string | null;
   cards: CardDTO[];
+  /** Resúmenes cargados por tarjeta en todos los meses (para avisar antes de borrarla). */
+  cardStatementCounts: Record<string, number>;
   statements: StatementDTO[];
   purchases: PurchaseDTO[];
   /** Fijos que se traerían al iniciar el mes (solo si no está iniciado). */
@@ -84,7 +86,7 @@ async function latestUsdRate(householdId: string, period: string): Promise<numbe
 export async function loadPlan(householdId: string, period: string): Promise<PlanData> {
   await ensurePlanDefaults(householdId);
 
-  const [month, categories, recurrings, entries, budgets, cards, statements, purchases] =
+  const [month, categories, recurrings, entries, budgets, cards, statements, purchases, statementCounts] =
     await Promise.all([
       prisma.planMonth.findUnique({ where: { householdId_period: { householdId, period } } }),
       prisma.planCategory.findMany({
@@ -100,11 +102,16 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       }),
       prisma.planBudget.findMany({ where: { householdId, period } }),
-      prisma.card.findMany({ where: { householdId }, orderBy: { name: "asc" } }),
+      prisma.card.findMany({ where: { householdId }, orderBy: [{ entity: "asc" }, { name: "asc" }] }),
       prisma.planCardStatement.findMany({ where: { householdId, period } }),
       prisma.planCardPurchase.findMany({
         where: { householdId },
         orderBy: [{ firstPeriod: "desc" }, { createdAt: "desc" }],
+      }),
+      prisma.planCardStatement.groupBy({
+        by: ["cardId"],
+        where: { householdId },
+        _count: { _all: true },
       }),
     ]);
 
@@ -167,7 +174,14 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
     budgets: budgets.map((b) => ({ categoryId: b.categoryId, amount: Number(b.amount) })),
     previousBudgets,
     previousBudgetPeriod,
-    cards: cards.map((c) => ({ id: c.id, name: c.name })),
+    cards: cards.map((c) => ({
+      id: c.id,
+      name: c.name,
+      entity: c.entity,
+      cardType: c.cardType,
+      ownerName: c.ownerName,
+    })),
+    cardStatementCounts: Object.fromEntries(statementCounts.map((g) => [g.cardId, g._count._all])),
     statements: statements.map((s) => ({
       id: s.id,
       cardId: s.cardId,

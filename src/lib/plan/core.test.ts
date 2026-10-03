@@ -2,11 +2,15 @@ import {
   addDays, addMonths, monthDiff, daysInPeriod, isValidPeriod, currentPeriod, periodLabel,
   occurrencesInPeriod, monthlyAmount, buildProposal,
   installmentFor, statementToPay, cardLines, projectInstallments,
-  buildSummary, balanceAt, netWorth,
+  buildSummary, balanceAt, netWorth, cardLabel, cardSubtitle, cardTitle,
   parseMoney, formatMoneyInput, numberToInput,
-  type CategoryDTO, type EntryDTO, type PurchaseDTO, type StatementDTO,
+  type CardDTO, type CategoryDTO, type EntryDTO, type PurchaseDTO, type StatementDTO,
   type BalanceItemDTO, type RecurringDTO,
 } from "./core";
+
+const card = (id: string, name: string, extra: Partial<CardDTO> = {}): CardDTO => ({
+  id, name, entity: null, cardType: null, ownerName: null, ...extra,
+});
 
 describe("períodos", () => {
   it("valida el formato YYYY-MM", () => {
@@ -107,7 +111,7 @@ describe("tarjetas", () => {
   });
 
   it("usa el resumen si existe y si no estima con las cuotas", () => {
-    const cards = [{ id: "card1", name: "VISA" }, { id: "card2", name: "MC" }, { id: "card3", name: "AMEX" }];
+    const cards = [card("card1", "VISA"), card("card2", "MC"), card("card3", "AMEX")];
     const lines = cardLines(cards, [st], [purchase, { ...purchase, id: "p2", cardId: "card2", amount: 300_000, installments: 3 }], "2026-10", 1500);
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatchObject({ cardId: "card1", toPayArs: 875_000, isEstimate: false });
@@ -121,6 +125,34 @@ describe("tarjetas", () => {
     );
     expect(proj.map((p) => p.totalArs)).toEqual([100_000, 200_000, 200_000, 200_000]);
     expect(proj[3].period).toBe("2027-01");
+  });
+});
+
+describe("cómo se identifica una tarjeta", () => {
+  it("usa banco, marca y titular cuando están cargados", () => {
+    const c = card("c", "VISA AVELINO BN", { entity: "Banco Nación", cardType: "VISA", ownerName: "Avelino" });
+    expect(cardTitle(c)).toBe("Banco Nación");
+    expect(cardSubtitle(c)).toBe("Visa · Avelino");
+    expect(cardLabel(c)).toBe("Banco Nación · Visa · Avelino");
+    expect(cardLabel(card("m", "x", { entity: "Galicia", cardType: "MC", ownerName: "María" }))).toBe("Galicia · Mastercard · María");
+  });
+
+  it("cae al nombre heredado si faltan los datos", () => {
+    const legacy = card("c", "VISA AVELINO BK");
+    expect(cardTitle(legacy)).toBe("VISA AVELINO BK");
+    expect(cardSubtitle(legacy)).toBe("");
+    expect(cardLabel(legacy)).toBe("VISA AVELINO BK");
+    // con datos parciales muestra lo que haya
+    expect(cardLabel(card("c", "x", { entity: " ", cardType: "AMEX" }))).toBe("x · Amex");
+  });
+
+  it("el aviso de vencimiento nombra la tarjeta completa", () => {
+    const c = card("card1", "BK", { entity: "Brubank", cardType: "VISA", ownerName: "Avelino" });
+    const st: StatementDTO = {
+      id: "s", cardId: "card1", period: "2026-10", dueDate: null, totalArs: 10, minimumArs: null,
+      usdAmount: null, payMode: "TOTAL", customAmount: null, isPaid: false,
+    };
+    expect(cardLines([c], [st], [], "2026-10", 1500)[0].cardName).toBe("Brubank · Visa · Avelino");
   });
 });
 
@@ -155,7 +187,7 @@ describe("resumen del mes", () => {
       { categoryId: "sup", amount: 200_000 },
       { categoryId: "tdc", amount: 1_000_000 },
     ],
-    cards: [{ id: "card1", name: "VISA" }],
+    cards: [card("card1", "VISA")],
     statements: [{
       id: "s1", cardId: "card1", period: "2026-10", dueDate: null, totalArs: 700_000,
       minimumArs: null, usdAmount: null, payMode: "TOTAL" as const, customAmount: null, isPaid: false,

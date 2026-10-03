@@ -5,7 +5,7 @@
  * Usan los mismos tokens que el resto de la app (globals.css).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, X } from "lucide-react";
@@ -48,19 +48,33 @@ export async function api(method: string, url: string, body?: unknown): Promise<
   return json;
 }
 
-/** Ejecuta una acción, refresca los datos del servidor y expone estado de carga y error. */
+/**
+ * Ejecuta una acción, refresca los datos del servidor y expone estado de carga y error.
+ * `after` (por ejemplo, cerrar la hoja) corre recién cuando los datos nuevos ya están en
+ * pantalla, para no mostrar por un instante la lista vieja.
+ */
 export function useAction() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, startRefresh] = useTransition();
+  const afterRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!refreshing && afterRef.current) {
+      const after = afterRef.current;
+      afterRef.current = null;
+      after();
+    }
+  }, [refreshing]);
 
   async function run(fn: () => Promise<unknown>, after?: () => void) {
     setBusy(true);
     setError(null);
     try {
       await fn();
-      router.refresh();
-      after?.();
+      afterRef.current = after ?? null;
+      startRefresh(() => router.refresh());
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -68,7 +82,7 @@ export function useAction() {
     }
   }
 
-  return { busy, error, setError, run };
+  return { busy: busy || refreshing, error, setError, run };
 }
 
 // ─── Encabezado de página con selector de mes ─────────────────────────────────

@@ -63,6 +63,10 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
 - **Tarjetas** cuentan por lo que se paga en el mes: el resumen si está cargado
   (total, mínimo u otro monto) o, si todavía no llegó, la suma de cuotas cargadas (estimado).
   Las compras con tarjeta no suman en otras categorías, para no contar dos veces.
+- **Tarjetas, cómo se identifican**: banco + marca + titular ("Banco Nación · Visa · Avelino").
+  Si a una tarjeta vieja le faltan esos datos se muestra su nombre heredado hasta que se edite.
+  Desde *Tarjetas → Administrar tarjetas* se agregan, editan y eliminan (`/api/plan/cards`);
+  eliminar una tarjeta borra también sus compras y resúmenes de Plan simple, previa confirmación.
 - **Presupuesto**: el gasto real de cada categoría sale de los movimientos;
   el de "Tarjetas de crédito" sale de los resúmenes. Estados: ok, cerca del tope (≥ 85 %), excedido.
 - **Ingresos con destino**: un ingreso puede destinarse a una categoría de gasto
