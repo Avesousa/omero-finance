@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import {
-  FREQUENCY_LABEL, fmtArs, fmtMoney, loanPaymentLabel, toArs,
+  FREQUENCY_LABEL, fmtArs, fmtMoney, isReceivable, loanPaymentLabel, toArs,
   type EntryDTO, type Kind, type LoanDTO,
 } from "@/lib/plan/core";
 import type { PlanData } from "@/lib/plan/server";
@@ -37,9 +37,12 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
   const variable = entries.filter((e) => !e.recurringId && !e.loanId);
 
   const ars = (list: EntryDTO[]) => list.reduce((s, e) => s + toArs(e.amount, e.currency, data.usdRate), 0);
-  const total = ars(entries);
-  // Fijos y cuotas de préstamos: los que se tildan como pagados / cobrados.
-  const tracked = [...fixed, ...loanEntries];
+  // Lo que me deben y no cobré no cuenta como ingreso del mes: va aparte, como "por cobrar".
+  const receivable = ars(entries.filter(isReceivable));
+  const total = ars(entries) - receivable;
+  // Los que se tildan como pagados / cobrados. En ingresos, las cuotas que me deben
+  // ya se informan como "por cobrar", así que acá quedan solo los fijos.
+  const tracked = isIncome ? fixed : [...fixed, ...loanEntries];
   const fixedPending = ars(tracked) - ars(tracked.filter((e) => e.isDone));
 
   const categoryName = (id: string | null) => data.categories.find((c) => c.id === id)?.name ?? null;
@@ -65,6 +68,7 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
     const target = categoryName(e.targetCategoryId);
     const number = loan ? loanPaymentLabel(loan, data.period) : null;
     const tracksDone = !!(e.recurringId || e.loanId);
+    const waiting = isReceivable(e);
 
     return (
       <div
@@ -93,11 +97,15 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
             {meta && <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{meta}</span>}
             {rule && rule.frequency !== "MONTHLY" && <Pill>{FREQUENCY_LABEL[rule.frequency]}</Pill>}
             {number && <Pill>cuota {number}</Pill>}
+            {waiting && <Pill tone="near">por cobrar · no suma</Pill>}
             {target && <Pill tone="accent">→ {target}</Pill>}
           </div>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+          <p
+            className="text-sm font-semibold tabular-nums"
+            style={{ color: waiting ? "var(--text-secondary)" : "var(--text-primary)" }}
+          >
             {fmtMoney(e.amount, e.currency)}
           </p>
           {e.currency === "USD" && data.usdRate > 0 && (
@@ -129,7 +137,13 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
               <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>
                 {fixedPending > 0.5
                   ? <>{words.pending}: <span className="font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(fixedPending)}</span> de fijos</>
-                  : <>Todos los fijos{loanEntries.length > 0 ? " y cuotas" : ""} ya están marcados como {words.done}s</>}
+                  : <>Todos los fijos{!isIncome && loanEntries.length > 0 ? " y cuotas" : ""} ya están marcados como {words.done}s</>}
+              </p>
+            )}
+            {receivable > 0.5 && (
+              <p className="text-xs mt-1.5" style={{ color: "var(--accent-amber)" }}>
+                Por cobrar: <span className="font-semibold tabular-nums">{fmtArs(receivable)}</span>. No suma al
+                disponible hasta que lo marques como cobrado.
               </p>
             )}
           </div>

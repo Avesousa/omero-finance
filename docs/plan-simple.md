@@ -31,6 +31,7 @@ Las categorías por defecto se crean solas la primera vez que el hogar entra a `
 | `/plan/presupuesto` | Presupuesto por categoría contra lo gastado. |
 | `/plan/patrimonio` | Lo que tenés, lo que debés y el neto mes a mes. |
 | `/plan/categorias` | Categorías de gastos y de ingresos. |
+| `/plan/exportar` | Resumen del mes en Markdown o JSON para copiar, compartir o descargar (`src/lib/plan/export.ts`). |
 
 El mes se elige con `?period=YYYY-MM` y se mantiene al navegar.
 
@@ -81,7 +82,9 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
   - Saldo = inicial + intereses generados − cuotas pagadas. Al tildar la última cuota (o saldar el saldo)
     el préstamo se cierra solo; si se destilda, se reabre.
   - En Patrimonio el saldo aparece solo (no se carga a mano). Eliminar un préstamo borra sus cuotas, previa confirmación.
-- **Disponible** también descuenta las cuotas de préstamos que pago; las que cobro suman como ingreso.
+- **Disponible** también descuenta las cuotas de préstamos que pago. Las cuotas que **me deben**
+  suman como ingreso recién cuando se tildan como cobradas; hasta entonces figuran aparte como
+  "Por cobrar" y no entran en el disponible, el presupuesto ni los ingresos destinados (`isReceivable`).
 - **Presupuesto**: el gasto real de cada categoría sale de los movimientos;
   el de "Tarjetas de crédito" sale de los resúmenes. Estados: ok, cerca del tope (≥ 85 %), excedido.
 - **Ingresos con destino**: un ingreso puede destinarse a una categoría de gasto

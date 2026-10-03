@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, ChevronRight, CreditCard, HandCoins, Pencil, Repeat, ShoppingBag } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, CreditCard, HandCoins, Hourglass, Pencil, Repeat, ShoppingBag } from "lucide-react";
 import {
   addDays, addMonths, buildSummary, cardLines, fmtArs, fmtMoney, numberToInput, parseMoney, periodLabel, toArs,
   type Currency, type Kind,
@@ -125,6 +125,7 @@ function StartMonth({ data }: { data: PlanData }) {
         </ListCard>
         <p className="text-[11px] px-1" style={{ color: "var(--text-secondary)" }}>
           Te propongo la cuota del mes pasado. Cambiala si este mes es distinta.
+          {loanRows.some((r) => r.kind === "INCOME") && " Las cuotas a cobrar no suman al disponible hasta que las marques como cobradas."}
         </p>
       </section>
     );
@@ -276,6 +277,10 @@ function MonthSummary({ data }: { data: PlanData }) {
 
   const breakdown = [
     { label: "Ingresos", value: summary.incomeArs, sign: "+", icon: ArrowDownLeft, href: href("/plan/ingresos"), tone: "var(--accent-green)" },
+    // Lo que me deben y todavía no cobré: se muestra, pero no entra en la cuenta.
+    ...(summary.receivableArs > 0
+      ? [{ label: "Por cobrar (no suma todavía)", value: summary.receivableArs, sign: "", icon: Hourglass, href: href("/plan/ingresos"), tone: "var(--text-secondary)", muted: true }]
+      : []),
     { label: "Gastos fijos", value: summary.fixedArs, sign: "−", icon: Repeat, href: href("/plan/gastos"), tone: "var(--text-secondary)" },
     { label: "Gastos del mes", value: summary.variableArs, sign: "−", icon: ShoppingBag, href: href("/plan/gastos"), tone: "var(--text-secondary)" },
     ...(summary.loansArs > 0
@@ -306,11 +311,14 @@ function MonthSummary({ data }: { data: PlanData }) {
           </p>
         </div>
         <div className="border-t divide-y" style={{ borderColor: "var(--border)" }}>
-          {breakdown.map(({ label, value, sign, icon: Icon, href: to, tone }) => (
+          {breakdown.map(({ label, value, sign, icon: Icon, href: to, tone, ...rest }) => (
             <Link key={label} href={to} className="flex items-center gap-3 px-5 py-2.5" style={{ borderColor: "var(--border)" }}>
               <Icon size={15} style={{ color: tone, flexShrink: 0 }} />
               <span className="flex-1 text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
-              <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>
+              <span
+                className="text-sm font-semibold tabular-nums"
+                style={{ color: "muted" in rest ? "var(--text-secondary)" : "var(--text-primary)" }}
+              >
                 {sign} {fmtArs(value)}
               </span>
               <ChevronRight size={14} style={{ color: "var(--border-strong)" }} />
