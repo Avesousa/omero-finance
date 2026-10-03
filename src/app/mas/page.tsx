@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, User, TrendingUp, Wallet, Zap, UserCircle } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, User, TrendingUp, Wallet, Zap, UserCircle, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
