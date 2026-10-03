@@ -674,6 +674,20 @@ export interface BudgetRow {
   status: BudgetStatus;
 }
 
+/** Una parte de lo reservado: de dónde sale, categoría por categoría. */
+export interface ReservedRow {
+  /** null = gastos sin categoría */
+  categoryId: string | null;
+  name: string;
+  isCards: boolean;
+  /** Cargado y todavía sin pagar. */
+  pending: number;
+  /** Lo que queda del presupuesto sin cargar todavía. */
+  budgetLeft: number;
+  /** pending + budgetLeft */
+  reserved: number;
+}
+
 export interface Summary {
   /** Ingresos que cuentan para el mes. No incluye lo que me deben y todavía no cobré. */
   incomeArs: number;
@@ -708,6 +722,10 @@ export interface Summary {
    * o lo que falta pagar de lo cargado, lo que sea mayor.
    */
   reservedArs: number;
+  /** El detalle de `reservedArs` por categoría, de mayor a menor. Suma exactamente `reservedArs`. */
+  reservedRows: ReservedRow[];
+  /** La parte de `reservedArs` que es presupuesto todavía sin cargar. */
+  budgetLeftArs: number;
   /** Libre: disponible − reservado. Equivale a ingresos − Σ máx(presupuesto, cargado) por categoría. */
   freeArs: number;
   budgetTotalArs: number;
@@ -796,8 +814,16 @@ export function buildSummary(input: SummaryInput): Summary {
   // Reservado: lo que todavía va a salir de cada categoría. Si hay presupuesto, lo que falta
   // gastar de él; si lo cargado lo supera (o no hay presupuesto), lo que falta pagar.
   let reservedArs = 0;
-  const reserve = (budget: number, actual: number, paid: number) => {
-    reservedArs += Math.max(budget, actual) - paid;
+  const reservedRows: ReservedRow[] = [];
+  const reserve = (
+    cat: Pick<ReservedRow, "categoryId" | "name" | "isCards">,
+    budget: number, actual: number, paid: number,
+  ) => {
+    const pending = actual - paid;
+    const budgetLeft = Math.max(0, budget - actual);
+    const reserved = pending + budgetLeft;
+    reservedArs += reserved;
+    if (reserved > 0.005) reservedRows.push({ ...cat, pending, budgetLeft, reserved });
   };
 
   const rows: BudgetRow[] = [];
@@ -809,7 +835,7 @@ export function buildSummary(input: SummaryInput): Summary {
     const paid = isCards ? cardsPaidArs : paidBy.get(c.id) ?? 0;
     const earmarked = earmarkBy.get(c.id) ?? 0;
     if (isCards) hasCardsRow = true;
-    reserve(budget, actual, paid);
+    reserve({ categoryId: c.id, name: c.name, isCards }, budget, actual, paid);
     if (budget <= 0 && actual <= 0 && earmarked <= 0) continue;
     rows.push({
       categoryId: c.id,
@@ -826,8 +852,9 @@ export function buildSummary(input: SummaryInput): Summary {
   }
   const uncategorized = actualBy.get(null) ?? 0;
   const uncategorizedPaid = paidBy.get(null) ?? 0;
-  reserve(0, uncategorized, uncategorizedPaid);
-  if (!hasCardsRow) reserve(0, cardsArs, cardsPaidArs);
+  reserve({ categoryId: null, name: "Sin categoría", isCards: false }, 0, uncategorized, uncategorizedPaid);
+  if (!hasCardsRow) reserve({ categoryId: null, name: "Tarjetas de crédito", isCards: true }, 0, cardsArs, cardsPaidArs);
+  reservedRows.sort((a, b) => b.reserved - a.reserved);
   if (uncategorized > 0) {
     rows.push({
       categoryId: null,
@@ -864,6 +891,8 @@ export function buildSummary(input: SummaryInput): Summary {
     pendingArs: spentArs - paidArs,
     availableArs: incomeArs - paidArs,
     reservedArs,
+    reservedRows,
+    budgetLeftArs: reservedRows.reduce((sum, r) => sum + r.budgetLeft, 0),
     freeArs: incomeArs - paidArs - reservedArs,
     budgetTotalArs,
     unassignedArs: incomeArs - budgetTotalArs,

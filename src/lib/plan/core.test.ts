@@ -221,6 +221,26 @@ describe("resumen del mes", () => {
     expect(s.rows.find((r) => r.categoryId === "sup")).toMatchObject({ paid: 180_000, pending: 0 });
   });
 
+  it("detalla lo reservado por categoría y suma exactamente lo reservado", () => {
+    expect(s.reservedRows).toEqual([
+      { categoryId: "tdc", name: expect.any(String), isCards: true, pending: 700_000, budgetLeft: 300_000, reserved: 1_000_000 },
+      { categoryId: "alq", name: expect.any(String), isCards: false, pending: 500_000, budgetLeft: 0, reserved: 500_000 },
+      { categoryId: "sup", name: expect.any(String), isCards: false, pending: 0, budgetLeft: 20_000, reserved: 20_000 },
+    ]);
+    expect(s.reservedRows.reduce((t, r) => t + r.reserved, 0)).toBe(s.reservedArs);
+    expect(s.budgetLeftArs).toBe(320_000);
+    expect(s.pendingArs + s.budgetLeftArs).toBe(s.reservedArs);
+  });
+
+  it("lo cargado sin categoría y sin pagar también figura en el detalle de lo reservado", () => {
+    const fixed = input.entries.find((e) => e.name === "Alquiler")!;
+    const x = buildSummary({ ...input, entries: input.entries.map((e) => (e === fixed ? { ...e, categoryId: null } : e)) });
+    expect(x.reservedRows.find((r) => r.categoryId === null)).toMatchObject({ name: "Sin categoría", pending: 500_000, budgetLeft: 0 });
+    // el presupuesto de alquiler quedó sin nada cargado: se reserva entero, además del alquiler sin categoría
+    expect(x.reservedRows.find((r) => r.categoryId === "alq")).toMatchObject({ pending: 0, budgetLeft: 400_000 });
+    expect(x.reservedRows.reduce((t, r) => t + r.reserved, 0)).toBe(x.reservedArs);
+  });
+
   it("al pagar, sale del disponible y el libre no cambia", () => {
     const paid = buildSummary({
       ...input,
