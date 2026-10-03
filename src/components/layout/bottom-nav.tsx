@@ -14,6 +14,9 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
 
+  // La sección /plan tiene su propia navegación (PlanNav).
+  if (pathname.startsWith("/plan")) return null;
+
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-50 flex justify-center"

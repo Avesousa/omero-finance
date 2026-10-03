@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get("from") ?? "/";
+  // Sin destino explícito se entra a Plan simple, la versión actual de la app.
+  const from = searchParams.get("from") ?? "/plan";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
