@@ -67,7 +67,13 @@ export interface BudgetDTO {
 
 export interface CardDTO {
   id: string;
+  /** Nombre heredado de la app clásica; puede ser una sigla ("VISA AVELINO BN"). */
   name: string;
+  /** Banco o entidad emisora. */
+  entity: string | null;
+  /** "VISA" | "MC" | "AMEX" */
+  cardType: string | null;
+  ownerName: string | null;
 }
 
 export interface PurchaseDTO {
@@ -301,6 +307,28 @@ export function statementToPay(
   return full;
 }
 
+const BRAND_LABEL: Record<string, string> = { VISA: "Visa", MC: "Mastercard", AMEX: "Amex" };
+
+export function cardBrandLabel(cardType: string | null): string | null {
+  if (!cardType?.trim()) return null;
+  return BRAND_LABEL[cardType.trim().toUpperCase()] ?? cardType.trim();
+}
+
+/** Lo que más identifica a la tarjeta: el banco. Si no está cargado, el nombre heredado. */
+export function cardTitle(card: CardDTO): string {
+  return card.entity?.trim() || card.name;
+}
+
+/** Marca y titular: "Visa · Avelino". Vacío si no hay ninguno de los dos. */
+export function cardSubtitle(card: CardDTO): string {
+  return [cardBrandLabel(card.cardType), card.ownerName?.trim()].filter(Boolean).join(" · ");
+}
+
+/** Todo en una línea, para listas y avisos: "Galicia · Visa · Avelino". */
+export function cardLabel(card: CardDTO): string {
+  return [cardTitle(card), cardSubtitle(card)].filter(Boolean).join(" · ");
+}
+
 export interface CardLine {
   cardId: string;
   cardName: string;
@@ -333,7 +361,7 @@ export function cardLines(
       const toPayArs = statement ? statementToPay(statement, usdRate) : projectedArs;
       return {
         cardId: card.id,
-        cardName: card.name,
+        cardName: cardLabel(card),
         statement,
         projectedArs,
         toPayArs,
