@@ -131,9 +131,15 @@ export interface LoanDTO {
   installments: number | null;
   /** FIXED: cuota del primer mes · OPEN: pago sugerido. */
   installmentAmount: number | null;
-  /** % por `interestFrequency`. */
+  /** % por `interestFrequency`, o anual (TNA) si `interestAnnual`. */
   interestRate: number | null;
   interestFrequency: Frequency | null;
+  /** La tasa es anual (TNA): por mes se usa 1/12. */
+  interestAnnual?: boolean;
+  /** IVA sobre el interés, en % (ej. 21). Va dentro de la cuota y no baja capital. */
+  interestTaxPct?: number | null;
+  /** Saldos según el banco, ordenados por mes: pisan el saldo calculado. */
+  anchors?: LoanAnchorDTO[];
   startPeriod: string;
   /** Mes en que se cargó en la app ("YYYY-MM"). La deuda existe desde ahí aunque la primera cuota sea después. */
   createdPeriod?: string;
@@ -145,6 +151,12 @@ export interface LoanDTO {
   schedule: { period: string; amount: number }[];
   /** Cuotas ya generadas (todos los meses), ordenadas por mes. */
   payments: LoanPaymentDTO[];
+}
+
+/** Saldo según el banco al empezar `period`, antes de la cuota (y el interés) de ese mes. */
+export interface LoanAnchorDTO {
+  period: string;
+  amount: number;
 }
 
 /** Una cuota generada: el PlanEntry vinculado al préstamo. */
@@ -428,6 +440,57 @@ export function cardLines(
     .filter((l) => l.statement !== null || l.projectedArs > 0);
 }
 
+/**
+ * Lo que queda debiendo de un resumen: todo si no se pagó; si se pagó el mínimo u otro monto,
+ * la diferencia con el total.
+ */
+export function statementDebt(st: StatementDTO, usdRate: number): number {
+  const full = st.totalArs + (st.usdAmount ?? 0) * usdRate;
+  return round2(st.isPaid ? Math.max(0, full - statementToPay(st, usdRate)) : full);
+}
+
+export interface CardDebt {
+  cardId: string;
+  cardName: string;
+  /** Mes del resumen del que sale la deuda (puede ser anterior al que se mira). */
+  statementPeriod: string;
+  /** Si el resumen está marcado como pagado (queda la parte que no se pagó). */
+  isPaid: boolean;
+  debtArs: number;
+}
+
+/**
+ * Deuda de tarjetas en `period`: por tarjeta manda su último resumen cargado hasta ese mes.
+ * Lo que no se pagó de ese resumen sigue siendo deuda en los meses siguientes hasta que se
+ * marca como pagado o se carga un resumen nuevo de esa tarjeta, que lo reemplaza.
+ */
+export function cardDebts(cards: CardDTO[], statements: StatementDTO[], period: string, usdRate: number): CardDebt[] {
+  const out: CardDebt[] = [];
+  for (const card of cards) {
+    const latest = statements
+      .filter((s) => s.cardId === card.id && s.period <= period)
+      .sort((a, b) => a.period.localeCompare(b.period))
+      .pop();
+    if (!latest) continue;
+    const debtArs = statementDebt(latest, usdRate);
+    if (debtArs <= 0.005) continue;
+    out.push({ cardId: card.id, cardName: cardLabel(card), statementPeriod: latest.period, isPaid: latest.isPaid, debtArs });
+  }
+  return out;
+}
+
+/** Las tarjetas como un ítem de patrimonio (deuda), con su saldo en cada mes que tiene resúmenes. */
+export function cardsBalanceItem(cards: CardDTO[], statements: StatementDTO[], usdRate: number): BalanceItemDTO | null {
+  const known = new Set(cards.map((c) => c.id));
+  const periods = [...new Set(statements.filter((s) => known.has(s.cardId)).map((s) => s.period))].sort();
+  if (periods.length === 0) return null;
+  const values: Record<string, number> = {};
+  for (const period of periods) {
+    values[period] = round2(cardDebts(cards, statements, period, usdRate).reduce((sum, d) => sum + d.debtArs, 0));
+  }
+  return { id: "cards", type: "DEBT", name: "Tarjetas de crédito", currency: "ARS", isArchived: false, values };
+}
+
 export interface ProjectionMonth {
   period: string;
   totalArs: number;
@@ -471,15 +534,31 @@ export function loanKind(direction: LoanDirection): Kind {
 }
 
 /**
- * Interés del mes en % sobre el saldo: la tasa por vez × veces en el mes
- * (diario × días, semanal × 4 o 5, quincenal × 2, mensual × 1). Interés simple.
+ * Lo que el saldo crece en el mes, en %: interés más su IVA.
+ * - Tasa por vez × veces en el mes (diario × días, semanal × 4 o 5, quincenal × 2, mensual × 1).
+ * - Tasa anual (TNA): un doceavo por mes.
+ * - Con IVA sobre el interés, se suma ese % del interés: está en la cuota y no baja capital.
+ * Interés simple dentro del mes.
  */
 export function monthlyRatePct(
-  loan: Pick<LoanDTO, "interestRate" | "interestFrequency">,
+  loan: Pick<LoanDTO, "interestRate" | "interestFrequency" | "interestAnnual" | "interestTaxPct">,
   period: string,
 ): number {
   if (!loan.interestRate || loan.interestRate <= 0) return 0;
-  return loan.interestRate * occurrencesInPeriod(loan.interestFrequency ?? "MONTHLY", period);
+  const base = loan.interestAnnual
+    ? loan.interestRate / 12
+    : loan.interestRate * occurrencesInPeriod(loan.interestFrequency ?? "MONTHLY", period);
+  return base * (1 + Math.max(0, loan.interestTaxPct ?? 0) / 100);
+}
+
+/** "3 % mensual", "0,1 % diario", "55 % anual + IVA". Null si no tiene tasa. */
+export function loanRateLabel(
+  loan: Pick<LoanDTO, "interestRate" | "interestFrequency" | "interestAnnual" | "interestTaxPct">,
+): string | null {
+  if (!loan.interestRate) return null;
+  const pct = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 4 }).format(loan.interestRate);
+  const unit = loan.interestAnnual ? "anual" : FREQUENCY_UNIT[loan.interestFrequency ?? "MONTHLY"];
+  return `${pct} % ${unit}${loan.interestTaxPct ? " + IVA" : ""}`;
 }
 
 /** Cuota fija (sistema francés). Sin interés: capital / cuotas. */
@@ -493,6 +572,13 @@ export function frenchInstallment(principal: number, monthlyPct: number, n: numb
 export interface LoanState {
   /** Lo que queda por pagar (o cobrar), con los intereses ya generados. */
   balance: number;
+  /**
+   * El interés de la última cuota generada, si todavía no se pagó: está en `balance` pero
+   * va dentro de esa cuota. El de cuotas anteriores impagas ya quedó sumado a la deuda.
+   */
+  pendingInterest: number;
+  /** `balance` sin ese interés: el saldo de capital, como lo muestra el banco. */
+  capital: number;
   paidCount: number;
   totalPaid: number;
   totalInterest: number;
@@ -501,23 +587,40 @@ export interface LoanState {
 /**
  * Estado del préstamo considerando las cuotas de los meses anteriores a `before`
  * (o todas si no se indica). Saldo = inicial + intereses − cuotas pagadas.
+ * Un saldo según el banco (`anchors`) pisa la cuenta al empezar su mes: lo anterior deja de
+ * importar para el saldo y lo que sigue se calcula desde ahí.
  */
 export function loanState(loan: LoanDTO, before?: string): LoanState {
   let balance = loan.principal;
+  let pendingInterest = 0;
   let paidCount = 0;
   let totalPaid = 0;
   let totalInterest = 0;
+  const anchors = [...(loan.anchors ?? [])].sort((a, b) => a.period.localeCompare(b.period));
+  let next = 0;
+  const applyAnchors = (upTo: string | null) => {
+    while (next < anchors.length && (upTo === null || anchors[next].period <= upTo)) {
+      balance = anchors[next].amount;
+      pendingInterest = 0;
+      next++;
+    }
+  };
   for (const p of loan.payments) {
     if (before && p.period >= before) continue;
+    applyAnchors(p.period);
     balance += p.interest;
     totalInterest += p.interest;
+    pendingInterest = p.isDone ? 0 : p.interest;
     if (p.isDone) {
       balance -= p.amount;
       totalPaid += p.amount;
       paidCount++;
     }
   }
-  return { balance: round2(Math.max(0, balance)), paidCount, totalPaid, totalInterest };
+  applyAnchors(before ?? null);
+  balance = round2(Math.max(0, balance));
+  pendingInterest = round2(Math.min(pendingInterest, balance));
+  return { balance, pendingInterest, capital: round2(balance - pendingInterest), paidCount, totalPaid, totalInterest };
 }
 
 /** Si el préstamo ya está saldado con las cuotas cargadas. */
@@ -628,7 +731,8 @@ export function loanPaymentLabel(loan: LoanDTO, period: string): string | null {
 }
 
 /**
- * El préstamo como ítem de patrimonio: saldo al cierre de cada mes con cuotas.
+ * El préstamo como ítem de patrimonio: saldo de capital al cierre de cada mes con cuotas
+ * (el interés de la cuota del mes, mientras no se paga, va en la cuota y no acá).
  * Lo que debo cuenta como deuda; lo que me deben, como algo que tengo.
  */
 export function loanBalanceItem(loan: LoanDTO): BalanceItemDTO {
@@ -636,9 +740,12 @@ export function loanBalanceItem(loan: LoanDTO): BalanceItemDTO {
   // empieza a pagarse el mes que viene ya es una deuda hoy.
   const from = loan.createdPeriod && loan.createdPeriod < loan.startPeriod ? loan.createdPeriod : loan.startPeriod;
   const values: Record<string, number> = { [from]: loan.principal };
-  const periods = [...new Set(loan.payments.map((p) => p.period))].sort();
+  // Cierre de cada mes con cuota, y de los meses que toca un saldo según el banco:
+  // el anterior a su mes (ahí vale el saldo cargado) y el propio.
+  const anchorPeriods = (loan.anchors ?? []).flatMap((a) => [addMonths(a.period, -1), a.period]).filter((p) => p >= from);
+  const periods = [...new Set([...loan.payments.map((p) => p.period), ...anchorPeriods])].sort();
   for (const period of periods) {
-    values[period] = loanState(loan, addMonths(period, 1)).balance;
+    values[period] = loanState(loan, addMonths(period, 1)).capital;
   }
   if (loan.isClosed && periods.length > 0) values[periods[periods.length - 1]] = 0;
   return {

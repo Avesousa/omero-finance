@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { loanFields, refreshLoanStatus } from "@/lib/plan/loans";
+import { loanFields, refreshLoanStatus, rethreadInterest } from "@/lib/plan/loans";
 import { ApiError, loadLoans, readBody, withSession } from "@/lib/plan/server";
 
 type Params = { params: Promise<{ id: string }> };
@@ -13,7 +13,8 @@ async function findLoan(householdId: string, id: string) {
 
 /**
  * PATCH /api/plan/loans/[id] — mismos campos que el alta, salvo tipo, modalidad y moneda.
- * Las cuotas ya generadas que no están pagadas toman el nombre y la categoría nuevos.
+ * Las cuotas ya generadas que no están pagadas toman el nombre y la categoría nuevos,
+ * y su interés se recalcula con la tasa nueva.
  */
 export async function PATCH(req: NextRequest, { params }: Params) {
   return withSession(req, async ({ householdId }) => {
@@ -31,6 +32,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         where: { loanId: id, isDone: false },
         data: { name: data.name, categoryId: data.categoryId },
       });
+      const [updated] = await loadLoans(householdId, { id }, tx);
+      if (updated) await rethreadInterest(tx, updated);
       await refreshLoanStatus(tx, householdId, id);
     });
     return NextResponse.json({ ok: true });

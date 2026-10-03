@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
-  FREQUENCY_UNIT, LOAN_MODE_LABEL, addMonths, fmtArs, fmtMoney, frenchInstallment, loanKind, loanPaymentLabel,
+  LOAN_MODE_LABEL, addMonths, fmtArs, fmtMoney, frenchInstallment, loanKind, loanPaymentLabel, loanRateLabel,
   loanState, monthDiff, monthlyRatePct, numberToInput, parseMoney, pastPaymentPlan, periodLabel, periodShort,
   proposeLoanPayment, round2, toArs,
   type CategoryDTO, type Currency, type EntryDTO, type Frequency, type LoanDTO, type LoanDirection, type LoanMode,
@@ -18,6 +18,7 @@ type SheetState =
   | { type: "loan"; loan?: LoanDTO; direction?: LoanDirection }
   | { type: "payment"; loan: LoanDTO; entry: EntryDTO }
   | { type: "past"; loan: LoanDTO }
+  | { type: "balance"; loan: LoanDTO }
   | null;
 
 const DIRECTIONS: readonly { value: LoanDirection; label: string }[] = [
@@ -36,7 +37,11 @@ const CURRENCIES: readonly { value: Currency; label: string }[] = [
   { value: "USD", label: "Dólares" },
 ];
 
-const RATE_FREQUENCIES: readonly { value: Frequency; label: string }[] = [
+/** Cada cuánto se aplica la tasa. "YEARLY" es una tasa anual (TNA): por mes se usa 1/12. */
+type RateFrequency = Frequency | "YEARLY";
+
+const RATE_FREQUENCIES: readonly { value: RateFrequency; label: string }[] = [
+  { value: "YEARLY", label: "Anual" },
   { value: "MONTHLY", label: "Mensual" },
   { value: "BIWEEKLY", label: "Quincenal" },
   { value: "WEEKLY", label: "Semanal" },
@@ -49,11 +54,14 @@ function shortDate(iso: string | null): string | null {
   return `${Number(d)}/${Number(m)}`;
 }
 
-/** "3 % mensual", "0,1 % diario". */
-function rateLabel(loan: Pick<LoanDTO, "interestRate" | "interestFrequency">): string | null {
-  if (!loan.interestRate) return null;
-  const pct = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 4 }).format(loan.interestRate);
-  return `${pct} % ${FREQUENCY_UNIT[loan.interestFrequency ?? "MONTHLY"]}`;
+const DEFAULT_TAX_PCT = 21;
+const pctFormat = (n: number, digits = 2) => new Intl.NumberFormat("es-AR", { maximumFractionDigits: digits }).format(n);
+
+const rateLabel = loanRateLabel;
+
+/** "interés" o "interés e IVA", según el préstamo. */
+function interestWord(loan: Pick<LoanDTO, "interestTaxPct">): string {
+  return loan.interestTaxPct ? "interés e IVA" : "interés";
 }
 
 // ─── Pantalla ─────────────────────────────────────────────────────────────────
@@ -66,7 +74,7 @@ export function LoansClient({ data }: { data: PlanData }) {
   const active = data.loans.filter((l) => !l.isClosed);
   const totals = (dir: LoanDirection) => {
     const list = active.filter((l) => l.direction === dir);
-    const balance = list.reduce((s, l) => s + ars(loanState(l).balance, l.currency), 0);
+    const balance = list.reduce((s, l) => s + ars(loanState(l).capital, l.currency), 0);
     const month = data.entries
       .filter((e) => e.loanId && list.some((l) => l.id === e.loanId))
       .reduce((s, e) => s + ars(e.amount, e.currency), 0);
@@ -108,6 +116,7 @@ export function LoansClient({ data }: { data: PlanData }) {
               onEdit={() => setSheet({ type: "loan", loan })}
               onPayment={(entry) => setSheet({ type: "payment", loan, entry })}
               onPast={() => setSheet({ type: "past", loan })}
+              onBalance={() => setSheet({ type: "balance", loan })}
             />
           ))}
         </section>
@@ -166,6 +175,14 @@ export function LoansClient({ data }: { data: PlanData }) {
           onClose={() => setSheet(null)}
         />
       )}
+      {sheet?.type === "balance" && (
+        <BankBalanceSheet
+          loan={data.loans.find((l) => l.id === sheet.loan.id) ?? sheet.loan}
+          entry={entryOf(sheet.loan)}
+          period={data.period}
+          onClose={() => setSheet(null)}
+        />
+      )}
     </>
   );
 }
@@ -188,13 +205,14 @@ function TotalCard({ label, tone, balance, month, verb }: {
   );
 }
 
-function LoanCard({ loan, entry, data, onEdit, onPayment, onPast }: {
+function LoanCard({ loan, entry, data, onEdit, onPayment, onPast, onBalance }: {
   loan: LoanDTO;
   entry: EntryDTO | undefined;
   data: PlanData;
   onEdit: () => void;
   onPayment: (entry: EntryDTO) => void;
   onPast: () => void;
+  onBalance: () => void;
 }) {
   const action = useAction();
   const state = loanState(loan);
@@ -205,6 +223,13 @@ function LoanCard({ loan, entry, data, onEdit, onPayment, onPast }: {
   const meta = [loan.counterpart, LOAN_MODE_LABEL[loan.mode], rateLabel(loan)].filter(Boolean).join(" · ");
   // Cuotas que se pueden cargar como ya pagadas antes de la primera que conoce la app.
   const canAddPast = pastPaymentPlan(loan, 1, data.period).max > 0;
+  // De qué está hecho el saldo: capital más el interés de las cuotas generadas y sin pagar.
+  const lastAnchor = loan.anchors?.[loan.anchors.length - 1];
+  const balanceNote = state.pendingInterest > 0.5
+    ? `Capital. La cuota trae además ${fmtMoney(state.pendingInterest, loan.currency)} de ${interestWord(loan)}`
+    : lastAnchor
+      ? `Saldo ajustado al del banco (${periodShort(lastAnchor.period)})`
+      : null;
 
   return (
     <div className="rounded-2xl overflow-hidden" style={cardStyle}>
@@ -221,7 +246,7 @@ function LoanCard({ loan, entry, data, onEdit, onPayment, onPast }: {
             {meta && <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>{meta}</p>}
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtMoney(state.balance, loan.currency)}</p>
+            <p className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtMoney(state.capital, loan.currency)}</p>
             <p className="text-[10px]" style={{ color: "var(--text-secondary)" }}>{owe ? "falta pagar" : "falta cobrar"}</p>
           </div>
         </div>
@@ -250,6 +275,17 @@ function LoanCard({ loan, entry, data, onEdit, onPayment, onPast }: {
             Fecha límite: {shortDate(loan.endDate)}/{loan.endDate.slice(2, 4)}
           </p>
         )}
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] min-w-0" data-testid="balance-note" style={{ color: "var(--text-secondary)" }}>{balanceNote}</p>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onBalance(); }}
+            className="text-[11px] font-semibold flex-shrink-0"
+            style={{ color: "var(--accent)" }}
+          >
+            Ajustar saldo
+          </button>
+        </div>
       </div>
 
       {entry ? (
@@ -274,7 +310,7 @@ function LoanCard({ loan, entry, data, onEdit, onPayment, onPast }: {
               {entry.isDone
                 ? owe ? "Pagada" : "Cobrada"
                 : entry.date ? `Vence el ${shortDate(entry.date)}` : "Sin fecha de vencimiento"}
-              {entry.interestAmount ? ` · interés ${fmtMoney(entry.interestAmount, entry.currency)}` : ""}
+              {entry.interestAmount ? ` · ${interestWord(loan)} ${fmtMoney(entry.interestAmount, entry.currency)}` : ""}
             </p>
           </div>
           <p className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-primary)", opacity: entry.isDone ? 0.6 : 1 }}>
@@ -324,7 +360,7 @@ export function PaymentSheet({ loan, entry, onClose }: { loan: LoanDTO; entry: E
       </Field>
       {entry.interestAmount ? (
         <p className="text-xs rounded-xl px-3 py-2" style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-          Interés generado este mes: <strong className="tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtMoney(entry.interestAmount, entry.currency)}</strong>
+          {loan.interestTaxPct ? "Interés e IVA de este mes" : "Interés generado este mes"}: <strong className="tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtMoney(entry.interestAmount, entry.currency)}</strong>
           {rateLabel(loan) ? ` (${rateLabel(loan)})` : ""}
         </p>
       ) : null}
@@ -475,6 +511,100 @@ export function PastPaymentsSheet({ loan, period, onClose }: { loan: LoanDTO; pe
   );
 }
 
+// ─── Saldo según el banco ─────────────────────────────────────────────────────
+
+/**
+ * Pisar el saldo calculado con el que muestra el banco (o la otra parte).
+ * Se guarda como el saldo al empezar un mes, antes de su cuota: desde ahí la cuenta
+ * sigue con las cuotas y el interés.
+ */
+export function BankBalanceSheet({ loan, entry, period, onClose }: {
+  loan: LoanDTO;
+  entry: EntryDTO | undefined;
+  period: string;
+  onClose: () => void;
+}) {
+  const action = useAction();
+  const owe = loan.direction === "OWE";
+  const state = loanState(loan);
+  const [amount, setAmount] = useState("");
+  // Si la cuota del mes ya está pagada, lo más probable es que el banco muestre el saldo de después.
+  const [moment, setMoment] = useState<"before" | "after">(entry?.isDone ? "after" : "before");
+  const anchorPeriod = entry && moment === "after" ? addMonths(period, 1) : period;
+  const anchors = loan.anchors ?? [];
+
+  function save() {
+    const parsed = parseMoney(amount);
+    if (!(parsed > 0)) return action.setError("Ingresá el saldo");
+    return action.run(
+      () => api("POST", `/api/plan/loans/${loan.id}/balance`, { period: anchorPeriod, amount: parsed }),
+      onClose,
+    );
+  }
+
+  return (
+    <Sheet title="Ajustar saldo" onClose={onClose}>
+      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+        <strong style={{ color: "var(--text-primary)" }}>{loan.name}</strong>: la app calcula{" "}
+        <strong className="tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtMoney(state.capital, loan.currency)}</strong>.
+        Si {owe ? "el banco te muestra" : "tenés anotado"} otro saldo, cargalo y la cuenta sigue desde ese número.
+        No cambia las cuotas ni el disponible.
+      </p>
+      <Field label={owe ? "Saldo de capital según el banco" : "Saldo que te deben"}>
+        <MoneyInput value={amount} onChange={setAmount} currency={loan.currency} large autoFocus ariaLabel="Saldo según el banco" />
+      </Field>
+      {entry ? (
+        <Field label={`¿Es de antes o de después de pagar la cuota de ${periodLabel(period)}?`}>
+          <Segmented
+            options={[
+              { value: "before", label: "Antes de pagarla" },
+              { value: "after", label: "Después de pagarla" },
+            ]}
+            value={moment}
+            onChange={setMoment}
+          />
+        </Field>
+      ) : (
+        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          Se toma como el saldo al empezar {periodLabel(period)}.
+        </p>
+      )}
+      {!loan.interestRate && loan.mode !== "SCHEDULE" && (
+        <p className="text-xs rounded-xl px-3 py-2" style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
+          Este préstamo no tiene tasa cargada: cada cuota baja el saldo entera. Si tiene interés, cargá la tasa
+          (tocando el préstamo) para que de cada cuota solo baje el capital.
+        </p>
+      )}
+      <ErrorText error={action.error} />
+      <PrimaryButton onClick={save} busy={action.busy}>Guardar saldo</PrimaryButton>
+
+      {anchors.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Saldos cargados</p>
+          {anchors.map((a) => (
+            <div key={a.period} className="flex items-center justify-between gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
+              <span>
+                Al empezar {periodLabel(a.period)}:{" "}
+                <strong className="tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtMoney(a.amount, loan.currency)}</strong>
+              </span>
+              <button
+                type="button"
+                disabled={action.busy}
+                aria-label={`Quitar el saldo de ${periodLabel(a.period)}`}
+                onClick={() => action.run(() => api("DELETE", `/api/plan/loans/${loan.id}/balance?period=${a.period}`))}
+                className="font-semibold disabled:opacity-50"
+                style={{ color: "var(--accent-red)" }}
+              >
+                Quitar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
 // ─── Alta y edición ───────────────────────────────────────────────────────────
 
 interface ScheduleRow { key: number; period: string; amount: string }
@@ -500,7 +630,11 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
   const [installmentAmount, setInstallmentAmount] = useState(numberToInput(loan?.installmentAmount));
   const [hasRate, setHasRate] = useState(!!loan?.interestRate);
   const [rate, setRate] = useState(loan?.interestRate ? String(loan.interestRate).replace(".", ",") : "");
-  const [rateFrequency, setRateFrequency] = useState<Frequency>(loan?.interestFrequency ?? "MONTHLY");
+  const [rateFrequency, setRateFrequency] = useState<RateFrequency>(
+    loan?.interestAnnual ? "YEARLY" : loan?.interestFrequency ?? "MONTHLY",
+  );
+  const [hasTax, setHasTax] = useState(!!loan?.interestTaxPct);
+  const taxPct = loan?.interestTaxPct || DEFAULT_TAX_PCT;
   const [startPeriod, setStartPeriod] = useState(loan?.startPeriod ?? period);
   const [dueDay, setDueDay] = useState(loan?.dueDay ? String(loan.dueDay) : "");
   const [endDate, setEndDate] = useState(loan?.endDate ?? "");
@@ -522,7 +656,14 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
   const selectedCategory = categoryId === undefined ? defaultCategory?.id ?? null : categoryId;
 
   const parsedRate = hasRate ? parseMoney(rate) : 0;
-  const monthlyPct = monthlyRatePct({ interestRate: parsedRate || null, interestFrequency: rateFrequency }, startPeriod);
+  const isAnnual = rateFrequency === "YEARLY";
+  const rateFields = {
+    interestRate: parsedRate || null,
+    interestFrequency: isAnnual ? "MONTHLY" as const : rateFrequency,
+    interestAnnual: isAnnual,
+  };
+  const monthlyPct = monthlyRatePct({ ...rateFields, interestTaxPct: hasTax ? taxPct : null }, startPeriod);
+  const monthlyPctNoTax = monthlyRatePct({ ...rateFields, interestTaxPct: null }, startPeriod);
   const parsedPrincipal = parseMoney(principal);
   const count = Math.max(1, Math.floor(Number(installments)) || 1);
   const suggested = parsedPrincipal > 0 ? frenchInstallment(parsedPrincipal, monthlyPct, count) : null;
@@ -555,7 +696,9 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
       direction, mode, name: name.trim(), counterpart: counterpart.trim() || null, currency,
       categoryId: selectedCategory,
       interestRate: hasRate ? parsedRate : null,
-      interestFrequency: hasRate ? rateFrequency : null,
+      interestFrequency: hasRate ? rateFields.interestFrequency : null,
+      interestAnnual: hasRate && isAnnual,
+      interestTaxPct: hasRate && hasTax ? taxPct : null,
       startPeriod, dueDay: day,
     };
 
@@ -822,11 +965,18 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>%</span>
             </div>
             <Segmented options={RATE_FREQUENCIES} value={rateFrequency} onChange={setRateFrequency} />
-            <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            <Switch
+              checked={hasTax}
+              onChange={setHasTax}
+              label={`La cuota incluye IVA sobre el interés (${pctFormat(taxPct)} %)`}
+            />
+            <p className="text-[11px]" data-testid="rate-hint" style={{ color: "var(--text-secondary)" }}>
+              {isAnnual ? "Tasa nominal anual (TNA): por mes se usa un doceavo. " : ""}
               Al iniciar cada mes se calcula el interés sobre el saldo pendiente
-              {monthlyPct > 0 && rateFrequency !== "MONTHLY"
-                ? ` (en ${periodLabel(startPeriod)}: ${new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(monthlyPct)} %)`
-                : ""}.
+              {monthlyPctNoTax > 0 && rateFrequency !== "MONTHLY"
+                ? ` (${isAnnual ? "por mes" : `en ${periodLabel(startPeriod)}`}: ${pctFormat(monthlyPctNoTax)} %${hasTax ? `, con IVA ${pctFormat(monthlyPct)} %` : ""})`
+                : hasTax && monthlyPct > 0 ? ` (con IVA: ${pctFormat(monthlyPct)} %)` : ""}.
+              {" "}De cada cuota, eso no baja el saldo: baja solo el resto, que es capital.
             </p>
           </>
         )}
@@ -838,7 +988,8 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
 
       {isEdit && paidCount > 0 && (
         <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
-          {paidCount} {paidCount === 1 ? "cuota registrada" : "cuotas registradas"}. Los cambios valen para las cuotas que vienen.
+          {paidCount} {paidCount === 1 ? "cuota registrada" : "cuotas registradas"}. Los cambios valen para las cuotas sin pagar y las que vienen.
+          Para corregir el saldo de hoy, usá «Ajustar saldo» en la tarjeta del préstamo.
         </p>
       )}
 

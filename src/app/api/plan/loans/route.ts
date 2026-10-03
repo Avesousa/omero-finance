@@ -6,7 +6,7 @@ import { readBody, v, withSession } from "@/lib/plan/server";
 /**
  * POST /api/plan/loans — carga un préstamo o deuda.
  * Body: { direction, mode, name, counterpart, categoryId, currency, principal, installments,
- *         installmentAmount, interestRate, interestFrequency, startPeriod, dueDay, endDate, note,
+ *         installmentAmount, interestRate, interestFrequency, interestAnnual, interestTaxPct, startPeriod, dueDay, endDate, note,
  *         schedule: [{ period, amount }], paidBefore, before }
  * `paidBefore`: cuotas que ya estaban pagadas; se cargan como pagadas en los meses anteriores a `before`.
  * Si alguno de sus meses ya está iniciado, genera la cuota en ese mes.

@@ -182,26 +182,9 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
     budgets: budgets.map((b) => ({ categoryId: b.categoryId, amount: Number(b.amount) })),
     previousBudgets,
     previousBudgetPeriod,
-    cards: cards.map((c) => ({
-      id: c.id,
-      name: c.name,
-      entity: c.entity,
-      cardType: c.cardType,
-      ownerName: c.ownerName,
-    })),
+    cards: cards.map(cardToDto),
     cardStatementCounts: Object.fromEntries(statementCounts.map((g) => [g.cardId, g._count._all])),
-    statements: statements.map((s) => ({
-      id: s.id,
-      cardId: s.cardId,
-      period: s.period,
-      dueDate: iso(s.dueDate),
-      totalArs: Number(s.totalArs),
-      minimumArs: num(s.minimumArs),
-      usdAmount: num(s.usdAmount),
-      payMode: s.payMode as PayMode,
-      customAmount: num(s.customAmount),
-      isPaid: s.isPaid,
-    })),
+    statements: statements.map(statementToDto),
     purchases: purchases.map((p) => ({
       id: p.id,
       cardId: p.cardId,
@@ -220,6 +203,37 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
   };
 }
 
+type CardRow = Awaited<ReturnType<typeof prisma.card.findMany>>[number];
+type StatementRow = Awaited<ReturnType<typeof prisma.planCardStatement.findMany>>[number];
+
+function cardToDto(c: CardRow): CardDTO {
+  return { id: c.id, name: c.name, entity: c.entity, cardType: c.cardType, ownerName: c.ownerName };
+}
+
+function statementToDto(s: StatementRow): StatementDTO {
+  return {
+    id: s.id,
+    cardId: s.cardId,
+    period: s.period,
+    dueDate: iso(s.dueDate),
+    totalArs: Number(s.totalArs),
+    minimumArs: num(s.minimumArs),
+    usdAmount: num(s.usdAmount),
+    payMode: s.payMode as PayMode,
+    customAmount: num(s.customAmount),
+    isPaid: s.isPaid,
+  };
+}
+
+/** Tarjetas con todos sus resúmenes (de todos los meses), para la deuda de tarjetas en Patrimonio. */
+export async function loadCardStatements(householdId: string): Promise<{ cards: CardDTO[]; statements: StatementDTO[] }> {
+  const [cards, statements] = await Promise.all([
+    prisma.card.findMany({ where: { householdId }, orderBy: [{ entity: "asc" }, { name: "asc" }] }),
+    prisma.planCardStatement.findMany({ where: { householdId }, orderBy: { period: "asc" } }),
+  ]);
+  return { cards: cards.map(cardToDto), statements: statements.map(statementToDto) };
+}
+
 type LoanRow = Awaited<ReturnType<typeof loanQuery>>[number];
 
 type Db = Pick<typeof prisma, "planLoan">;
@@ -230,6 +244,7 @@ function loanQuery(householdId: string, where: { id?: string; isClosed?: boolean
     orderBy: [{ isClosed: "asc" }, { createdAt: "asc" }],
     include: {
       schedule: { orderBy: { period: "asc" } },
+      balances: { orderBy: { period: "asc" } },
       entries: { orderBy: { period: "asc" } },
     },
   });
@@ -249,6 +264,9 @@ export function loanToDto(l: LoanRow): LoanDTO {
     installmentAmount: num(l.installmentAmount),
     interestRate: num(l.interestRate),
     interestFrequency: l.interestFrequency as Frequency | null,
+    interestAnnual: l.interestAnnual,
+    interestTaxPct: num(l.interestTaxPct),
+    anchors: l.balances.map((b) => ({ period: b.period, amount: Number(b.amount) })),
     startPeriod: l.startPeriod,
     createdPeriod: currentPeriod(l.createdAt),
     dueDay: l.dueDay,
