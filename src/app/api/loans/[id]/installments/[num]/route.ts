@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSession, unauthorized } from "@/lib/auth";
 
 /** PATCH /api/loans/[id]/installments/[num] — toggle isPaid */
 export async function PATCH(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; num: string }> },
 ) {
+  try {
+    await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const { id: loanId, num } = await params;
     const installmentNumber   = parseInt(num, 10);

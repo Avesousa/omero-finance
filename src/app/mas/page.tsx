@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, User, TrendingUp, Wallet, Zap } from "lucide-react";
-import { Sparkles } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, User, TrendingUp, Wallet, Zap, UserCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +63,12 @@ const MENU_ITEMS = [
     icon:  Banknote,
     label: "Préstamos y deudas",
     desc:  "Préstamos dados y tomados, deudas a cobrar",
+  },
+  {
+    href:  "/mas/perfil",
+    icon:  UserCircle,
+    label: "Perfil",
+    desc:  "Editá tu nombre, email, contraseña y color de avatar",
   },
   {
     href:  "/mas/gastos-propios",

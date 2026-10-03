@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { HOUSEHOLD_ID, AVELINO_ID } from "../../../../prisma/constants";
+import { requireSession, unauthorized } from "@/lib/auth";
 
 const MONTH_NAMES = [
   "enero","febrero","marzo","abril","mayo","junio",
   "julio","agosto","septiembre","octubre","noviembre","diciembre",
 ];
 
-/** GET /api/rent?month=abril&year=2026 */
 export async function GET(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   const { searchParams } = new URL(req.url);
   const now   = new Date();
   const month = searchParams.get("month") ?? MONTH_NAMES[now.getMonth()];
   const year  = parseInt(searchParams.get("year") ?? String(now.getFullYear()), 10);
+  const { householdId } = session.user;
 
   try {
     const payments = await prisma.rentPayment.findMany({
-      where: { householdId: HOUSEHOLD_ID, month, year },
+      where: { householdId, month, year },
       orderBy: [{ type: "asc" }, { createdAt: "asc" }],
     });
 
@@ -41,8 +48,14 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/** POST /api/rent */
 export async function POST(req: NextRequest) {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+
   try {
     const body = await req.json();
     const { type, apartment, currency, amount, description, cbuAlias, month, year } = body;
@@ -64,11 +77,12 @@ export async function POST(req: NextRequest) {
     const now         = new Date();
     const targetMonth = month ?? MONTH_NAMES[now.getMonth()];
     const targetYear  = typeof year === "number" ? year : now.getFullYear();
+    const { householdId, id: createdById } = session.user;
 
     const payment = await prisma.rentPayment.create({
       data: {
-        householdId: HOUSEHOLD_ID,
-        createdById: AVELINO_ID,
+        householdId,
+        createdById,
         month:       targetMonth,
         year:        targetYear,
         type,
