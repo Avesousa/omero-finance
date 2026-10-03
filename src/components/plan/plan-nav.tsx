@@ -19,8 +19,8 @@ export function PlanNav() {
   const period = useSearchParams().get("period");
   const query = isValidPeriod(period) ? `?period=${period}` : "";
 
-  // "Más" también agrupa presupuesto, patrimonio y categorías.
-  const inMore = ["/plan/mas", "/plan/presupuesto", "/plan/patrimonio", "/plan/categorias"]
+  // "Más" también agrupa presupuesto, préstamos, patrimonio y categorías.
+  const inMore = ["/plan/mas", "/plan/presupuesto", "/plan/prestamos", "/plan/patrimonio", "/plan/categorias"]
     .some((p) => pathname.startsWith(p));
 
   return (

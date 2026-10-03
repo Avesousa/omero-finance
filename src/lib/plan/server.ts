@@ -7,9 +7,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession, unauthorized } from "@/lib/auth";
 import {
-  TDC_KEY, addMonths, buildProposal, currentPeriod, isValidPeriod, todayIso,
+  TDC_KEY, addMonths, buildLoanProposal, buildProposal, currentPeriod, isValidPeriod, todayIso,
   type BalanceItemDTO, type BudgetDTO, type CardDTO, type CategoryDTO, type Currency,
-  type EntryDTO, type Frequency, type Kind, type PayMode, type ProposalRow,
+  type EntryDTO, type Frequency, type Kind, type LoanDTO, type LoanDirection, type LoanMode,
+  type LoanProposalRow, type PayMode, type ProposalRow,
   type PurchaseDTO, type RecurringDTO, type StatementDTO,
 } from "./core";
 
@@ -59,6 +60,10 @@ export interface PlanData {
   purchases: PurchaseDTO[];
   /** Fijos que se traerían al iniciar el mes (solo si no está iniciado). */
   proposal: ProposalRow[];
+  /** Préstamos y deudas (activos y cerrados), con sus cuotas de todos los meses. */
+  loans: LoanDTO[];
+  /** Cuotas de préstamos que se traerían al iniciar el mes (solo si no está iniciado). */
+  loanProposal: LoanProposalRow[];
 }
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
@@ -86,7 +91,7 @@ async function latestUsdRate(householdId: string, period: string): Promise<numbe
 export async function loadPlan(householdId: string, period: string): Promise<PlanData> {
   await ensurePlanDefaults(householdId);
 
-  const [month, categories, recurrings, entries, budgets, cards, statements, purchases, statementCounts] =
+  const [month, categories, recurrings, entries, budgets, cards, statements, purchases, statementCounts, loans] =
     await Promise.all([
       prisma.planMonth.findUnique({ where: { householdId_period: { householdId, period } } }),
       prisma.planCategory.findMany({
@@ -113,6 +118,7 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
         where: { householdId },
         _count: { _all: true },
       }),
+      loadLoans(householdId),
     ]);
 
   let previousBudgets: BudgetDTO[] = [];
@@ -170,6 +176,8 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
       date: iso(e.date),
       isDone: e.isDone,
       note: e.note,
+      loanId: e.loanId,
+      interestAmount: num(e.interestAmount),
     })),
     budgets: budgets.map((b) => ({ categoryId: b.categoryId, amount: Number(b.amount) })),
     previousBudgets,
@@ -207,7 +215,63 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
       note: p.note,
     })),
     proposal: month ? [] : buildProposal(recurringDtos, period),
+    loans,
+    loanProposal: month ? [] : buildLoanProposal(loans, period),
   };
+}
+
+type LoanRow = Awaited<ReturnType<typeof loanQuery>>[number];
+
+type Db = Pick<typeof prisma, "planLoan">;
+
+function loanQuery(householdId: string, where: { id?: string; isClosed?: boolean } = {}, db: Db = prisma) {
+  return db.planLoan.findMany({
+    where: { householdId, ...where },
+    orderBy: [{ isClosed: "asc" }, { createdAt: "asc" }],
+    include: {
+      schedule: { orderBy: { period: "asc" } },
+      entries: { orderBy: { period: "asc" } },
+    },
+  });
+}
+
+export function loanToDto(l: LoanRow): LoanDTO {
+  return {
+    id: l.id,
+    direction: l.direction as LoanDirection,
+    mode: l.mode as LoanMode,
+    name: l.name,
+    counterpart: l.counterpart,
+    categoryId: l.categoryId,
+    currency: l.currency as Currency,
+    principal: Number(l.principal),
+    installments: l.installments,
+    installmentAmount: num(l.installmentAmount),
+    interestRate: num(l.interestRate),
+    interestFrequency: l.interestFrequency as Frequency | null,
+    startPeriod: l.startPeriod,
+    dueDay: l.dueDay,
+    endDate: iso(l.endDate),
+    isClosed: l.isClosed,
+    note: l.note,
+    schedule: l.schedule.map((s) => ({ period: s.period, amount: Number(s.amount) })),
+    payments: l.entries.map((e) => ({
+      entryId: e.id,
+      period: e.period,
+      amount: Number(e.amount),
+      interest: num(e.interestAmount) ?? 0,
+      isDone: e.isDone,
+    })),
+  };
+}
+
+/** Préstamos del hogar con sus cuotas. `db` permite leer dentro de una transacción. */
+export async function loadLoans(
+  householdId: string,
+  where: { id?: string; isClosed?: boolean } = {},
+  db: Db = prisma,
+): Promise<LoanDTO[]> {
+  return (await loanQuery(householdId, where, db)).map(loanToDto);
 }
 
 export async function loadBalance(householdId: string): Promise<BalanceItemDTO[]> {

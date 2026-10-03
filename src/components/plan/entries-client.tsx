@@ -3,17 +3,22 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import {
-  FREQUENCY_LABEL, fmtArs, fmtMoney, toArs,
-  type EntryDTO, type Kind,
+  FREQUENCY_LABEL, fmtArs, fmtMoney, loanPaymentLabel, toArs,
+  type EntryDTO, type Kind, type LoanDTO,
 } from "@/lib/plan/core";
 import type { PlanData } from "@/lib/plan/server";
 import { EntrySheet } from "./entry-sheet";
+import { LoanSheet, PaymentSheet } from "./loans-client";
 import {
   DoneToggle, EmptyHint, Fab, ListCard, NotStartedNotice, Pill, PlanHeader, SectionTitle,
   SmallAction, api, cardStyle, useAction,
 } from "./plan-ui";
 
-type SheetState = { entry?: EntryDTO; fixed?: boolean } | null;
+type SheetState =
+  | { type: "entry"; entry?: EntryDTO; fixed?: boolean }
+  | { type: "loan" }
+  | { type: "payment"; loan: LoanDTO; entry: EntryDTO }
+  | null;
 
 function shortDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -28,38 +33,49 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
 
   const entries = data.entries.filter((e) => e.kind === kind);
   const fixed = entries.filter((e) => e.recurringId);
-  const variable = entries.filter((e) => !e.recurringId);
+  const loanEntries = entries.filter((e) => e.loanId);
+  const variable = entries.filter((e) => !e.recurringId && !e.loanId);
 
   const ars = (list: EntryDTO[]) => list.reduce((s, e) => s + toArs(e.amount, e.currency, data.usdRate), 0);
   const total = ars(entries);
-  const fixedDone = ars(fixed.filter((e) => e.isDone));
-  const fixedPending = ars(fixed) - fixedDone;
+  // Fijos y cuotas de préstamos: los que se tildan como pagados / cobrados.
+  const tracked = [...fixed, ...loanEntries];
+  const fixedPending = ars(tracked) - ars(tracked.filter((e) => e.isDone));
 
   const categoryName = (id: string | null) => data.categories.find((c) => c.id === id)?.name ?? null;
   const ruleOf = (e: EntryDTO) => data.recurrings.find((r) => r.id === e.recurringId);
+  const loanOf = (e: EntryDTO) => data.loans.find((l) => l.id === e.loanId);
 
   const words = isIncome
-    ? { title: "Ingresos", fixed: "Ingresos fijos", variable: "Otros ingresos del mes", done: "cobrado", pending: "Falta cobrar" }
-    : { title: "Gastos", fixed: "Gastos fijos", variable: "Gastos del mes", done: "pagado", pending: "Falta pagar" };
+    ? { title: "Ingresos", fixed: "Ingresos fijos", variable: "Otros ingresos del mes", loans: "Me deben", done: "cobrado", pending: "Falta cobrar" }
+    : { title: "Gastos", fixed: "Gastos fijos", variable: "Gastos del mes", loans: "Préstamos y deudas", done: "pagado", pending: "Falta pagar" };
+
+  function open(e: EntryDTO) {
+    const loan = loanOf(e);
+    setSheet(loan ? { type: "payment", loan, entry: e } : { type: "entry", entry: e });
+  }
 
   function row(e: EntryDTO) {
     const rule = ruleOf(e);
+    const loan = loanOf(e);
     const meta = [
-      categoryName(e.categoryId),
-      e.recurringId ? null : shortDate(e.date),
+      loan ? loan.counterpart : categoryName(e.categoryId),
+      e.recurringId ? null : loan ? (e.date ? `vence ${shortDate(e.date)}` : null) : shortDate(e.date),
     ].filter(Boolean).join(" · ");
     const target = categoryName(e.targetCategoryId);
+    const number = loan ? loanPaymentLabel(loan, data.period) : null;
+    const tracksDone = !!(e.recurringId || e.loanId);
 
     return (
       <div
         key={e.id}
         role="button"
         tabIndex={0}
-        onClick={() => setSheet({ entry: e })}
-        onKeyDown={(ev) => ev.key === "Enter" && setSheet({ entry: e })}
+        onClick={() => open(e)}
+        onKeyDown={(ev) => ev.key === "Enter" && open(e)}
         className="flex items-center gap-3 px-4 py-3 cursor-pointer"
       >
-        {e.recurringId && (
+        {tracksDone && (
           <DoneToggle
             done={e.isDone}
             label={`Marcar ${e.name} como ${words.done}`}
@@ -69,13 +85,14 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
         <div className="flex-1 min-w-0">
           <p
             className="text-sm font-medium truncate"
-            style={{ color: "var(--text-primary)", opacity: e.recurringId && e.isDone ? 0.6 : 1 }}
+            style={{ color: "var(--text-primary)", opacity: tracksDone && e.isDone ? 0.6 : 1 }}
           >
             {e.name}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             {meta && <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{meta}</span>}
             {rule && rule.frequency !== "MONTHLY" && <Pill>{FREQUENCY_LABEL[rule.frequency]}</Pill>}
+            {number && <Pill>cuota {number}</Pill>}
             {target && <Pill tone="accent">→ {target}</Pill>}
           </div>
         </div>
@@ -108,17 +125,17 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
             <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
               {fmtArs(total)}
             </p>
-            {fixed.length > 0 && (
+            {tracked.length > 0 && (
               <p className="text-xs mt-1.5" style={{ color: "var(--text-secondary)" }}>
                 {fixedPending > 0.5
                   ? <>{words.pending}: <span className="font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(fixedPending)}</span> de fijos</>
-                  : <>Todos los fijos ya están marcados como {words.done}s</>}
+                  : <>Todos los fijos{loanEntries.length > 0 ? " y cuotas" : ""} ya están marcados como {words.done}s</>}
               </p>
             )}
           </div>
 
           <section className="space-y-2">
-            <SectionTitle right={<SmallAction onClick={() => setSheet({ fixed: true })}><Plus size={12} /> Fijo</SmallAction>}>
+            <SectionTitle right={<SmallAction onClick={() => setSheet({ type: "entry", fixed: true })}><Plus size={12} /> Fijo</SmallAction>}>
               {words.fixed}
             </SectionTitle>
             {fixed.length === 0 ? (
@@ -133,7 +150,22 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
           </section>
 
           <section className="space-y-2">
-            <SectionTitle right={<SmallAction onClick={() => setSheet({})}><Plus size={12} /> Agregar</SmallAction>}>
+            <SectionTitle right={<SmallAction onClick={() => setSheet({ type: "loan" })}><Plus size={12} /> Agregar</SmallAction>}>
+              {words.loans}
+            </SectionTitle>
+            {loanEntries.length === 0 ? (
+              <EmptyHint>
+                {isIncome
+                  ? "Si alguien te devuelve plata en cuotas, cargalo acá y cada cuota entra sola."
+                  : "Préstamos y deudas en cuotas: cargalos una vez y cada cuota entra sola al mes."}
+              </EmptyHint>
+            ) : (
+              <ListCard>{loanEntries.map(row)}</ListCard>
+            )}
+          </section>
+
+          <section className="space-y-2">
+            <SectionTitle right={<SmallAction onClick={() => setSheet({ type: "entry" })}><Plus size={12} /> Agregar</SmallAction>}>
               {words.variable}
             </SectionTitle>
             {variable.length === 0 ? (
@@ -149,11 +181,11 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
             <p role="alert" className="text-xs text-center" style={{ color: "var(--accent-red)" }}>{toggle.error}</p>
           )}
 
-          <Fab onClick={() => setSheet({})} label={`Agregar ${isIncome ? "ingreso" : "gasto"}`} />
+          <Fab onClick={() => setSheet({ type: "entry" })} label={`Agregar ${isIncome ? "ingreso" : "gasto"}`} />
         </>
       )}
 
-      {sheet && (
+      {sheet?.type === "entry" && (
         <EntrySheet
           kind={kind}
           period={data.period}
@@ -163,6 +195,17 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
           defaultFixed={sheet.fixed}
           onClose={() => setSheet(null)}
         />
+      )}
+      {sheet?.type === "loan" && (
+        <LoanSheet
+          direction={isIncome ? "OWED" : "OWE"}
+          period={data.period}
+          categories={data.categories}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet?.type === "payment" && (
+        <PaymentSheet loan={sheet.loan} entry={sheet.entry} onClose={() => setSheet(null)} />
       )}
     </>
   );

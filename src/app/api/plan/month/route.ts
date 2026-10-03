@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { occurrencesInPeriod, round2, type Frequency } from "@/lib/plan/core";
-import { ApiError, readBody, v, withSession } from "@/lib/plan/server";
+import { createLoanEntry } from "@/lib/plan/loans";
+import { ApiError, loadLoans, readBody, v, withSession } from "@/lib/plan/server";
 
 /**
  * POST /api/plan/month — inicia un mes.
- * Trae los fijos elegidos (con el monto que se confirme) y el presupuesto.
- * Body: { period, usdRate, entries: [{ recurringId, amount }], budgets: [{ categoryId, amount }], updateRules }
+ * Trae los fijos elegidos (con el monto que se confirme), las cuotas de préstamos y el presupuesto.
+ * Body: { period, usdRate, entries: [{ recurringId, amount }], loans: [{ loanId, amount }],
+ *         budgets: [{ categoryId, amount }], updateRules }
  */
 export async function POST(req: NextRequest) {
   return withSession(req, async ({ householdId }) => {
@@ -17,6 +19,7 @@ export async function POST(req: NextRequest) {
 
     const rawEntries = Array.isArray(body.entries) ? body.entries : [];
     const rawBudgets = Array.isArray(body.budgets) ? body.budgets : [];
+    const rawLoans = Array.isArray(body.loans) ? body.loans : [];
 
     const recurrings = await prisma.planRecurring.findMany({ where: { householdId, isActive: true } });
     const recurringById = new Map(recurrings.map((r) => [r.id, r]));
@@ -27,6 +30,13 @@ export async function POST(req: NextRequest) {
       const rule = recurringById.get(String(raw?.recurringId));
       if (!rule) throw new ApiError("Hay un fijo que ya no existe. Recargá la página.");
       return { rule, amount: v.amount(raw.amount, `Monto de ${rule.name}`, { allowZero: true }) };
+    });
+    const loans = await loadLoans(householdId, { isClosed: false });
+    const loanById = new Map(loans.map((l) => [l.id, l]));
+    const loanPayments = rawLoans.map((raw: Record<string, unknown>) => {
+      const loan = loanById.get(String(raw?.loanId));
+      if (!loan) throw new ApiError("Hay un préstamo que ya no existe. Recargá la página.");
+      return { loan, amount: v.amount(raw.amount, `Cuota de ${loan.name}`) };
     });
     const budgets = rawBudgets
       .map((raw: Record<string, unknown>) => {
@@ -68,6 +78,10 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+      }
+
+      for (const { loan, amount } of loanPayments as { loan: (typeof loans)[number]; amount: number }[]) {
+        await createLoanEntry(tx, householdId, loan, period, amount);
       }
 
       for (const b of budgets as { categoryId: string; amount: number }[]) {

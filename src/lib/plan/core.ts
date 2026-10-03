@@ -10,6 +10,8 @@ export type Kind = "INCOME" | "EXPENSE";
 export type Frequency = "DAILY" | "WEEKLY" | "BIWEEKLY" | "MONTHLY";
 export type PayMode = "TOTAL" | "MINIMUM" | "CUSTOM";
 export type BalanceType = "ASSET" | "DEBT";
+export type LoanDirection = "OWE" | "OWED";
+export type LoanMode = "FIXED" | "SCHEDULE" | "OPEN";
 
 export const TDC_KEY = "TDC";
 const TZ = "America/Argentina/Buenos_Aires";
@@ -58,6 +60,10 @@ export interface EntryDTO {
   date: string | null;
   isDone: boolean;
   note: string | null;
+  /** Cuota de un préstamo o deuda. */
+  loanId: string | null;
+  /** Parte del monto que es interés. */
+  interestAmount: number | null;
 }
 
 export interface BudgetDTO {
@@ -110,6 +116,54 @@ export interface BalanceItemDTO {
   isArchived: boolean;
   /** period → saldo */
   values: Record<string, number>;
+}
+
+export interface LoanDTO {
+  id: string;
+  direction: LoanDirection;
+  mode: LoanMode;
+  name: string;
+  counterpart: string | null;
+  categoryId: string | null;
+  currency: Currency;
+  /** FIXED: capital · OPEN: saldo inicial · SCHEDULE: suma de las cuotas. */
+  principal: number;
+  installments: number | null;
+  /** FIXED: cuota del primer mes · OPEN: pago sugerido. */
+  installmentAmount: number | null;
+  /** % por `interestFrequency`. */
+  interestRate: number | null;
+  interestFrequency: Frequency | null;
+  startPeriod: string;
+  dueDay: number | null;
+  endDate: string | null;
+  isClosed: boolean;
+  note: string | null;
+  /** SCHEDULE: cuota de cada mes, ordenadas. */
+  schedule: { period: string; amount: number }[];
+  /** Cuotas ya generadas (todos los meses), ordenadas por mes. */
+  payments: LoanPaymentDTO[];
+}
+
+/** Una cuota generada: el PlanEntry vinculado al préstamo. */
+export interface LoanPaymentDTO {
+  entryId: string;
+  period: string;
+  amount: number;
+  interest: number;
+  isDone: boolean;
+}
+
+/** Cuota de un préstamo propuesta para el inicio de mes. */
+export interface LoanProposalRow {
+  loanId: string;
+  kind: Kind;
+  name: string;
+  currency: Currency;
+  number: number | null;
+  of: number | null;
+  amount: number;
+  interest: number;
 }
 
 /** Fila de la propuesta de "inicio de mes" (un fijo que se trae de la regla). */
@@ -402,6 +456,170 @@ export function projectInstallments(
   return out;
 }
 
+// ─── Préstamos y deudas ──────────────────────────────────────────────────────
+
+export const LOAN_MODE_LABEL: Record<LoanMode, string> = {
+  FIXED: "Cuota fija",
+  SCHEDULE: "Cuotas variables",
+  OPEN: "Sin cuotas fijas",
+};
+
+export function loanKind(direction: LoanDirection): Kind {
+  return direction === "OWED" ? "INCOME" : "EXPENSE";
+}
+
+/**
+ * Interés del mes en % sobre el saldo: la tasa por vez × veces en el mes
+ * (diario × días, semanal × 4 o 5, quincenal × 2, mensual × 1). Interés simple.
+ */
+export function monthlyRatePct(
+  loan: Pick<LoanDTO, "interestRate" | "interestFrequency">,
+  period: string,
+): number {
+  if (!loan.interestRate || loan.interestRate <= 0) return 0;
+  return loan.interestRate * occurrencesInPeriod(loan.interestFrequency ?? "MONTHLY", period);
+}
+
+/** Cuota fija (sistema francés). Sin interés: capital / cuotas. */
+export function frenchInstallment(principal: number, monthlyPct: number, n: number): number {
+  const count = Math.max(1, n);
+  const i = monthlyPct / 100;
+  if (i <= 0) return round2(principal / count);
+  return round2((principal * i) / (1 - Math.pow(1 + i, -count)));
+}
+
+export interface LoanState {
+  /** Lo que queda por pagar (o cobrar), con los intereses ya generados. */
+  balance: number;
+  paidCount: number;
+  totalPaid: number;
+  totalInterest: number;
+}
+
+/**
+ * Estado del préstamo considerando las cuotas de los meses anteriores a `before`
+ * (o todas si no se indica). Saldo = inicial + intereses − cuotas pagadas.
+ */
+export function loanState(loan: LoanDTO, before?: string): LoanState {
+  let balance = loan.principal;
+  let paidCount = 0;
+  let totalPaid = 0;
+  let totalInterest = 0;
+  for (const p of loan.payments) {
+    if (before && p.period >= before) continue;
+    balance += p.interest;
+    totalInterest += p.interest;
+    if (p.isDone) {
+      balance -= p.amount;
+      totalPaid += p.amount;
+      paidCount++;
+    }
+  }
+  return { balance: round2(Math.max(0, balance)), paidCount, totalPaid, totalInterest };
+}
+
+/** Si el préstamo ya está saldado con las cuotas cargadas. */
+export function isLoanFinished(loan: LoanDTO): boolean {
+  const state = loanState(loan);
+  switch (loan.mode) {
+    case "FIXED":
+      return state.paidCount >= Math.max(1, loan.installments ?? 1);
+    case "SCHEDULE":
+      return loan.schedule.length > 0 &&
+        loan.schedule.every((s) => loan.payments.some((p) => p.period === s.period && p.isDone));
+    case "OPEN":
+      return state.balance <= 0.5;
+  }
+}
+
+/**
+ * La cuota que corresponde a `period`, o null si ese mes no lleva cuota.
+ * - Cuota fija: la del mes anterior (o la pactada al primer mes).
+ * - Cuotas variables: la cargada para ese mes.
+ * - Sin cuotas: el pago del mes anterior (o el sugerido), sin pasarse del saldo.
+ * El interés se calcula sobre el saldo pendiente al empezar el mes.
+ */
+export function proposeLoanPayment(loan: LoanDTO, period: string): Omit<LoanProposalRow, "loanId" | "kind" | "name" | "currency"> | null {
+  if (loan.isClosed || period < loan.startPeriod) return null;
+  const prior = loan.payments.filter((p) => p.period < period);
+  const state = loanState(loan, period);
+  const interest = round2(state.balance * monthlyRatePct(loan, period) / 100);
+  const last = prior.length > 0 ? prior[prior.length - 1].amount : null;
+
+  switch (loan.mode) {
+    case "FIXED": {
+      const of = Math.max(1, loan.installments ?? 1);
+      const number = prior.length + 1;
+      if (number > of) return null;
+      const amount = last ?? loan.installmentAmount ??
+        frenchInstallment(loan.principal, monthlyRatePct(loan, loan.startPeriod), of);
+      return { number, of, amount, interest };
+    }
+    case "SCHEDULE": {
+      const idx = loan.schedule.findIndex((s) => s.period === period);
+      if (idx < 0) return null;
+      return { number: idx + 1, of: loan.schedule.length, amount: loan.schedule[idx].amount, interest };
+    }
+    case "OPEN": {
+      const owed = round2(state.balance + interest);
+      if (owed <= 0.5) return null;
+      const amount = Math.min(last ?? loan.installmentAmount ?? owed, owed);
+      return { number: null, of: null, amount: round2(amount), interest };
+    }
+  }
+}
+
+export function buildLoanProposal(loans: LoanDTO[], period: string): LoanProposalRow[] {
+  const rows: LoanProposalRow[] = [];
+  for (const loan of loans) {
+    if (loan.payments.some((p) => p.period === period)) continue;
+    const p = proposeLoanPayment(loan, period);
+    if (!p) continue;
+    rows.push({ loanId: loan.id, kind: loanKind(loan.direction), name: loan.name, currency: loan.currency, ...p });
+  }
+  return rows;
+}
+
+/** Fecha de vencimiento de la cuota en `period` ("YYYY-MM-DD"), según el día pactado. */
+export function loanDueDate(dueDay: number | null, period: string): string | null {
+  if (!dueDay) return null;
+  const day = Math.min(dueDay, daysInPeriod(period));
+  return `${period}-${String(day).padStart(2, "0")}`;
+}
+
+/** Número de cuota de un mes ("3/12"), o null si no corresponde. */
+export function loanPaymentLabel(loan: LoanDTO, period: string): string | null {
+  if (loan.mode === "OPEN") return null;
+  const idx = loan.payments.findIndex((p) => p.period === period);
+  if (idx < 0) return null;
+  if (loan.mode === "SCHEDULE") {
+    const s = loan.schedule.findIndex((x) => x.period === period);
+    return s < 0 ? null : `${s + 1}/${loan.schedule.length}`;
+  }
+  return `${idx + 1}/${Math.max(1, loan.installments ?? 1)}`;
+}
+
+/**
+ * El préstamo como ítem de patrimonio: saldo al cierre de cada mes con cuotas.
+ * Lo que debo cuenta como deuda; lo que me deben, como algo que tengo.
+ */
+export function loanBalanceItem(loan: LoanDTO): BalanceItemDTO {
+  const values: Record<string, number> = { [loan.startPeriod]: loan.principal };
+  const periods = [...new Set(loan.payments.map((p) => p.period))].sort();
+  for (const period of periods) {
+    values[period] = loanState(loan, addMonths(period, 1)).balance;
+  }
+  if (loan.isClosed && periods.length > 0) values[periods[periods.length - 1]] = 0;
+  return {
+    id: `loan:${loan.id}`,
+    type: loan.direction === "OWE" ? "DEBT" : "ASSET",
+    name: loan.name,
+    currency: loan.currency,
+    isArchived: false,
+    values,
+  };
+}
+
 // ─── Resumen del mes y presupuesto ────────────────────────────────────────────
 
 export type BudgetStatus = "ok" | "near" | "over" | "unbudgeted" | "unused";
@@ -428,10 +646,13 @@ export interface Summary {
   fixedArs: number;
   fixedPaidArs: number;
   variableArs: number;
+  /** Cuotas de préstamos y deudas que pago. */
+  loansArs: number;
+  loansPaidArs: number;
   cardsArs: number;
   cardsHasEstimate: boolean;
   spentArs: number;
-  /** Ingresos − gastos fijos − gastos variables − tarjetas. */
+  /** Ingresos − gastos fijos − gastos variables − préstamos − tarjetas. */
   availableArs: number;
   budgetTotalArs: number;
   /** Ingresos − total presupuestado (positivo = plata sin destino). */
@@ -469,7 +690,8 @@ export function buildSummary(input: SummaryInput): Summary {
   const incomes = entries.filter((e) => e.kind === "INCOME");
   const expenses = entries.filter((e) => e.kind === "EXPENSE");
   const fixedExpenses = expenses.filter((e) => e.recurringId);
-  const variableExpenses = expenses.filter((e) => !e.recurringId);
+  const loanExpenses = expenses.filter((e) => e.loanId);
+  const variableExpenses = expenses.filter((e) => !e.recurringId && !e.loanId);
 
   const lines = cardLines(input.cards, input.statements, input.purchases, period, usdRate);
   const cardsArs = lines.reduce((s, l) => s + l.toPayArs, 0);
@@ -477,7 +699,8 @@ export function buildSummary(input: SummaryInput): Summary {
   const incomeArs = sum(incomes);
   const fixedArs = sum(fixedExpenses);
   const variableArs = sum(variableExpenses);
-  const spentArs = fixedArs + variableArs + cardsArs;
+  const loansArs = sum(loanExpenses);
+  const spentArs = fixedArs + variableArs + loansArs + cardsArs;
 
   // ── Presupuesto vs real, por categoría de gasto ──
   const expenseCats = categories
@@ -532,12 +755,14 @@ export function buildSummary(input: SummaryInput): Summary {
 
   return {
     incomeArs,
-    incomeFixedArs: sum(incomes.filter((e) => e.recurringId)),
-    incomeVariableArs: sum(incomes.filter((e) => !e.recurringId)),
-    incomeReceivedArs: sum(incomes.filter((e) => !e.recurringId || e.isDone)),
+    incomeFixedArs: sum(incomes.filter((e) => e.recurringId || e.loanId)),
+    incomeVariableArs: sum(incomes.filter((e) => !e.recurringId && !e.loanId)),
+    incomeReceivedArs: sum(incomes.filter((e) => (!e.recurringId && !e.loanId) || e.isDone)),
     fixedArs,
     fixedPaidArs: sum(fixedExpenses.filter((e) => e.isDone)),
     variableArs,
+    loansArs,
+    loansPaidArs: sum(loanExpenses.filter((e) => e.isDone)),
     cardsArs,
     cardsHasEstimate: lines.some((l) => l.isEstimate),
     spentArs,

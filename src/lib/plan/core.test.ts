@@ -4,7 +4,9 @@ import {
   installmentFor, statementToPay, cardLines, projectInstallments,
   buildSummary, balanceAt, netWorth, cardLabel, cardSubtitle, cardTitle,
   parseMoney, formatMoneyInput, numberToInput,
-  type CardDTO, type CategoryDTO, type EntryDTO, type PurchaseDTO, type StatementDTO,
+  monthlyRatePct, frenchInstallment, loanState, isLoanFinished, proposeLoanPayment, buildLoanProposal,
+  loanDueDate, loanPaymentLabel, loanBalanceItem,
+  type CardDTO, type LoanDTO, type LoanPaymentDTO, type CategoryDTO, type EntryDTO, type PurchaseDTO, type StatementDTO,
   type BalanceItemDTO, type RecurringDTO,
 } from "./core";
 
@@ -167,7 +169,7 @@ describe("resumen del mes", () => {
   const entry = (over: Partial<EntryDTO>): EntryDTO => ({
     id: Math.random().toString(36), period: "2026-10", kind: "EXPENSE", recurringId: null,
     name: "x", categoryId: null, targetCategoryId: null, currency: "ARS", amount: 0,
-    date: null, isDone: false, note: null, ...over,
+    date: null, isDone: false, note: null, loanId: null, interestAmount: null, ...over,
   });
 
   const input = {
@@ -274,5 +276,141 @@ describe("fechas", () => {
   it("suma días cruzando de mes", () => {
     expect(addDays("2026-10-28", 7)).toBe("2026-11-04");
     expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+  });
+});
+
+describe("préstamos y deudas", () => {
+  const loan = (over: Partial<LoanDTO>): LoanDTO => ({
+    id: "l1", direction: "OWE", mode: "FIXED", name: "Préstamo", counterpart: null, categoryId: null,
+    currency: "ARS", principal: 120_000, installments: 12, installmentAmount: null,
+    interestRate: null, interestFrequency: null, startPeriod: "2026-10", dueDay: 10, endDate: null,
+    isClosed: false, note: null, schedule: [], payments: [], ...over,
+  });
+  const paid = (period: string, amount: number, interest = 0, isDone = true): LoanPaymentDTO => ({
+    entryId: period, period, amount, interest, isDone,
+  });
+
+  it("pasa la tasa a mensual según la frecuencia", () => {
+    expect(monthlyRatePct({ interestRate: 3, interestFrequency: "MONTHLY" }, "2026-10")).toBe(3);
+    expect(monthlyRatePct({ interestRate: 0.1, interestFrequency: "DAILY" }, "2026-10")).toBeCloseTo(3.1);
+    expect(monthlyRatePct({ interestRate: 1, interestFrequency: "BIWEEKLY" }, "2026-10")).toBe(2);
+    expect(monthlyRatePct({ interestRate: 1, interestFrequency: "WEEKLY" }, "2026-10")).toBe(4);
+    expect(monthlyRatePct({ interestRate: null, interestFrequency: null }, "2026-10")).toBe(0);
+  });
+
+  it("calcula la cuota francesa (o capital / cuotas sin interés)", () => {
+    expect(frenchInstallment(120_000, 0, 12)).toBe(10_000);
+    expect(frenchInstallment(100_000, 5, 12)).toBeCloseTo(11_282.54, 2);
+  });
+
+  it("cuota fija: sugiere la francesa el primer mes y después repite la del mes anterior", () => {
+    expect(proposeLoanPayment(loan({}), "2026-10")).toEqual({ number: 1, of: 12, amount: 10_000, interest: 0 });
+    expect(proposeLoanPayment(loan({ installmentAmount: 11_000 }), "2026-10")!.amount).toBe(11_000);
+    const l = loan({ installmentAmount: 11_000, payments: [paid("2026-10", 12_500)] });
+    expect(proposeLoanPayment(l, "2026-11")).toEqual({ number: 2, of: 12, amount: 12_500, interest: 0 });
+  });
+
+  it("no propone cuota antes de empezar, después de la última ni si está cerrado", () => {
+    expect(proposeLoanPayment(loan({}), "2026-09")).toBeNull();
+    expect(proposeLoanPayment(loan({ installments: 1, payments: [paid("2026-10", 120_000)] }), "2026-11")).toBeNull();
+    expect(proposeLoanPayment(loan({ isClosed: true }), "2026-10")).toBeNull();
+  });
+
+  it("calcula el interés del mes sobre el saldo pendiente", () => {
+    const l = loan({ interestRate: 10, interestFrequency: "MONTHLY", installmentAmount: 30_000 });
+    expect(proposeLoanPayment(l, "2026-10")!.interest).toBe(12_000);
+    // 120.000 + 12.000 de interés − 30.000 pagados = 102.000 → 10 % = 10.200
+    const after = { ...l, payments: [paid("2026-10", 30_000, 12_000)] };
+    expect(loanState(after).balance).toBe(102_000);
+    expect(proposeLoanPayment(after, "2026-11")!.interest).toBe(10_200);
+  });
+
+  it("una cuota sin pagar no baja el saldo", () => {
+    const l = loan({ payments: [paid("2026-10", 10_000, 0, false)] });
+    expect(loanState(l).balance).toBe(120_000);
+    expect(loanState(l).paidCount).toBe(0);
+  });
+
+  it("cuotas variables: usa la cargada para cada mes", () => {
+    const l = loan({
+      mode: "SCHEDULE", principal: 300,
+      schedule: [{ period: "2026-10", amount: 100 }, { period: "2026-12", amount: 200 }],
+    });
+    expect(proposeLoanPayment(l, "2026-10")).toEqual({ number: 1, of: 2, amount: 100, interest: 0 });
+    expect(proposeLoanPayment(l, "2026-11")).toBeNull();
+    expect(proposeLoanPayment(l, "2026-12")!.number).toBe(2);
+  });
+
+  it("sin cuotas fijas: propone el pago sugerido sin pasarse del saldo", () => {
+    const l = loan({ mode: "OPEN", principal: 50_000, installments: null, installmentAmount: 30_000 });
+    expect(proposeLoanPayment(l, "2026-10")).toEqual({ number: null, of: null, amount: 30_000, interest: 0 });
+    const after = { ...l, payments: [paid("2026-10", 30_000)] };
+    expect(proposeLoanPayment(after, "2026-11")!.amount).toBe(20_000);
+    const done = { ...after, payments: [...after.payments, paid("2026-11", 20_000)] };
+    expect(proposeLoanPayment(done, "2026-12")).toBeNull();
+  });
+
+  it("se da por terminado al pagar la última cuota o saldar la deuda", () => {
+    const fixed = loan({ installments: 2, payments: [paid("2026-10", 60_000), paid("2026-11", 60_000, 0, false)] });
+    expect(isLoanFinished(fixed)).toBe(false);
+    expect(isLoanFinished({ ...fixed, payments: [paid("2026-10", 60_000), paid("2026-11", 60_000)] })).toBe(true);
+
+    const sched = loan({ mode: "SCHEDULE", schedule: [{ period: "2026-10", amount: 1 }, { period: "2026-11", amount: 1 }] });
+    expect(isLoanFinished({ ...sched, payments: [paid("2026-10", 1)] })).toBe(false);
+    expect(isLoanFinished({ ...sched, payments: [paid("2026-10", 1), paid("2026-11", 1)] })).toBe(true);
+
+    const open = loan({ mode: "OPEN", principal: 1000 });
+    expect(isLoanFinished({ ...open, payments: [paid("2026-10", 600)] })).toBe(false);
+    expect(isLoanFinished({ ...open, payments: [paid("2026-10", 600), paid("2026-11", 400)] })).toBe(true);
+  });
+
+  it("la propuesta del mes salta los préstamos que ya tienen cuota ese mes", () => {
+    const a = loan({ id: "a" });
+    const b = loan({ id: "b", direction: "OWED", payments: [paid("2026-10", 10_000, 0, false)] });
+    const rows = buildLoanProposal([a, b], "2026-10");
+    expect(rows.map((r) => r.loanId)).toEqual(["a"]);
+    expect(rows[0].kind).toBe("EXPENSE");
+    expect(buildLoanProposal([{ ...b, payments: [] }], "2026-10")[0].kind).toBe("INCOME");
+  });
+
+  it("arma el vencimiento sin pasarse de fin de mes", () => {
+    expect(loanDueDate(10, "2026-10")).toBe("2026-10-10");
+    expect(loanDueDate(31, "2026-02")).toBe("2026-02-28");
+    expect(loanDueDate(null, "2026-10")).toBeNull();
+  });
+
+  it("numera las cuotas", () => {
+    const l = loan({ payments: [paid("2026-10", 1), paid("2026-11", 1)] });
+    expect(loanPaymentLabel(l, "2026-11")).toBe("2/12");
+    expect(loanPaymentLabel(l, "2026-12")).toBeNull();
+  });
+
+  it("aparece en patrimonio con el saldo de cada mes", () => {
+    const l = loan({ payments: [paid("2026-10", 10_000), paid("2026-11", 10_000, 0, false)] });
+    const item = loanBalanceItem(l);
+    expect(item.type).toBe("DEBT");
+    expect(item.values).toEqual({ "2026-10": 110_000, "2026-11": 110_000 });
+    expect(balanceAt(item, "2027-01")).toBe(110_000);
+    expect(loanBalanceItem({ ...l, direction: "OWED" }).type).toBe("ASSET");
+  });
+
+  it("las cuotas cuentan en el disponible y en su categoría", () => {
+    const s = buildSummary({
+      period: "2026-10", usdRate: 1, categories: [
+        { id: "deu", kind: "EXPENSE", name: "Deudas", systemKey: null, isArchived: false, sortOrder: 1 },
+      ],
+      entries: [
+        { id: "1", period: "2026-10", kind: "INCOME", recurringId: null, name: "Me deben", categoryId: null, targetCategoryId: null, currency: "ARS", amount: 50_000, date: null, isDone: false, note: null, loanId: "x", interestAmount: null },
+        { id: "2", period: "2026-10", kind: "EXPENSE", recurringId: null, name: "Préstamo", categoryId: "deu", targetCategoryId: null, currency: "ARS", amount: 30_000, date: null, isDone: true, note: null, loanId: "y", interestAmount: 2_000 },
+      ],
+      budgets: [], cards: [], statements: [], purchases: [],
+    });
+    expect(s.loansArs).toBe(30_000);
+    expect(s.loansPaidArs).toBe(30_000);
+    expect(s.variableArs).toBe(0);
+    expect(s.incomeFixedArs).toBe(50_000);
+    expect(s.incomeReceivedArs).toBe(0);
+    expect(s.availableArs).toBe(20_000);
+    expect(s.rows.find((r) => r.categoryId === "deu")!.actual).toBe(30_000);
   });
 });

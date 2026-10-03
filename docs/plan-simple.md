@@ -27,6 +27,7 @@ Las categorías por defecto se crean solas la primera vez que el hogar entra a `
 | `/plan/ingresos` | Ingresos fijos (con regla de recurrencia) y otros ingresos del mes. |
 | `/plan/gastos` | Gastos fijos (tildables como pagados) y gastos del mes. |
 | `/plan/tarjetas` | Resúmenes a pagar (total, mínimo, USD, vencimiento), compras en cuotas y cuotas a futuro. |
+| `/plan/prestamos` | Préstamos y deudas: lo que debo y lo que me deben, con cuotas, interés y saldo. |
 | `/plan/presupuesto` | Presupuesto por categoría contra lo gastado. |
 | `/plan/patrimonio` | Lo que tenés, lo que debés y el neto mes a mes. |
 | `/plan/categorias` | Categorías de gastos y de ingresos. |
@@ -67,6 +68,20 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
   Si a una tarjeta vieja le faltan esos datos se muestra su nombre heredado hasta que se edite.
   Desde *Tarjetas → Administrar tarjetas* se agregan, editan y eliminan (`/api/plan/cards`);
   eliminar una tarjeta borra también sus compras y resúmenes de Plan simple, previa confirmación.
+- **Préstamos y deudas** (`PlanLoan`): *Debo* genera gastos (categoría "Deudas y préstamos")
+  y *Me deben* genera ingresos ("Cobro de deudas"). Tres modalidades:
+  - *Cuota fija*: capital + N cuotas. El primer mes usa la cuota cargada o, si no hay,
+    la del sistema francés con el interés; los meses siguientes proponen la cuota del mes anterior.
+  - *Cuotas variables*: un monto por mes (`PlanLoanScheduleItem`).
+  - *Sin cuotas*: saldo + pago sugerido por mes (sin pasarse del saldo) y fecha límite opcional.
+  - **Interés** opcional en % diario, semanal, quincenal o mensual. Al generar la cuota del mes se calcula
+    sobre el saldo pendiente: tasa × veces en el mes (misma regla que los fijos). Interés simple.
+  - Cada cuota es un `PlanEntry` con `loanId` (uno por préstamo y mes) que se genera al iniciar el mes
+    (editable en el inicio guiado) o al cargar el préstamo si su mes ya está iniciado.
+  - Saldo = inicial + intereses generados − cuotas pagadas. Al tildar la última cuota (o saldar el saldo)
+    el préstamo se cierra solo; si se destilda, se reabre.
+  - En Patrimonio el saldo aparece solo (no se carga a mano). Eliminar un préstamo borra sus cuotas, previa confirmación.
+- **Disponible** también descuenta las cuotas de préstamos que pago; las que cobro suman como ingreso.
 - **Presupuesto**: el gasto real de cada categoría sale de los movimientos;
   el de "Tarjetas de crédito" sale de los resúmenes. Estados: ok, cerca del tope (≥ 85 %), excedido.
 - **Ingresos con destino**: un ingreso puede destinarse a una categoría de gasto
@@ -77,8 +92,10 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
 
 ```
 prisma/migrations/20261002120000_add_plan_simple/   tablas Plan*
+prisma/migrations/20261003120000_add_plan_loans/    préstamos y deudas (solo agrega)
 src/lib/plan/core.ts        lógica pura + formato
 src/lib/plan/server.ts      carga de datos y helpers de API (sesión, validación)
+src/lib/plan/loans.ts       préstamos: validación, generación de cuotas y cierre
 src/lib/plan/page.ts        sesión + mes para las páginas
 src/app/plan/**             páginas (server components)
 src/app/api/plan/**         rutas (todas filtran por householdId)
