@@ -639,7 +639,10 @@ export interface BudgetRow {
 }
 
 export interface Summary {
+  /** Ingresos que cuentan para el mes. No incluye lo que me deben y todavía no cobré. */
   incomeArs: number;
+  /** Cuotas que me deben este mes y todavía no marqué como cobradas. No suman al disponible. */
+  receivableArs: number;
   incomeFixedArs: number;
   incomeVariableArs: number;
   incomeReceivedArs: number;
@@ -652,7 +655,7 @@ export interface Summary {
   cardsArs: number;
   cardsHasEstimate: boolean;
   spentArs: number;
-  /** Ingresos − gastos fijos − gastos variables − préstamos − tarjetas. */
+  /** Ingresos (sin lo que me deben y no cobré) − gastos fijos − gastos variables − préstamos − tarjetas. */
   availableArs: number;
   budgetTotalArs: number;
   /** Ingresos − total presupuestado (positivo = plata sin destino). */
@@ -668,6 +671,14 @@ function budgetStatus(budget: number, actual: number): BudgetStatus {
   if (actual > budget + 0.005) return "over";
   if (actual >= budget * NEAR_THRESHOLD) return "near";
   return "ok";
+}
+
+/**
+ * Una cuota que me deben y todavía no cobré. Mientras esté así no cuenta como ingreso:
+ * es plata que no tengo. Pasa a contar cuando se marca como cobrada.
+ */
+export function isReceivable(e: Pick<EntryDTO, "kind" | "loanId" | "isDone">): boolean {
+  return e.kind === "INCOME" && !!e.loanId && !e.isDone;
 }
 
 export interface SummaryInput {
@@ -687,7 +698,8 @@ export function buildSummary(input: SummaryInput): Summary {
   const ars = (e: EntryDTO) => toArs(e.amount, e.currency, usdRate);
   const sum = (list: EntryDTO[]) => list.reduce((s, e) => s + ars(e), 0);
 
-  const incomes = entries.filter((e) => e.kind === "INCOME");
+  const receivables = entries.filter(isReceivable);
+  const incomes = entries.filter((e) => e.kind === "INCOME" && !isReceivable(e));
   const expenses = entries.filter((e) => e.kind === "EXPENSE");
   const fixedExpenses = expenses.filter((e) => e.recurringId);
   const loanExpenses = expenses.filter((e) => e.loanId);
@@ -755,6 +767,7 @@ export function buildSummary(input: SummaryInput): Summary {
 
   return {
     incomeArs,
+    receivableArs: sum(receivables),
     incomeFixedArs: sum(incomes.filter((e) => e.recurringId || e.loanId)),
     incomeVariableArs: sum(incomes.filter((e) => !e.recurringId && !e.loanId)),
     incomeReceivedArs: sum(incomes.filter((e) => (!e.recurringId && !e.loanId) || e.isDone)),

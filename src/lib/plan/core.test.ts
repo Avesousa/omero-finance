@@ -2,7 +2,7 @@ import {
   addDays, addMonths, monthDiff, daysInPeriod, isValidPeriod, currentPeriod, periodLabel,
   occurrencesInPeriod, monthlyAmount, buildProposal,
   installmentFor, statementToPay, cardLines, projectInstallments,
-  buildSummary, balanceAt, netWorth, cardLabel, cardSubtitle, cardTitle,
+  buildSummary, balanceAt, isReceivable, netWorth, cardLabel, cardSubtitle, cardTitle,
   parseMoney, formatMoneyInput, numberToInput,
   monthlyRatePct, frenchInstallment, loanState, isLoanFinished, proposeLoanPayment, buildLoanProposal,
   loanDueDate, loanPaymentLabel, loanBalanceItem,
@@ -408,9 +408,57 @@ describe("préstamos y deudas", () => {
     expect(s.loansArs).toBe(30_000);
     expect(s.loansPaidArs).toBe(30_000);
     expect(s.variableArs).toBe(0);
-    expect(s.incomeFixedArs).toBe(50_000);
+    // Lo que me deben y no cobré no es plata disponible: queda aparte como "por cobrar".
+    expect(s.incomeArs).toBe(0);
+    expect(s.receivableArs).toBe(50_000);
+    expect(s.incomeFixedArs).toBe(0);
     expect(s.incomeReceivedArs).toBe(0);
-    expect(s.availableArs).toBe(20_000);
+    expect(s.availableArs).toBe(-30_000);
     expect(s.rows.find((r) => r.categoryId === "deu")!.actual).toBe(30_000);
+  });
+
+  describe("lo que me deben", () => {
+    const base = {
+      period: "2026-10", usdRate: 1500, budgets: [{ categoryId: "aho", amount: 100_000 }],
+      cards: [], statements: [], purchases: [],
+      categories: [
+        { id: "aho", kind: "EXPENSE" as const, name: "Ahorro", systemKey: null, isArchived: false, sortOrder: 1 },
+      ],
+    };
+    const e = (over: Partial<EntryDTO>): EntryDTO => ({
+      id: Math.random().toString(36), period: "2026-10", kind: "INCOME", recurringId: null, name: "x",
+      categoryId: null, targetCategoryId: null, currency: "ARS", amount: 0, date: null, isDone: false,
+      note: null, loanId: null, interestAmount: null, ...over,
+    });
+    const sueldo = e({ recurringId: "r", name: "Sueldo", amount: 1_000_000 });
+    const cuota = e({ loanId: "l", name: "Préstamo a Juan", amount: 200_000, targetCategoryId: "aho" });
+    const cuotaUsd = e({ loanId: "l2", name: "Préstamo en dólares", amount: 100, currency: "USD" });
+
+    it("no suma al disponible mientras no esté cobrado", () => {
+      const s = buildSummary({ ...base, entries: [sueldo, cuota, cuotaUsd] });
+      expect(s.incomeArs).toBe(1_000_000);
+      expect(s.receivableArs).toBe(350_000);
+      expect(s.availableArs).toBe(1_000_000);
+      expect(s.unassignedArs).toBe(900_000);
+      // tampoco figura como plata destinada a una categoría
+      expect(s.rows.find((r) => r.categoryId === "aho")!.earmarked).toBe(0);
+    });
+
+    it("suma cuando se marca como cobrado", () => {
+      const s = buildSummary({ ...base, entries: [sueldo, { ...cuota, isDone: true }, cuotaUsd] });
+      expect(s.incomeArs).toBe(1_200_000);
+      expect(s.receivableArs).toBe(150_000);
+      expect(s.availableArs).toBe(1_200_000);
+      expect(s.rows.find((r) => r.categoryId === "aho")!.earmarked).toBe(200_000);
+    });
+
+    it("no cambia cómo cuentan el sueldo sin cobrar ni las cuotas que pago", () => {
+      expect(isReceivable(sueldo)).toBe(false);
+      expect(isReceivable(e({ kind: "EXPENSE", loanId: "y", amount: 10 }))).toBe(false);
+      expect(isReceivable(cuota)).toBe(true);
+      expect(isReceivable({ ...cuota, isDone: true })).toBe(false);
+      const s = buildSummary({ ...base, entries: [sueldo, e({ kind: "EXPENSE", loanId: "y", amount: 300_000 })] });
+      expect(s.availableArs).toBe(700_000);
+    });
   });
 });

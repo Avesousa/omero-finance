@@ -309,6 +309,13 @@ export function PaymentSheet({ loan, entry, onClose }: { loan: LoanDTO; entry: E
         <DoneToggle done={isDone} label={owe ? "Pagada" : "Cobrada"} onToggle={() => setIsDone(!isDone)} />
         <span className="text-sm" style={{ color: "var(--text-primary)" }}>{owe ? "Ya la pagué" : "Ya la cobré"}</span>
       </div>
+      {!owe && (
+        <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          {isDone
+            ? "Cuenta como ingreso del mes y suma al disponible."
+            : "Mientras no la cobres no suma al disponible: figura aparte como \"por cobrar\"."}
+        </p>
+      )}
       <ErrorText error={action.error} />
       <PrimaryButton onClick={save} busy={action.busy}>Guardar</PrimaryButton>
       {!confirmDelete ? (

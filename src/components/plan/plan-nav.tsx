@@ -20,7 +20,7 @@ export function PlanNav() {
   const query = isValidPeriod(period) ? `?period=${period}` : "";
 
   // "Más" también agrupa presupuesto, préstamos, patrimonio y categorías.
-  const inMore = ["/plan/mas", "/plan/presupuesto", "/plan/prestamos", "/plan/patrimonio", "/plan/categorias"]
+  const inMore = ["/plan/mas", "/plan/presupuesto", "/plan/prestamos", "/plan/patrimonio", "/plan/categorias", "/plan/exportar"]
     .some((p) => pathname.startsWith(p));
 
   return (
