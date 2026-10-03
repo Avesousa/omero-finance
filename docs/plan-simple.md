@@ -23,7 +23,7 @@ Las categorías por defecto se crean solas la primera vez que el hogar entra a `
 
 | Ruta | Qué hace |
 |---|---|
-| `/plan` | **Mi mes**: número único "Disponible", desglose, alertas y presupuesto vs. gasto. Si el mes no está iniciado muestra el **inicio de mes guiado**. |
+| `/plan` | **Mi mes**: arriba se elige qué número ver en grande, **Disponible** o **Libre** (se recuerda en el dispositivo); el otro queda debajo. Desglose, alertas y presupuesto vs. gasto. Si el mes no está iniciado muestra el **inicio de mes guiado**. |
 | `/plan/ingresos` | Ingresos fijos (con regla de recurrencia) y otros ingresos del mes. |
 | `/plan/gastos` | Gastos fijos (tildables como pagados) y gastos del mes. |
 | `/plan/tarjetas` | Resúmenes a pagar (total, mínimo, USD, vencimiento), compras en cuotas y cuotas a futuro. |
@@ -61,7 +61,12 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
   Cada mes genera un movimiento por `monto × veces en el mes`
   (mensual 1, quincenal 2, diario = días del mes, semanal = veces que cae ese día: 4 o 5).
   El monto del mes se puede editar sin tocar la regla, o guardarlo como base para los meses siguientes.
-- **Disponible** = ingresos − gastos fijos − gastos del mes − tarjetas.
+- **Disponible** = ingresos − lo que ya salió: gastos del mes, fijos y cuotas tildados como pagados y
+  resúmenes de tarjeta pagados. Lo cargado y todavía sin pagar sigue en el disponible.
+- **Libre** = disponible − reservado. Por categoría se reserva lo que falta gastar del presupuesto o,
+  si lo cargado lo supera (o no hay presupuesto), lo que falta pagar. Equivale a
+  ingresos − Σ máx(presupuesto, cargado). Pagar algo ya previsto baja el disponible y no el libre;
+  pasarse del presupuesto o gastar fuera de él baja los dos.
 - **Tarjetas** cuentan por lo que se paga en el mes: el resumen si está cargado
   (total, mínimo u otro monto) o, si todavía no llegó, la suma de cuotas cargadas (estimado).
   Las compras con tarjeta no suman en otras categorías, para no contar dos veces.
@@ -82,7 +87,12 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
   - Saldo = inicial + intereses generados − cuotas pagadas. Al tildar la última cuota (o saldar el saldo)
     el préstamo se cierra solo; si se destilda, se reabre.
   - En Patrimonio el saldo aparece solo (no se carga a mano). Eliminar un préstamo borra sus cuotas, previa confirmación.
-- **Disponible** también descuenta las cuotas de préstamos que pago. Las cuotas que **me deben**
+  - **Cuotas anteriores**: las cuotas saldadas antes de usar la app se cargan como pagadas en sus meses
+    (*Préstamos → Cargar cuotas ya pagadas*, o "Cuotas que ya pagaste" al dar de alta). Corrigen el número
+    de cuota y el saldo sin tocar el mes en curso; con interés, cada una lo calcula sobre el saldo de su mes
+    y se recalcula el de las pendientes (`pastPaymentPlan`, `addPastPayments`).
+  - En Patrimonio la deuda cuenta desde el mes en que se cargó, aunque su primera cuota sea más adelante.
+- Las cuotas de préstamos que pago descuentan del disponible al tildarlas. Las cuotas que **me deben**
   suman como ingreso recién cuando se tildan como cobradas; hasta entonces figuran aparte como
   "Por cobrar" y no entran en el disponible, el presupuesto ni los ingresos destinados (`isReceivable`).
 - **Presupuesto**: el gasto real de cada categoría sale de los movimientos;

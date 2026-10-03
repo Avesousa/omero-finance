@@ -250,6 +250,7 @@ export function loanToDto(l: LoanRow): LoanDTO {
     interestRate: num(l.interestRate),
     interestFrequency: l.interestFrequency as Frequency | null,
     startPeriod: l.startPeriod,
+    createdPeriod: currentPeriod(l.createdAt),
     dueDay: l.dueDay,
     endDate: iso(l.endDate),
     isClosed: l.isClosed,

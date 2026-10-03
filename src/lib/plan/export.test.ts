@@ -59,7 +59,13 @@ describe("exportar el resumen del mes", () => {
     expect(x.mesNombre).toBe("octubre 2026");
     expect(x.resumen).toMatchObject({
       ingresos: 3_150_000, porCobrar: 200_000, gastosFijos: 500_000, gastosDelMes: 180_000,
-      tarjetas: 700_000, disponible: 3_150_000 - 500_000 - 180_000 - 700_000,
+      tarjetas: 700_000,
+      // solo salió lo ya pagado (el súper); alquiler y tarjeta siguen pendientes
+      disponible: 3_150_000 - 180_000,
+      yaPagado: 180_000,
+      pendienteDePago: 1_200_000,
+      reservado: 1_200_000,
+      libre: 3_150_000 - 180_000 - 1_200_000,
     });
   });
 
@@ -90,6 +96,18 @@ describe("exportar el resumen del mes", () => {
     expect(x.patrimonio.detalle.map((d) => d.nombre)).toEqual(["Ahorros", "Préstamo a Juan"]);
   });
 
+  it("el patrimonio incluye las deudas que empiezan a pagarse más adelante", () => {
+    const later: LoanDTO = {
+      ...loan, id: "l2", direction: "OWE", mode: "OPEN", name: "Mercado Pago", counterpart: null,
+      principal: 2_400_000, installments: null, installmentAmount: 1_000_000,
+      startPeriod: "2026-11", createdPeriod: "2026-10", payments: [],
+    };
+    const y = buildExport({ ...input, loans: [loan, later] }, balance);
+    expect(y.patrimonio.detalle.map((d) => d.nombre)).toEqual(["Ahorros", "Préstamo a Juan", "Mercado Pago"]);
+    expect(y.patrimonio).toMatchObject({ tengo: 2_100_000, debo: 2_400_000, neto: -300_000 });
+    expect(y.prestamosYDeudas.map((l) => l.nombre)).toEqual(["Préstamo a Juan", "Mercado Pago"]);
+  });
+
   it("es JSON válido de ida y vuelta", () => {
     expect(JSON.parse(JSON.stringify(x))).toEqual(x);
   });
@@ -97,7 +115,8 @@ describe("exportar el resumen del mes", () => {
   it("genera Markdown legible con tablas", () => {
     const md = exportToMarkdown(x);
     expect(md.startsWith("# Resumen de octubre 2026 — Omero Finance")).toBe(true);
-    expect(md).toContain("**Disponible este mes: $");
+    expect(md).toContain("**Disponible: $");
+    expect(md).toContain("**Libre: $");
     expect(md).toContain("- Por cobrar (no suma todavía): $");
     expect(md).toContain("## Ingresos");
     expect(md).toContain("| Tarjeta | A pagar |");

@@ -5,7 +5,7 @@
  * Usan los mismos tokens que el resto de la app (globals.css).
  */
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, X } from "lucide-react";
@@ -84,6 +84,50 @@ export function useAction() {
 
   return { busy: busy || refreshing, error, setError, run };
 }
+
+// ─── Preferencias de vista (se recuerdan en este dispositivo) ────────────────
+
+const choiceListeners = new Set<() => void>();
+
+function subscribeChoice(onChange: () => void) {
+  choiceListeners.add(onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    choiceListeners.delete(onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+/**
+ * Una elección entre opciones fijas que se recuerda en el dispositivo (localStorage).
+ * En el servidor y hasta hidratar vale `fallback`; si el almacenamiento falla, dura lo que la pantalla.
+ */
+export function useStoredChoice<T extends string>(key: string, options: readonly T[], fallback: T): [T, (value: T) => void] {
+  const read = (): T => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored && (options as readonly string[]).includes(stored)) return stored as T;
+    } catch {
+      /* sin almacenamiento disponible */
+    }
+    return memoryChoices.get(key) as T | undefined ?? fallback;
+  };
+  const value = useSyncExternalStore(subscribeChoice, read, () => fallback);
+
+  function set(next: T) {
+    memoryChoices.set(key, next);
+    try {
+      localStorage.setItem(key, next);
+    } catch {
+      /* se mantiene solo en memoria */
+    }
+    choiceListeners.forEach((notify) => notify());
+  }
+
+  return [value, set];
+}
+
+const memoryChoices = new Map<string, string>();
 
 // ─── Encabezado de página con selector de mes ─────────────────────────────────
 

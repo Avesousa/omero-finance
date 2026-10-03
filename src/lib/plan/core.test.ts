@@ -2,7 +2,7 @@ import {
   addDays, addMonths, monthDiff, daysInPeriod, isValidPeriod, currentPeriod, periodLabel,
   occurrencesInPeriod, monthlyAmount, buildProposal,
   installmentFor, statementToPay, cardLines, projectInstallments,
-  buildSummary, balanceAt, isReceivable, netWorth, cardLabel, cardSubtitle, cardTitle,
+  buildSummary, balanceAt, isReceivable, netWorth, pastPaymentPlan, cardLabel, cardSubtitle, cardTitle,
   parseMoney, formatMoneyInput, numberToInput,
   monthlyRatePct, frenchInstallment, loanState, isLoanFinished, proposeLoanPayment, buildLoanProposal,
   loanDueDate, loanPaymentLabel, loanBalanceItem,
@@ -206,7 +206,62 @@ describe("resumen del mes", () => {
     expect(s.fixedArs).toBe(500_000);
     expect(s.variableArs).toBe(185_000);
     expect(s.cardsArs).toBe(700_000);
-    expect(s.availableArs).toBe(3_300_000 - 500_000 - 185_000 - 700_000);
+    // Disponible: solo salió lo ya pagado (los gastos del mes). El alquiler y la tarjeta siguen sin pagar.
+    expect(s.paidArs).toBe(185_000);
+    expect(s.pendingArs).toBe(1_200_000);
+    expect(s.availableArs).toBe(3_300_000 - 185_000);
+  });
+
+  it("libre = disponible − lo reservado por presupuesto y pagos pendientes", () => {
+    // alquiler: cargado 500 > presupuesto 400 → reserva 500 · súper: faltan 20 del presupuesto
+    // tarjetas: presupuesto 1.000 (resumen de 700 sin pagar) → reserva 1.000
+    expect(s.reservedArs).toBe(500_000 + 20_000 + 1_000_000);
+    expect(s.freeArs).toBe(3_115_000 - 1_520_000);
+    expect(s.rows.find((r) => r.categoryId === "alq")).toMatchObject({ paid: 0, pending: 500_000 });
+    expect(s.rows.find((r) => r.categoryId === "sup")).toMatchObject({ paid: 180_000, pending: 0 });
+  });
+
+  it("al pagar, sale del disponible y el libre no cambia", () => {
+    const paid = buildSummary({
+      ...input,
+      entries: input.entries.map((e) => (e.name === "Alquiler" ? { ...e, isDone: true } : e)),
+      statements: input.statements.map((st) => ({ ...st, isPaid: true })),
+    });
+    expect(paid.availableArs).toBe(s.availableArs - 500_000 - 700_000);
+    expect(paid.cardsPaidArs).toBe(700_000);
+    expect(paid.freeArs).toBe(s.freeArs);
+  });
+
+  it("con 8 millones disponibles y 5 de presupuesto, quedan 3 libres", () => {
+    const e = input.entries[0];
+    const x = buildSummary({
+      ...input, cards: [], statements: [],
+      entries: [{ ...e, amount: 8_000_000 }],
+      budgets: [{ categoryId: "alq", amount: 2_000_000 }, { categoryId: "sup", amount: 3_000_000 }],
+    });
+    expect(x.availableArs).toBe(8_000_000);
+    expect(x.reservedArs).toBe(5_000_000);
+    expect(x.freeArs).toBe(3_000_000);
+    // gastar dentro del presupuesto baja el disponible pero no el libre
+    const spent = buildSummary({
+      ...input, cards: [], statements: [],
+      entries: [{ ...e, amount: 8_000_000 }, { ...input.entries[3], amount: 1_000_000 }],
+      budgets: [{ categoryId: "alq", amount: 2_000_000 }, { categoryId: "sup", amount: 3_000_000 }],
+    });
+    expect(spent.availableArs).toBe(7_000_000);
+    expect(spent.freeArs).toBe(3_000_000);
+    // pasarse del presupuesto sí baja el libre
+    const over = buildSummary({
+      ...input, cards: [], statements: [],
+      entries: [{ ...e, amount: 8_000_000 }, { ...input.entries[3], amount: 3_500_000 }],
+      budgets: [{ categoryId: "alq", amount: 2_000_000 }, { categoryId: "sup", amount: 3_000_000 }],
+    });
+    expect(over.freeArs).toBe(2_500_000);
+  });
+
+  it("sin presupuesto, libre es lo que queda después de todo lo cargado", () => {
+    const x = buildSummary({ ...input, budgets: [] });
+    expect(x.freeArs).toBe(3_300_000 - 500_000 - 185_000 - 700_000);
   });
 
   it("marca el alquiler de 500 mil contra un presupuesto de 400 mil", () => {
@@ -373,6 +428,59 @@ describe("préstamos y deudas", () => {
     expect(buildLoanProposal([{ ...b, payments: [] }], "2026-10")[0].kind).toBe("INCOME");
   });
 
+  describe("cuotas ya pagadas antes de usar la app", () => {
+    it("cuota fija: las ubica en los meses anteriores a la primera cuota conocida", () => {
+      const l = loan({ installments: 24, payments: [paid("2026-10", 10_000, 0, false)] });
+      expect(pastPaymentPlan(l, 7, "2026-10")).toEqual({
+        anchor: "2026-10",
+        periods: ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"],
+        max: 23,
+      });
+    });
+
+    it("sin cuotas generadas todavía, toma como referencia el mes que se está viendo", () => {
+      const l = loan({ installments: 12, startPeriod: "2026-08" });
+      expect(pastPaymentPlan(l, 2, "2026-10").periods).toEqual(["2026-08", "2026-09"]);
+    });
+
+    it("no deja cargar más cuotas que las que tiene el préstamo", () => {
+      const l = loan({ installments: 3, payments: [paid("2026-10", 1)] });
+      const plan = pastPaymentPlan(l, 10, "2026-10");
+      expect(plan.max).toBe(2);
+      expect(plan.periods).toEqual(["2026-08", "2026-09"]);
+    });
+
+    it("con las cuotas anteriores cargadas, el número de cuota y el saldo quedan como en la realidad", () => {
+      // 24 cuotas de 100.000; ya había pagado 7 y octubre es la octava
+      const before = ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"];
+      const l = loan({
+        principal: 2_400_000, installments: 24, installmentAmount: 100_000, startPeriod: "2026-03",
+        payments: [...before.map((p) => paid(p, 100_000)), paid("2026-10", 100_000, 0, false)],
+      });
+      expect(loanPaymentLabel(l, "2026-10")).toBe("8/24");
+      expect(loanState(l)).toMatchObject({ paidCount: 7, totalPaid: 700_000, balance: 1_700_000 });
+      // y el mes siguiente propone la cuota 9
+      const next = { ...l, payments: l.payments.map((p) => ({ ...p, isDone: true })) };
+      expect(proposeLoanPayment(next, "2026-11")).toMatchObject({ number: 9, of: 24, amount: 100_000 });
+    });
+
+    it("cuotas variables: toma las del cronograma anteriores que no se generaron", () => {
+      const l = loan({
+        mode: "SCHEDULE", startPeriod: "2026-07",
+        schedule: [
+          { period: "2026-07", amount: 10 }, { period: "2026-08", amount: 20 },
+          { period: "2026-10", amount: 30 }, { period: "2026-11", amount: 40 },
+        ],
+        payments: [paid("2026-10", 30, 0, false)],
+      });
+      expect(pastPaymentPlan(l, 99, "2026-10")).toEqual({ anchor: "2026-10", periods: ["2026-07", "2026-08"], max: 2 });
+    });
+
+    it("sin cuotas fijas no aplica", () => {
+      expect(pastPaymentPlan(loan({ mode: "OPEN" }), 3, "2026-10")).toMatchObject({ periods: [], max: 0 });
+    });
+  });
+
   it("arma el vencimiento sin pasarse de fin de mes", () => {
     expect(loanDueDate(10, "2026-10")).toBe("2026-10-10");
     expect(loanDueDate(31, "2026-02")).toBe("2026-02-28");
@@ -392,6 +500,17 @@ describe("préstamos y deudas", () => {
     expect(item.values).toEqual({ "2026-10": 110_000, "2026-11": 110_000 });
     expect(balanceAt(item, "2027-01")).toBe(110_000);
     expect(loanBalanceItem({ ...l, direction: "OWED" }).type).toBe("ASSET");
+  });
+
+  it("una deuda cuya primera cuota es el mes que viene ya cuenta en el patrimonio de hoy", () => {
+    // "Sin cuotas fijas", cargada en octubre y con primer pago en noviembre
+    const open = loan({ id: "mp", mode: "OPEN", principal: 2_400_000, installments: null, installmentAmount: 1_000_000, startPeriod: "2026-11", createdPeriod: "2026-10" });
+    const item = loanBalanceItem(open);
+    expect(balanceAt(item, "2026-10")).toBe(2_400_000);
+    expect(balanceAt(item, "2026-09")).toBeNull();
+    expect(netWorth([item], "2026-10", 1)).toEqual({ assetsArs: 0, debtsArs: 2_400_000, netArs: -2_400_000 });
+    // si la primera cuota es anterior a la carga, manda la primera cuota
+    expect(Object.keys(loanBalanceItem(loan({ startPeriod: "2026-03", createdPeriod: "2026-10" })).values)).toEqual(["2026-03"]);
   });
 
   it("las cuotas cuentan en el disponible y en su categoría", () => {
@@ -458,7 +577,9 @@ describe("préstamos y deudas", () => {
       expect(isReceivable(cuota)).toBe(true);
       expect(isReceivable({ ...cuota, isDone: true })).toBe(false);
       const s = buildSummary({ ...base, entries: [sueldo, e({ kind: "EXPENSE", loanId: "y", amount: 300_000 })] });
-      expect(s.availableArs).toBe(700_000);
+      // la cuota que debo y no pagué sigue en el disponible, pero ya no está libre
+      expect(s.availableArs).toBe(1_000_000);
+      expect(s.freeArs).toBe(1_000_000 - 300_000 - 100_000);
     });
   });
 });

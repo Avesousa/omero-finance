@@ -4,18 +4,20 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
   FREQUENCY_UNIT, LOAN_MODE_LABEL, addMonths, fmtArs, fmtMoney, frenchInstallment, loanKind, loanPaymentLabel,
-  loanState, monthlyRatePct, numberToInput, parseMoney, periodLabel, periodShort, proposeLoanPayment, round2, toArs,
+  loanState, monthDiff, monthlyRatePct, numberToInput, parseMoney, pastPaymentPlan, periodLabel, periodShort,
+  proposeLoanPayment, round2, toArs,
   type CategoryDTO, type Currency, type EntryDTO, type Frequency, type LoanDTO, type LoanDirection, type LoanMode,
 } from "@/lib/plan/core";
 import type { PlanData } from "@/lib/plan/server";
 import {
   Chips, DoneToggle, EmptyHint, ErrorText, Fab, Field, ListCard, MoneyInput, Pill, PlanHeader, PrimaryButton,
-  ProgressBar, SecondaryButton, SectionTitle, Segmented, Sheet, TextInput, api, cardStyle, useAction, withPeriod,
+  ProgressBar, SecondaryButton, SectionTitle, Segmented, Sheet, Switch, TextInput, api, cardStyle, useAction, withPeriod,
 } from "./plan-ui";
 
 type SheetState =
   | { type: "loan"; loan?: LoanDTO; direction?: LoanDirection }
   | { type: "payment"; loan: LoanDTO; entry: EntryDTO }
+  | { type: "past"; loan: LoanDTO }
   | null;
 
 const DIRECTIONS: readonly { value: LoanDirection; label: string }[] = [
@@ -105,6 +107,7 @@ export function LoansClient({ data }: { data: PlanData }) {
               data={data}
               onEdit={() => setSheet({ type: "loan", loan })}
               onPayment={(entry) => setSheet({ type: "payment", loan, entry })}
+              onPast={() => setSheet({ type: "past", loan })}
             />
           ))}
         </section>
@@ -155,6 +158,14 @@ export function LoansClient({ data }: { data: PlanData }) {
       {sheet?.type === "payment" && (
         <PaymentSheet loan={sheet.loan} entry={sheet.entry} onClose={() => setSheet(null)} />
       )}
+      {sheet?.type === "past" && (
+        <PastPaymentsSheet
+          // Se toma el préstamo actualizado para que la hoja refleje lo recién cargado.
+          loan={data.loans.find((l) => l.id === sheet.loan.id) ?? sheet.loan}
+          period={data.period}
+          onClose={() => setSheet(null)}
+        />
+      )}
     </>
   );
 }
@@ -177,12 +188,13 @@ function TotalCard({ label, tone, balance, month, verb }: {
   );
 }
 
-function LoanCard({ loan, entry, data, onEdit, onPayment }: {
+function LoanCard({ loan, entry, data, onEdit, onPayment, onPast }: {
   loan: LoanDTO;
   entry: EntryDTO | undefined;
   data: PlanData;
   onEdit: () => void;
   onPayment: (entry: EntryDTO) => void;
+  onPast: () => void;
 }) {
   const action = useAction();
   const state = loanState(loan);
@@ -191,6 +203,8 @@ function LoanCard({ loan, entry, data, onEdit, onPayment }: {
   const number = loanPaymentLabel(loan, data.period);
   const upcoming = !entry ? proposeLoanPayment(loan, data.period) : null;
   const meta = [loan.counterpart, LOAN_MODE_LABEL[loan.mode], rateLabel(loan)].filter(Boolean).join(" · ");
+  // Cuotas que se pueden cargar como ya pagadas antes de la primera que conoce la app.
+  const canAddPast = pastPaymentPlan(loan, 1, data.period).max > 0;
 
   return (
     <div className="rounded-2xl overflow-hidden" style={cardStyle}>
@@ -214,9 +228,21 @@ function LoanCard({ loan, entry, data, onEdit, onPayment }: {
         {of != null && (
           <div className="space-y-1">
             <ProgressBar value={state.paidCount} max={of} tone="var(--accent-green)" />
-            <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
-              {state.paidCount} de {of} cuotas {owe ? "pagadas" : "cobradas"}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                {state.paidCount} de {of} cuotas {owe ? "pagadas" : "cobradas"}
+              </p>
+              {canAddPast && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onPast(); }}
+                  className="text-[11px] font-semibold"
+                  style={{ color: "var(--accent)" }}
+                >
+                  Cargar cuotas ya {owe ? "pagadas" : "cobradas"}
+                </button>
+              )}
+            </div>
           </div>
         )}
         {loan.mode === "OPEN" && loan.endDate && (
@@ -338,6 +364,117 @@ export function PaymentSheet({ loan, entry, onClose }: { loan: LoanDTO; entry: E
   );
 }
 
+// ─── Cuotas anteriores ────────────────────────────────────────────────────────
+
+/**
+ * Cargar cuotas que ya estaban saldadas antes de que la app conociera el préstamo.
+ * Quedan como pagadas en sus meses: corrigen el número de cuota y el saldo sin tocar este mes.
+ */
+export function PastPaymentsSheet({ loan, period, onClose }: { loan: LoanDTO; period: string; onClose: () => void }) {
+  const action = useAction();
+  const owe = loan.direction === "OWE";
+  const done = owe ? "pagadas" : "cobradas";
+  const state = loanState(loan);
+  const base = pastPaymentPlan(loan, 0, period);
+  const isSchedule = loan.mode === "SCHEDULE";
+  const of = isSchedule ? loan.schedule.length : Math.max(1, loan.installments ?? 1);
+
+  // Si la primera cuota del préstamo es anterior a la primera cargada, se sugiere completar ese hueco.
+  const gap = monthDiff(loan.startPeriod, base.anchor);
+  const [countText, setCountText] = useState(String(isSchedule ? base.max : Math.min(base.max, gap > 0 ? gap : 1)));
+  const defaultAmount = loan.payments[0]?.amount ?? loan.installmentAmount ??
+    frenchInstallment(loan.principal, monthlyRatePct(loan, loan.startPeriod), of);
+  const [amount, setAmount] = useState(numberToInput(defaultAmount));
+
+  const count = isSchedule ? base.max : Math.max(0, Math.floor(Number(countText)) || 0);
+  const plan = pastPaymentPlan(loan, count, period);
+  const parsedAmount = parseMoney(amount);
+  const oldest = loan.payments[0];
+  const canRemove = !!oldest && oldest.isDone && oldest.period < period;
+
+  function save() {
+    if (!(count >= 1)) return action.setError("Poné cuántas cuotas");
+    if (count > base.max) return action.setError(`Como mucho podés cargar ${base.max} ${base.max === 1 ? "cuota" : "cuotas"} más`);
+    if (!isSchedule && !(parsedAmount > 0)) return action.setError("Ingresá el monto de cada cuota");
+    return action.run(
+      () => api("POST", `/api/plan/loans/${loan.id}/past-payments`, {
+        count, before: period, ...(isSchedule ? {} : { amount: parsedAmount }),
+      }),
+      onClose,
+    );
+  }
+
+  return (
+    <Sheet title={`Cuotas ya ${done}`} onClose={onClose}>
+      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+        <strong style={{ color: "var(--text-primary)" }}>{loan.name}</strong>: hoy figuran {state.paidCount} de {of} cuotas {done}.
+        Cargá acá las que ya estaban saldadas antes de {periodLabel(base.anchor)}: bajan el saldo y corrigen el
+        número de cuota, sin tocar el disponible de este mes.
+      </p>
+
+      {base.max === 0 ? (
+        <p className="text-xs rounded-xl px-3 py-2" style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
+          No quedan cuotas anteriores para cargar.
+        </p>
+      ) : isSchedule ? (
+        <p className="text-xs rounded-xl px-3 py-2" style={{ backgroundColor: "var(--accent-subtle)", color: "var(--accent)" }}>
+          {base.max === 1 ? "Hay 1 cuota" : `Hay ${base.max} cuotas`} del cronograma anteriores a {periodLabel(base.anchor)}{" "}
+          ({plan.periods.map(periodShort).join(", ")}). Se van a marcar como {done} con el monto de cada una.
+        </p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="¿Cuántas cuotas?">
+              <TextInput
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={base.max}
+                aria-label="Cantidad de cuotas anteriores"
+                value={countText}
+                onChange={(e) => setCountText(e.target.value)}
+                autoFocus
+              />
+            </Field>
+            <Field label="Monto de cada una">
+              <MoneyInput value={amount} onChange={setAmount} currency={loan.currency} ariaLabel="Monto de cada cuota anterior" />
+            </Field>
+          </div>
+          {plan.periods.length > 0 && parsedAmount > 0 && (
+            <p className="text-xs rounded-xl px-3 py-2" style={{ backgroundColor: "var(--accent-subtle)", color: "var(--accent)" }}>
+              {plan.periods.length === 1
+                ? <>Se carga la de {periodLabel(plan.periods[0])}.</>
+                : <>Se cargan de {periodLabel(plan.periods[0])} a {periodLabel(plan.periods[plan.periods.length - 1])}.</>}{" "}
+              Vas a quedar con <strong>{state.paidCount + plan.periods.length} de {of}</strong> cuotas {done}
+              {loan.interestRate
+                ? " y el saldo se recalcula con el interés."
+                : <> y un saldo de <strong>{fmtMoney(Math.max(0, round2(state.balance - plan.periods.length * parsedAmount)), loan.currency)}</strong>.</>}
+            </p>
+          )}
+        </>
+      )}
+
+      <ErrorText error={action.error} />
+      {base.max > 0 && (
+        <PrimaryButton onClick={save} busy={action.busy}>
+          {count === 1 ? "Cargar 1 cuota" : `Cargar ${count} cuotas`}
+        </PrimaryButton>
+      )}
+      {canRemove && (
+        <button
+          type="button"
+          disabled={action.busy}
+          onClick={() => action.run(() => api("DELETE", `/api/plan/loans/${loan.id}/past-payments`))}
+          className="w-full text-xs font-semibold py-1 disabled:opacity-50"
+          style={{ color: "var(--accent-red)" }}
+        >
+          Quitar la cuota de {periodLabel(oldest.period)} (la más antigua)
+        </button>
+      )}
+    </Sheet>
+  );
+}
+
 // ─── Alta y edición ───────────────────────────────────────────────────────────
 
 interface ScheduleRow { key: number; period: string; amount: string }
@@ -374,6 +511,9 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
       : [{ key: 0, period, amount: "" }],
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Cuotas que ya venía pagando: null = todavía no lo tocó (se sugiere según la primera cuota).
+  const [paidBeforeText, setPaidBeforeText] = useState<string | null>(null);
+  const [pastScheduleDone, setPastScheduleDone] = useState(true);
 
   const owe = direction === "OWE";
   const kind = loanKind(direction);
@@ -387,6 +527,12 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
   const count = Math.max(1, Math.floor(Number(installments)) || 1);
   const suggested = parsedPrincipal > 0 ? frenchInstallment(parsedPrincipal, monthlyPct, count) : null;
   const scheduleTotal = round2(schedule.reduce((s, r) => s + (parseMoney(r.amount) || 0), 0));
+
+  // Las cuotas anteriores se cargan como pagadas en los meses previos a este.
+  const pastAnchor = startPeriod > period ? startPeriod : period;
+  const suggestedPaidBefore = startPeriod < period ? String(Math.min(monthDiff(startPeriod, period), count)) : "";
+  const paidBefore = Math.max(0, Math.floor(Number(paidBeforeText ?? suggestedPaidBefore)) || 0);
+  const pastScheduleRows = schedule.filter((r) => r.amount.trim() !== "" && r.period < period).length;
 
   function addScheduleRow() {
     setSchedule((rows) => {
@@ -418,6 +564,10 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
       if (!(count >= 1 && count <= 360)) return action.setError("Las cuotas van de 1 a 360");
       const custom = parseMoney(installmentAmount);
       Object.assign(body, { principal: parsedPrincipal, installments: count, installmentAmount: custom > 0 ? custom : null });
+      if (!isEdit && paidBefore > 0) {
+        if (paidBefore > count) return action.setError("No podés haber pagado más cuotas que las que tiene el préstamo");
+        Object.assign(body, { paidBefore, before: pastAnchor });
+      }
     } else if (mode === "OPEN") {
       if (!(parsedPrincipal > 0)) return action.setError("Ingresá el saldo");
       const pay = parseMoney(installmentAmount);
@@ -435,6 +585,7 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
         schedule: sorted.map((r) => ({ period: r.period, amount: parseMoney(r.amount) })),
         startPeriod: startLocked ? startPeriod : sorted[0].period,
       });
+      if (!isEdit && pastScheduleDone && pastScheduleRows > 0) Object.assign(body, { paidBefore: pastScheduleRows, before: period });
     }
 
     return action.run(
@@ -537,6 +688,25 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
               ariaLabel="Cuota del primer mes"
             />
           </Field>
+          {!isEdit && (
+            <Field
+              label={owe ? "Cuotas que ya pagaste (opcional)" : "Cuotas que ya te pagaron (opcional)"}
+              hint={paidBefore > 0
+                ? `Las cargo como ${owe ? "pagadas" : "cobradas"} en los ${paidBefore === 1 ? "" : `${paidBefore} `}${paidBefore === 1 ? "mes anterior" : "meses anteriores"} a ${periodLabel(pastAnchor)}: bajan el saldo y la próxima cuota queda como la ${Math.min(paidBefore + 1, count)} de ${count}. No tocan el disponible de este mes.`
+                : "Si el préstamo viene de antes, poné cuántas cuotas ya estaban saldadas para que el número de cuota y el saldo sean los reales."}
+            >
+              <TextInput
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={count}
+                placeholder="0"
+                aria-label="Cuotas ya pagadas"
+                value={paidBeforeText ?? suggestedPaidBefore}
+                onChange={(e) => setPaidBeforeText(e.target.value)}
+              />
+            </Field>
+          )}
         </>
       )}
 
@@ -608,6 +778,15 @@ export function LoanSheet({ loan, direction: initialDirection, period, categorie
             </button>
           </div>
         </Field>
+      )}
+      {mode === "SCHEDULE" && !isEdit && pastScheduleRows > 0 && (
+        <div className="rounded-xl p-3" style={{ backgroundColor: "var(--bg-elevated)" }}>
+          <Switch
+            checked={pastScheduleDone}
+            onChange={setPastScheduleDone}
+            label={`${pastScheduleRows === 1 ? "La cuota anterior" : `Las ${pastScheduleRows} cuotas anteriores`} a ${periodLabel(period)} ya ${pastScheduleRows === 1 ? "está" : "están"} ${owe ? (pastScheduleRows === 1 ? "pagada" : "pagadas") : (pastScheduleRows === 1 ? "cobrada" : "cobradas")}`}
+          />
+        </div>
       )}
 
       <Field label="Día de vencimiento (opcional)">
