@@ -27,9 +27,9 @@ Las categorías por defecto se crean solas la primera vez que el hogar entra a `
 | `/plan/ingresos` | Ingresos fijos (con regla de recurrencia) y otros ingresos del mes. |
 | `/plan/gastos` | Gastos fijos (tildables como pagados) y gastos del mes. |
 | `/plan/tarjetas` | Resúmenes a pagar (total, mínimo, USD, vencimiento), compras en cuotas y cuotas a futuro. |
-| `/plan/prestamos` | Préstamos y deudas: lo que debo y lo que me deben, con cuotas, interés y saldo. |
+| `/plan/prestamos` | Préstamos y deudas: lo que debo y lo que me deben, con cuotas, interés (también tasa anual e IVA) y saldo de capital. **Ajustar saldo** lo pisa con el del banco. |
 | `/plan/presupuesto` | Presupuesto por categoría contra lo gastado. |
-| `/plan/patrimonio` | Lo que tenés, lo que debés y el neto mes a mes. |
+| `/plan/patrimonio` | Lo que tenés, lo que debés y el neto mes a mes. Los préstamos y las tarjetas con resumen cargado aparecen solos. |
 | `/plan/categorias` | Categorías de gastos y de ingresos. |
 | `/plan/exportar` | Resumen del mes en Markdown o JSON para copiar, compartir o descargar (`src/lib/plan/export.ts`). |
 
@@ -83,8 +83,18 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
     la del sistema francés con el interés; los meses siguientes proponen la cuota del mes anterior.
   - *Cuotas variables*: un monto por mes (`PlanLoanScheduleItem`).
   - *Sin cuotas*: saldo + pago sugerido por mes (sin pasarse del saldo) y fecha límite opcional.
-  - **Interés** opcional en % diario, semanal, quincenal o mensual. Al generar la cuota del mes se calcula
-    sobre el saldo pendiente: tasa × veces en el mes (misma regla que los fijos). Interés simple.
+  - **Interés** opcional en % diario, semanal, quincenal, mensual o **anual (TNA)**. Al generar la cuota del mes
+    se calcula sobre el saldo pendiente: tasa × veces en el mes (misma regla que los fijos), o un doceavo de la
+    anual (`interestAnnual`). Interés simple.
+  - **IVA sobre el interés** opcional (`interestTaxPct`, 21 % por defecto en la pantalla): se suma al interés del
+    mes. De cada cuota, interés e IVA no bajan el saldo; baja solo el resto, que es capital (sistema francés).
+  - **Saldo de capital**: lo que se muestra como saldo (y va a Patrimonio) no incluye el interés de la última cuota
+    mientras no se paga, porque ese interés va dentro de la cuota (`loanState().capital`). El interés de cuotas
+    viejas impagas sí queda sumado a la deuda.
+  - **Saldo según el banco** (`PlanLoanBalance`, *Ajustar saldo*): el saldo de capital al empezar un mes, antes de
+    su cuota. Pisa la cuenta: lo anterior deja de contar para el saldo y desde ahí sigue con cuotas e interés.
+    No cambia el número de cuota ni el disponible. Al cambiar la tasa o el saldo se recalcula el interés de las
+    cuotas sin pagar; las pagadas no se tocan.
   - Cada cuota es un `PlanEntry` con `loanId` (uno por préstamo y mes) que se genera al iniciar el mes
     (editable en el inicio guiado) o al cargar el préstamo si su mes ya está iniciado.
   - Saldo = inicial + intereses generados − cuotas pagadas. Al tildar la última cuota (o saldar el saldo)
@@ -95,6 +105,11 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
     de cuota y el saldo sin tocar el mes en curso; con interés, cada una lo calcula sobre el saldo de su mes
     y se recalcula el de las pendientes (`pastPaymentPlan`, `addPastPayments`).
   - En Patrimonio la deuda cuenta desde el mes en que se cargó, aunque su primera cuota sea más adelante.
+- **Tarjetas en Patrimonio** (`cardDebts`, `cardsBalanceItem`): por tarjeta manda su último resumen cargado hasta
+  el mes que se mira. Sin pagar se debe entero (pesos + dólares al tipo de cambio del mes); marcado como pagado
+  queda la diferencia entre el total y lo pagado (mínimo u otro monto). Esa deuda sigue en los meses siguientes
+  hasta que se marca como pagada o se carga un resumen nuevo de esa tarjeta, que la reemplaza. Las cuotas futuras
+  de compras no entran: solo lo que ya está en un resumen.
 - Las cuotas de préstamos que pago descuentan del disponible al tildarlas. Las cuotas que **me deben**
   suman como ingreso recién cuando se tildan como cobradas; hasta entonces figuran aparte como
   "Por cobrar" y no entran en el disponible, el presupuesto ni los ingresos destinados (`isReceivable`).
@@ -109,6 +124,7 @@ Toda la lógica está en `src/lib/plan/core.ts` (pura, con tests en `core.test.t
 ```
 prisma/migrations/20261002120000_add_plan_simple/   tablas Plan*
 prisma/migrations/20261003120000_add_plan_loans/    préstamos y deudas (solo agrega)
+prisma/migrations/20261004120000_add_plan_loan_rate_and_balance/   tasa anual, IVA y saldo del banco (solo agrega)
 src/lib/plan/core.ts        lógica pura + formato
 src/lib/plan/server.ts      carga de datos y helpers de API (sesión, validación)
 src/lib/plan/loans.ts       préstamos: validación, generación de cuotas y cierre

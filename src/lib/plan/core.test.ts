@@ -5,7 +5,7 @@ import {
   buildSummary, balanceAt, isReceivable, netWorth, pastPaymentPlan, cardLabel, cardSubtitle, cardTitle,
   parseMoney, formatMoneyInput, numberToInput,
   monthlyRatePct, frenchInstallment, loanState, isLoanFinished, proposeLoanPayment, buildLoanProposal,
-  loanDueDate, loanPaymentLabel, loanBalanceItem,
+  loanDueDate, loanPaymentLabel, loanBalanceItem, loanRateLabel, statementDebt, cardDebts, cardsBalanceItem,
   type CardDTO, type LoanDTO, type LoanPaymentDTO, type CategoryDTO, type EntryDTO, type PurchaseDTO, type StatementDTO,
   type BalanceItemDTO, type RecurringDTO,
 } from "./core";
@@ -127,6 +127,63 @@ describe("tarjetas", () => {
     );
     expect(proj.map((p) => p.totalArs)).toEqual([100_000, 200_000, 200_000, 200_000]);
     expect(proj[3].period).toBe("2027-01");
+  });
+});
+
+describe("deuda de tarjetas en patrimonio", () => {
+  const cards = [card("a", "Visa"), card("b", "Master")];
+  const st = (cardId: string, period: string, totalArs: number, over: Partial<StatementDTO> = {}): StatementDTO => ({
+    id: `${cardId}-${period}`, cardId, period, dueDate: null, totalArs, minimumArs: null, usdAmount: null,
+    payMode: "TOTAL", customAmount: null, isPaid: false, ...over,
+  });
+
+  it("un resumen sin pagar se debe entero; pagado en total, nada; pagando una parte, la diferencia", () => {
+    expect(statementDebt(st("a", "2026-10", 500_000), 1500)).toBe(500_000);
+    expect(statementDebt(st("a", "2026-10", 500_000, { usdAmount: 100 }), 1500)).toBe(650_000);
+    expect(statementDebt(st("a", "2026-10", 500_000, { isPaid: true }), 1500)).toBe(0);
+    expect(statementDebt(st("a", "2026-10", 500_000, { isPaid: true, payMode: "MINIMUM", minimumArs: 80_000 }), 1500)).toBe(420_000);
+    expect(statementDebt(st("a", "2026-10", 500_000, { isPaid: true, payMode: "CUSTOM", customAmount: 300_000 }), 1500)).toBe(200_000);
+    // elegir pagar el mínimo no baja la deuda hasta que se marca como pagado
+    expect(statementDebt(st("a", "2026-10", 500_000, { payMode: "MINIMUM", minimumArs: 80_000 }), 1500)).toBe(500_000);
+  });
+
+  it("la deuda sigue en los meses siguientes hasta que se paga o se carga un resumen nuevo", () => {
+    const statements = [
+      st("a", "2026-09", 400_000, { isPaid: true }),
+      st("a", "2026-10", 500_000),
+      st("b", "2026-10", 200_000, { isPaid: true, payMode: "MINIMUM", minimumArs: 50_000 }),
+      st("b", "2026-12", 90_000),
+    ];
+    const total = (period: string) => cardDebts(cards, statements, period, 1500).reduce((s, d) => s + d.debtArs, 0);
+    expect(total("2026-08")).toBe(0);
+    expect(total("2026-09")).toBe(0);
+    expect(total("2026-10")).toBe(500_000 + 150_000);
+    // noviembre: no hay resúmenes nuevos, se arrastra lo de octubre
+    expect(cardDebts(cards, statements, "2026-11", 1500)).toEqual([
+      { cardId: "a", cardName: "Visa", statementPeriod: "2026-10", isPaid: false, debtArs: 500_000 },
+      { cardId: "b", cardName: "Master", statementPeriod: "2026-10", isPaid: true, debtArs: 150_000 },
+    ]);
+    // diciembre: el resumen nuevo de la tarjeta b pisa su deuda anterior
+    expect(total("2026-12")).toBe(500_000 + 90_000);
+
+    const item = cardsBalanceItem(cards, statements, 1500)!;
+    expect(item).toMatchObject({ type: "DEBT", currency: "ARS", name: "Tarjetas de crédito" });
+    expect(balanceAt(item, "2026-08")).toBeNull();
+    expect(balanceAt(item, "2026-11")).toBe(650_000);
+    expect(balanceAt(item, "2027-03")).toBe(590_000);
+    expect(netWorth([item], "2026-10", 1500)).toEqual({ assetsArs: 0, debtsArs: 650_000, netArs: -650_000 });
+  });
+
+  it("al marcar el resumen como pagado, la deuda baja", () => {
+    const statements = [st("a", "2026-10", 500_000)];
+    expect(balanceAt(cardsBalanceItem(cards, statements, 1500)!, "2026-11")).toBe(500_000);
+    const paid = statements.map((s) => ({ ...s, isPaid: true }));
+    expect(balanceAt(cardsBalanceItem(cards, paid, 1500)!, "2026-11")).toBe(0);
+    expect(cardDebts(cards, paid, "2026-11", 1500)).toEqual([]);
+  });
+
+  it("sin resúmenes no hay ítem", () => {
+    expect(cardsBalanceItem(cards, [], 1500)).toBeNull();
   });
 });
 
@@ -371,6 +428,89 @@ describe("préstamos y deudas", () => {
     expect(monthlyRatePct({ interestRate: 1, interestFrequency: "BIWEEKLY" }, "2026-10")).toBe(2);
     expect(monthlyRatePct({ interestRate: 1, interestFrequency: "WEEKLY" }, "2026-10")).toBe(4);
     expect(monthlyRatePct({ interestRate: null, interestFrequency: null }, "2026-10")).toBe(0);
+  });
+
+  it("tasa anual (TNA): un doceavo por mes, y el IVA se suma sobre el interés", () => {
+    expect(monthlyRatePct({ interestRate: 60, interestFrequency: "MONTHLY", interestAnnual: true }, "2026-10")).toBe(5);
+    // el mes no cambia una tasa anual: febrero y octubre pesan lo mismo
+    expect(monthlyRatePct({ interestRate: 60, interestFrequency: "MONTHLY", interestAnnual: true }, "2026-02")).toBe(5);
+    expect(monthlyRatePct({ interestRate: 60, interestFrequency: "MONTHLY", interestAnnual: true, interestTaxPct: 21 }, "2026-10")).toBeCloseTo(6.05);
+    expect(monthlyRatePct({ interestRate: 3, interestFrequency: "MONTHLY", interestTaxPct: 21 }, "2026-10")).toBeCloseTo(3.63);
+  });
+
+  it("con tasa, de cada cuota solo baja el capital (el interés y su IVA no)", () => {
+    // Capital 6.270.000 al 55 % anual + IVA 21 %: en el mes genera 6.270.000 × 55/12 % × 1,21 = 347.723,75
+    const l = loan({
+      principal: 6_270_000, installments: 60, installmentAmount: 524_496,
+      interestRate: 55, interestFrequency: "MONTHLY", interestAnnual: true, interestTaxPct: 21,
+    });
+    const p = proposeLoanPayment(l, "2026-10")!;
+    expect(p.interest).toBe(347_723.75);
+    const pending = loanState({ ...l, payments: [paid("2026-10", 524_496, p.interest, false)] });
+    // mientras la cuota no se paga, su interés va en la cuota: el saldo de capital es el del banco
+    expect(pending).toMatchObject({ balance: 6_617_723.75, pendingInterest: 347_723.75, capital: 6_270_000 });
+    const done = loanState({ ...l, payments: [paid("2026-10", 524_496, p.interest)] });
+    // bajó 176.772,25 de capital, no los 524.496 de la cuota
+    expect(done).toMatchObject({ balance: 6_093_227.75, pendingInterest: 0, capital: 6_093_227.75 });
+    expect(loanRateLabel(l)).toBe("55 % anual + IVA");
+    // en patrimonio figura el capital, antes y después de pagar
+    expect(balanceAt(loanBalanceItem({ ...l, payments: [paid("2026-10", 524_496, p.interest, false)] }), "2026-10")).toBe(6_270_000);
+    expect(balanceAt(loanBalanceItem({ ...l, payments: [paid("2026-10", 524_496, p.interest)] }), "2026-10")).toBe(6_093_227.75);
+  });
+
+  it("el interés de una cuota vieja sin pagar queda sumado a la deuda", () => {
+    const l = loan({ mode: "OPEN", principal: 100_000, installments: null, installmentAmount: 20_000, interestRate: 10, interestFrequency: "MONTHLY" });
+    // septiembre quedó sin pagar: sus 10.000 de interés ya son deuda; solo el de octubre va "en la cuota"
+    const state = loanState({ ...l, startPeriod: "2026-09", payments: [paid("2026-09", 20_000, 10_000, false), paid("2026-10", 20_000, 11_000, false)] });
+    expect(state).toMatchObject({ balance: 121_000, pendingInterest: 11_000, capital: 110_000 });
+  });
+
+  describe("saldo según el banco", () => {
+    // Sin tasa cargada, cada cuota de 10.000 baja el saldo entera: 120.000 → 90.000 tras tres cuotas.
+    const base = loan({ startPeriod: "2026-07", payments: [paid("2026-07", 10_000), paid("2026-08", 10_000), paid("2026-09", 10_000)] });
+
+    it("pisa el saldo calculado al empezar su mes", () => {
+      expect(loanState(base).balance).toBe(90_000);
+      const l = { ...base, anchors: [{ period: "2026-10", amount: 112_000 }] };
+      expect(loanState(l).balance).toBe(112_000);
+      expect(loanState(l, "2026-10").balance).toBe(112_000);
+      // antes de ese mes sigue valiendo la cuenta anterior
+      expect(loanState(l, "2026-09").balance).toBe(100_000);
+      // el número de cuota no cambia
+      expect(loanState(l).paidCount).toBe(3);
+    });
+
+    it("desde ahí la cuenta sigue con las cuotas y el interés", () => {
+      const l = loan({
+        ...base, interestRate: 60, interestFrequency: "MONTHLY", interestAnnual: true,
+        anchors: [{ period: "2026-10", amount: 112_000 }],
+      });
+      const p = proposeLoanPayment(l, "2026-10")!;
+      expect(p).toMatchObject({ number: 4, of: 12, amount: 10_000, interest: 5_600 });
+      const after = { ...l, payments: [...l.payments, paid("2026-10", 10_000, 5_600)] };
+      expect(loanState(after).balance).toBe(107_600);
+      expect(proposeLoanPayment(after, "2026-11")!.interest).toBe(5_380);
+    });
+
+    it("cargado después de la cuota del mes, vale desde el mes siguiente", () => {
+      const l = { ...base, payments: [...base.payments, paid("2026-10", 10_000)], anchors: [{ period: "2026-11", amount: 105_000 }] };
+      expect(loanState(l).balance).toBe(105_000);
+      expect(loanState(l, "2026-10").balance).toBe(90_000);
+    });
+
+    it("manda el último saldo cargado", () => {
+      const l = { ...base, anchors: [{ period: "2026-08", amount: 111_000 }, { period: "2026-10", amount: 99_000 }] };
+      expect(loanState(l, "2026-09").balance).toBe(101_000);
+      expect(loanState(l).balance).toBe(99_000);
+    });
+
+    it("en patrimonio se ve desde el cierre del mes anterior", () => {
+      const item = loanBalanceItem({ ...base, createdPeriod: "2026-07", anchors: [{ period: "2026-10", amount: 112_000 }] });
+      expect(balanceAt(item, "2026-08")).toBe(100_000);
+      expect(balanceAt(item, "2026-09")).toBe(112_000);
+      expect(balanceAt(item, "2026-10")).toBe(112_000);
+      expect(balanceAt(item, "2026-12")).toBe(112_000);
+    });
   });
 
   it("calcula la cuota francesa (o capital / cuotas sin interés)", () => {

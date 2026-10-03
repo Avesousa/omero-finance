@@ -4,7 +4,7 @@
  */
 
 import {
-  LOAN_MODE_LABEL, balanceAt, buildSummary, cardLines, fmtArs, fmtMoney, isReceivable, loanBalanceItem,
+  LOAN_MODE_LABEL, balanceAt, buildSummary, cardLines, cardsBalanceItem, fmtArs, fmtMoney, isReceivable, loanBalanceItem,
   loanPaymentLabel, loanState, netWorth, periodLabel, projectInstallments, round2, toArs,
   type BalanceItemDTO, type BudgetDTO, type BudgetStatus, type CardDTO, type CategoryDTO, type Currency,
   type EntryDTO, type LoanDTO, type PurchaseDTO, type StatementDTO,
@@ -97,8 +97,13 @@ export interface PlanExport {
     tipo: "debo" | "me deben";
     contraparte: string | null;
     modalidad: string;
+    /** Saldo de capital: sin el interés de la cuota del mes mientras no se paga. */
     saldo: number;
     moneda: Currency;
+    /** "55 % anual + IVA". Solo si tiene tasa cargada. */
+    tasa?: string;
+    /** Interés (e IVA) dentro de la cuota del mes: esa parte no baja el saldo. */
+    interesDeLaCuota?: number;
     cuotaDelMes: number | null;
     cuota: string | null;
     cuotaSaldada: boolean | null;
@@ -119,7 +124,16 @@ const STATUS_LABEL: Record<BudgetStatus, string> = {
   unused: "sin gastos",
 };
 
-export function buildExport(data: ExportInput, balanceItems: BalanceItemDTO[]): PlanExport {
+/**
+ * `allStatements`: los resúmenes de tarjeta de todos los meses, para que la deuda de una tarjeta
+ * siga figurando en el patrimonio hasta que se pague o se cargue un resumen nuevo. Si no se
+ * pasan, se usan solo los del mes.
+ */
+export function buildExport(
+  data: ExportInput,
+  balanceItems: BalanceItemDTO[],
+  allStatements: StatementDTO[] = data.statements,
+): PlanExport {
   const { period, usdRate } = data;
   const summary = buildSummary(data);
   const categoryName = (id: string | null) => data.categories.find((c) => c.id === id)?.name ?? null;
@@ -148,9 +162,11 @@ export function buildExport(data: ExportInput, balanceItems: BalanceItemDTO[]): 
 
   const lines = cardLines(data.cards, data.statements, data.purchases, period, usdRate);
 
+  const cardsItem = cardsBalanceItem(data.cards, allStatements, usdRate);
   const items = [
     ...balanceItems.filter((i) => !i.isArchived),
     ...data.loans.filter((l) => !l.isClosed).map(loanBalanceItem),
+    ...(cardsItem ? [cardsItem] : []),
   ];
   const worth = netWorth(items, period, usdRate);
 
@@ -168,6 +184,8 @@ export function buildExport(data: ExportInput, balanceItems: BalanceItemDTO[]): 
       "Gastos fijos, gastos del mes, préstamos y tarjetas son los totales cargados en el mes, pagados o no.",
       "Lo que me deben y todavía no cobré figura como \"por cobrar\" y no suma al disponible.",
       "Tarjetas cuenta lo que se paga en el mes: el resumen si está cargado o, si no, una estimación por cuotas.",
+      "En patrimonio, \"Tarjetas de crédito\" es lo que falta pagar del último resumen cargado de cada tarjeta; sigue ahí hasta que se paga o se carga un resumen nuevo.",
+      "El saldo de un préstamo con tasa baja solo por el capital de cada cuota: el interés (y su IVA) no lo baja.",
     ],
     resumen: {
       disponible: round2(summary.availableArs),

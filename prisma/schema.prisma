@@ -758,6 +758,10 @@ model PlanLoan {
   /// Interés en % por `interestFrequency` (ej. 3.5 = 3,5 % mensual). Null = sin interés.
   interestRate      Decimal?           @db.Decimal(8, 4)
   interestFrequency PlanFrequency?
+  /// true = `interestRate` es una tasa anual (TNA): por mes se usa 1/12.
+  interestAnnual    Boolean            @default(false)
+  /// IVA u otro impuesto sobre el interés, en % (ej. 21). Va dentro de la cuota y no baja capital.
+  interestTaxPct    Decimal?           @db.Decimal(5, 2)
   /// Primer mes en que cae una cuota ("YYYY-MM").
   startPeriod       String
   /// Día del mes en que vence la cuota.
@@ -772,6 +776,7 @@ model PlanLoan {
   household Household              @relation(fields: [householdId], references: [id])
   category  PlanCategory?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   schedule  PlanLoanScheduleItem[]
+  balances  PlanLoanBalance[]
   entries   PlanEntry[]
 
   @@index([householdId])
@@ -783,6 +788,20 @@ model PlanLoanScheduleItem {
   loanId String
   period String
   amount Decimal @db.Decimal(14, 2)
+
+  loan PlanLoan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@unique([loanId, period])
+}
+
+/// Saldo según el banco (o la otra parte) al empezar `period`, antes de la cuota de ese mes.
+/// Pisa el saldo calculado: desde ahí la cuenta sigue con las cuotas y el interés.
+model PlanLoanBalance {
+  id        String   @id @default(cuid())
+  loanId    String
+  period    String
+  amount    Decimal  @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
 
   loan PlanLoan @relation(fields: [loanId], references: [id], onDelete: Cascade)
 

@@ -97,9 +97,19 @@ describe("exportar el resumen del mes", () => {
       nombre: "Préstamo a Juan", tipo: "me deben", contraparte: "Juan", modalidad: "Cuota fija", saldo: 600_000,
       moneda: "ARS", cuotaDelMes: 200_000, cuota: "1/3", cuotaSaldada: false,
     }]);
-    // ahorros en dólares + lo que me deben; lo archivado no cuenta
-    expect(x.patrimonio).toMatchObject({ tengo: 1_500_000 + 600_000, debo: 0, neto: 2_100_000 });
-    expect(x.patrimonio.detalle.map((d) => d.nombre)).toEqual(["Ahorros", "Préstamo a Juan"]);
+    // ahorros en dólares + lo que me deben; lo archivado no cuenta. El resumen de la tarjeta, sin pagar, es deuda.
+    expect(x.patrimonio).toMatchObject({ tengo: 1_500_000 + 600_000, debo: 700_000, neto: 1_400_000 });
+    expect(x.patrimonio.detalle.map((d) => d.nombre)).toEqual(["Ahorros", "Préstamo a Juan", "Tarjetas de crédito"]);
+  });
+
+  it("la deuda de una tarjeta sigue en el patrimonio del mes siguiente si no se pagó ni hay resumen nuevo", () => {
+    const november = { ...input, period: "2026-11", statements: [] };
+    // sin los resúmenes de otros meses no hay de dónde arrastrarla
+    expect(buildExport(november, balance).patrimonio.debo).toBe(0);
+    const carried = buildExport(november, balance, input.statements);
+    expect(carried.patrimonio.debo).toBe(700_000);
+    const paid = buildExport(november, balance, input.statements.map((s) => ({ ...s, isPaid: true })));
+    expect(paid.patrimonio.debo).toBe(0);
   });
 
   it("el patrimonio incluye las deudas que empiezan a pagarse más adelante", () => {
@@ -109,8 +119,8 @@ describe("exportar el resumen del mes", () => {
       startPeriod: "2026-11", createdPeriod: "2026-10", payments: [],
     };
     const y = buildExport({ ...input, loans: [loan, later] }, balance);
-    expect(y.patrimonio.detalle.map((d) => d.nombre)).toEqual(["Ahorros", "Préstamo a Juan", "Mercado Pago"]);
-    expect(y.patrimonio).toMatchObject({ tengo: 2_100_000, debo: 2_400_000, neto: -300_000 });
+    expect(y.patrimonio.detalle.map((d) => d.nombre)).toEqual(["Ahorros", "Préstamo a Juan", "Mercado Pago", "Tarjetas de crédito"]);
+    expect(y.patrimonio).toMatchObject({ tengo: 2_100_000, debo: 2_400_000 + 700_000, neto: -1_000_000 });
     expect(y.prestamosYDeudas.map((l) => l.nombre)).toEqual(["Préstamo a Juan", "Mercado Pago"]);
   });
 

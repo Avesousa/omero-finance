@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import {
-  addMonths, balanceAt, fmtArs, fmtMoney, loanBalanceItem, netWorth, numberToInput, parseMoney, periodLabel, periodShort,
-  type BalanceItemDTO, type BalanceType, type Currency, type LoanDTO,
+  addMonths, balanceAt, cardDebts, cardsBalanceItem, fmtArs, fmtMoney, loanBalanceItem, netWorth, numberToInput, parseMoney,
+  periodLabel, periodShort,
+  type BalanceItemDTO, type BalanceType, type CardDTO, type Currency, type LoanDTO, type StatementDTO,
 } from "@/lib/plan/core";
 import {
   EmptyHint, ErrorText, Field, ListCard, MoneyInput, Pill, PlanHeader, PrimaryButton, SecondaryButton,
@@ -19,9 +20,12 @@ const CURRENCIES: readonly { value: Currency; label: string }[] = [
   { value: "USD", label: "Dólares" },
 ];
 
-export function BalanceClient({ items: manualItems, loans, period, usdRate }: {
+export function BalanceClient({ items: manualItems, loans, cards, statements, period, usdRate }: {
   items: BalanceItemDTO[];
   loans: LoanDTO[];
+  cards: CardDTO[];
+  /** Resúmenes de todos los meses. */
+  statements: StatementDTO[];
   period: string;
   usdRate: number;
 }) {
@@ -33,7 +37,10 @@ export function BalanceClient({ items: manualItems, loans, period, usdRate }: {
     const value = balanceAt(i, period);
     return value != null && (!loans[idx].isClosed || value > 0.5);
   });
-  const items = [...manualItems, ...loanItems];
+  // Tarjetas: lo que falta pagar del último resumen de cada una. Tampoco se carga a mano.
+  const cardsItem = cardsBalanceItem(cards, statements, usdRate);
+  const cardRows = cardDebts(cards, statements, period, usdRate);
+  const items = [...manualItems, ...loanItems, ...(cardsItem ? [cardsItem] : [])];
   const active = manualItems.filter((i) => !i.isArchived);
   const now = netWorth(items, period, usdRate);
   const prevPeriod = addMonths(period, -1);
@@ -78,7 +85,33 @@ export function BalanceClient({ items: manualItems, loans, period, usdRate }: {
             })}
           </ListCard>
         )}
-        {list.length === 0 ? (fromLoans.length > 0 ? null : <EmptyHint>{empty}</EmptyHint>) : (
+        {type === "DEBT" && cardRows.length > 0 && (
+          <ListCard>
+            {cardRows.map((row) => (
+              <Link
+                key={row.cardId}
+                href={withPeriod("/plan/tarjetas", row.statementPeriod)}
+                data-testid="card-debt"
+                className="flex items-center gap-3 px-4 py-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{row.cardName}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <Pill tone="accent">tarjeta</Pill>
+                    <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                      resumen de {periodShort(row.statementPeriod)} · {row.isPaid ? "quedó una parte sin pagar" : "sin pagar"}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm font-semibold tabular-nums flex-shrink-0" style={{ color: "var(--text-primary)" }}>
+                  {fmtArs(row.debtArs)}
+                </p>
+                <ChevronRight size={14} style={{ color: "var(--border-strong)", flexShrink: 0 }} />
+              </Link>
+            ))}
+          </ListCard>
+        )}
+        {list.length === 0 ? (fromLoans.length > 0 || (type === "DEBT" && cardRows.length > 0) ? null : <EmptyHint>{empty}</EmptyHint>) : (
           <ListCard>
             {list.map((item) => {
               const value = balanceAt(item, period);
@@ -179,10 +212,11 @@ export function BalanceClient({ items: manualItems, loans, period, usdRate }: {
       )}
 
       {group("ASSET", "Lo que tenés", "Ahorros, inversiones, dólares, fondo de emergencia.")}
-      {group("DEBT", "Lo que debés", "Préstamos, saldo de tarjetas refinanciado, deudas con personas.")}
+      {group("DEBT", "Lo que debés", "Otras deudas. Los préstamos y las tarjetas con resumen cargado aparecen solos.")}
 
       <p className="text-[11px] text-center px-4" style={{ color: "var(--text-secondary)" }}>
         Actualizá los saldos una vez por mes. Si no tocás uno, se arrastra el último valor.
+        Las tarjetas cuentan por lo que falta pagar de su último resumen, hasta que lo pagues o cargues uno nuevo.
       </p>
 
       {sheet && <BalanceSheet type={sheet.type} item={sheet.item} period={period} onClose={() => setSheet(null)} />}

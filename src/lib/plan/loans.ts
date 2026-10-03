@@ -51,7 +51,13 @@ export async function loanFields(householdId: string, body: Record<string, unkno
   const interestRate = body.interestRate == null || body.interestRate === ""
     ? null
     : v.amount(body.interestRate, "Interés", { allowZero: true });
-  if (interestRate != null && interestRate > 100) throw new ApiError("Interés inválido");
+  // Una tasa anual (TNA) puede pasar el 100 %; una por mes o menos, no.
+  const interestAnnual = !!interestRate && body.interestAnnual === true;
+  if (interestRate != null && interestRate > (interestAnnual ? 2000 : 100)) throw new ApiError("Interés inválido");
+  const interestTaxPct = !interestRate || body.interestTaxPct == null || body.interestTaxPct === ""
+    ? null
+    : v.amount(body.interestTaxPct, "IVA sobre el interés", { allowZero: true });
+  if (interestTaxPct != null && interestTaxPct > 100) throw new ApiError("IVA sobre el interés inválido");
 
   let principal: number;
   let installments: number | null = null;
@@ -96,7 +102,11 @@ export async function loanFields(householdId: string, body: Record<string, unkno
       installments,
       installmentAmount,
       interestRate: interestRate || null,
-      interestFrequency: interestRate ? v.oneOf(body.interestFrequency ?? "MONTHLY", FREQUENCIES, "Frecuencia del interés") : null,
+      interestFrequency: interestRate
+        ? interestAnnual ? "MONTHLY" as const : v.oneOf(body.interestFrequency ?? "MONTHLY", FREQUENCIES, "Frecuencia del interés")
+        : null,
+      interestAnnual,
+      interestTaxPct: interestTaxPct || null,
       startPeriod,
       dueDay: v.optionalInt(body.dueDay, "Día de vencimiento", 1, 31),
       endDate,
@@ -170,12 +180,11 @@ export async function refreshLoanStatus(tx: Tx, householdId: string, loanId: str
 }
 
 /**
- * Recalcula el interés de las cuotas pendientes después de cambiar cuotas anteriores:
- * el interés de cada mes sale del saldo que quedaba al empezarlo. Las cuotas ya
- * pagadas no se tocan.
+ * Recalcula el interés de las cuotas pendientes después de cambiar cuotas anteriores, la tasa
+ * o el saldo según el banco: el interés de cada mes sale del saldo que quedaba al empezarlo.
+ * Las cuotas ya pagadas no se tocan.
  */
-async function rethreadInterest(tx: Tx, loan: LoanDTO): Promise<void> {
-  if (!loan.interestRate) return;
+export async function rethreadInterest(tx: Tx, loan: LoanDTO): Promise<void> {
   let running: LoanDTO = { ...loan, payments: [] };
   for (const p of loan.payments) {
     let interest = p.interest;
@@ -281,4 +290,40 @@ export async function removeOldestPastPayment(tx: Tx, householdId: string, loanI
   }
   await rethreadInterest(tx, { ...loan, payments: rest });
   await refreshLoanStatus(tx, householdId, loan.id);
+}
+
+/**
+ * Guarda el saldo según el banco al empezar `period` (antes de la cuota de ese mes).
+ * Desde ahí el saldo se calcula a partir de ese número; lo anterior deja de contar.
+ */
+export async function setLoanBalance(
+  tx: Tx,
+  householdId: string,
+  loanId: string,
+  period: string,
+  amount: number,
+): Promise<void> {
+  const [loan] = await loadLoans(householdId, { id: loanId }, tx);
+  if (!loan) throw new ApiError("No encontrado", 404);
+  await tx.planLoanBalance.upsert({
+    where: { loanId_period: { loanId, period } },
+    create: { loanId, period, amount },
+    update: { amount },
+  });
+  await afterBalanceChange(tx, householdId, loanId);
+}
+
+/** Quita un saldo según el banco: el saldo vuelve a salir de la cuenta anterior. */
+export async function removeLoanBalance(tx: Tx, householdId: string, loanId: string, period: string): Promise<void> {
+  const [loan] = await loadLoans(householdId, { id: loanId }, tx);
+  if (!loan) throw new ApiError("No encontrado", 404);
+  await tx.planLoanBalance.deleteMany({ where: { loanId, period } });
+  await afterBalanceChange(tx, householdId, loanId);
+}
+
+async function afterBalanceChange(tx: Tx, householdId: string, loanId: string): Promise<void> {
+  const [loan] = await loadLoans(householdId, { id: loanId }, tx);
+  if (!loan) return;
+  await rethreadInterest(tx, loan);
+  await refreshLoanStatus(tx, householdId, loanId);
 }
