@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { appleStartupImages } from "@/lib/apple-startup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,12 +15,15 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "Omero Finance",
   description: "Presupuesto del hogar",
-  manifest: "/manifest.json",
+  // El manifest se genera en app/manifest.ts y Next agrega el <link> solo.
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Omero",
+    startupImage: appleStartupImages,
   },
+  // Next ya emite "mobile-web-app-capable"; iOS usa el nombre con prefijo para pantalla completa y arranque.
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 export const viewport: Viewport = {
@@ -50,8 +54,11 @@ export default function RootLayout({
         <ThemeProvider>
           {/* Header */}
           <header
-            className="glass sticky top-0 z-40 flex items-center justify-between px-5 h-14"
+            className="glass sticky top-0 z-40 flex items-center justify-between px-5"
             style={{
+              // Instalada en el iPhone el contenido llega hasta arriba: dejamos libre la barra de estado.
+              paddingTop: "env(safe-area-inset-top)",
+              height: "calc(3.5rem + env(safe-area-inset-top))",
               backgroundColor: "rgba(9,9,11,0.75)",
               borderBottom: "1px solid var(--border)",
             }}

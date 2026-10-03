@@ -37,6 +37,16 @@ model Household {
   exchangeRates     ExchangeRate[]
   accounts          Account[]
   accountTransfers  AccountTransfer[]
+
+  // Plan simple (/plan)
+  planMonths         PlanMonth[]
+  planCategories     PlanCategory[]
+  planRecurrings     PlanRecurring[]
+  planEntries        PlanEntry[]
+  planBudgets        PlanBudget[]
+  planCardPurchases  PlanCardPurchase[]
+  planCardStatements PlanCardStatement[]
+  planBalanceItems   PlanBalanceItem[]
 }
 
 model User {
@@ -160,7 +170,9 @@ model Card {
   ownerName   String?
   createdAt   DateTime @default(now())
 
-  household Household @relation(fields: [householdId], references: [id])
+  household      Household           @relation(fields: [householdId], references: [id])
+  planPurchases  PlanCardPurchase[]
+  planStatements PlanCardStatement[]
 }
 
 // ─────────────────────────────────────────────
@@ -577,4 +589,217 @@ model HouseholdInvitation {
   acceptedAt  DateTime?
 
   household Household @relation(fields: [householdId], references: [id])
+}
+
+// ═════════════════════════════════════════════
+// Plan simple (/plan)
+// Tablas nuevas e independientes del resto de la app.
+// El mes se guarda como "YYYY-MM" en `period`.
+// ═════════════════════════════════════════════
+
+enum PlanKind {
+  INCOME
+  EXPENSE
+}
+
+enum PlanFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum PlanPayMode {
+  TOTAL
+  MINIMUM
+  CUSTOM
+}
+
+enum PlanBalanceType {
+  ASSET
+  DEBT
+}
+
+/// Un mes "iniciado": guarda el tipo de cambio usado para ese mes.
+model PlanMonth {
+  id          String   @id @default(cuid())
+  householdId String
+  period      String
+  usdRate     Decimal  @db.Decimal(10, 4)
+  startedAt   DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+
+  @@unique([householdId, period])
+}
+
+/// Categorías de ingresos y de gastos. `systemKey = "TDC"` es la línea de
+/// tarjetas de crédito: su gasto real sale de los resúmenes, no de movimientos.
+model PlanCategory {
+  id          String   @id @default(cuid())
+  householdId String
+  kind        PlanKind
+  name        String
+  systemKey   String?
+  isArchived  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  household       Household          @relation(fields: [householdId], references: [id])
+  recurrings      PlanRecurring[]    @relation("PlanRecurringCategory")
+  recurringTarget PlanRecurring[]    @relation("PlanRecurringTarget")
+  entries         PlanEntry[]        @relation("PlanEntryCategory")
+  entryTarget     PlanEntry[]        @relation("PlanEntryTarget")
+  budgets         PlanBudget[]
+  cardPurchases   PlanCardPurchase[]
+
+  @@unique([householdId, kind, name])
+}
+
+/// La "regla" de un ingreso fijo o gasto fijo: monto por vez + recurrencia.
+/// Cada mes genera un PlanEntry (monto × cantidad de veces en el mes).
+model PlanRecurring {
+  id               String        @id @default(cuid())
+  householdId      String
+  kind             PlanKind
+  name             String
+  categoryId       String?
+  /// Solo ingresos: categoría de gasto a la que se destina (opcional).
+  targetCategoryId String?
+  currency         Currency      @default(ARS)
+  /// Monto por ocurrencia (por día, por semana, por quincena o por mes).
+  amount           Decimal       @db.Decimal(14, 2)
+  frequency        PlanFrequency @default(MONTHLY)
+  /// Semanal: día de la semana (0 = domingo … 6 = sábado).
+  weekday          Int?
+  /// Mensual: día del mes en que se cobra / vence (informativo).
+  dueDay           Int?
+  isActive         Boolean       @default(true)
+  sortOrder        Int           @default(0)
+  createdAt        DateTime      @default(now())
+
+  household      Household     @relation(fields: [householdId], references: [id])
+  category       PlanCategory? @relation("PlanRecurringCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  targetCategory PlanCategory? @relation("PlanRecurringTarget", fields: [targetCategoryId], references: [id], onDelete: SetNull)
+  entries        PlanEntry[]
+
+  @@index([householdId, kind])
+}
+
+/// Un ingreso o gasto de un mes. Si `recurringId` está presente es un fijo
+/// (generado desde la regla); si no, es un movimiento variable.
+model PlanEntry {
+  id               String    @id @default(cuid())
+  householdId      String
+  period           String
+  kind             PlanKind
+  recurringId      String?
+  name             String
+  categoryId       String?
+  targetCategoryId String?
+  currency         Currency  @default(ARS)
+  amount           Decimal   @db.Decimal(14, 2)
+  date             DateTime? @db.Date
+  /// Fijos: cobrado / pagado.
+  isDone           Boolean   @default(false)
+  note             String?
+  createdAt        DateTime  @default(now())
+
+  household      Household      @relation(fields: [householdId], references: [id])
+  recurring      PlanRecurring? @relation(fields: [recurringId], references: [id], onDelete: SetNull)
+  category       PlanCategory?  @relation("PlanEntryCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  targetCategory PlanCategory?  @relation("PlanEntryTarget", fields: [targetCategoryId], references: [id], onDelete: SetNull)
+
+  @@unique([recurringId, period])
+  @@index([householdId, period])
+}
+
+/// Presupuesto mensual por categoría de gasto.
+model PlanBudget {
+  id          String  @id @default(cuid())
+  householdId String
+  period      String
+  categoryId  String
+  amount      Decimal @db.Decimal(14, 2)
+
+  household Household    @relation(fields: [householdId], references: [id])
+  category  PlanCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, period, categoryId])
+}
+
+/// Compra con tarjeta. Las cuotas se proyectan solas desde `firstPeriod`.
+model PlanCardPurchase {
+  id           String    @id @default(cuid())
+  householdId  String
+  cardId       String
+  description  String
+  categoryId   String?
+  currency     Currency  @default(ARS)
+  /// Monto total de la compra (se divide en `installments` cuotas iguales).
+  amount       Decimal   @db.Decimal(14, 2)
+  installments Int       @default(1)
+  /// Mes del resumen en que entra la primera cuota ("YYYY-MM").
+  firstPeriod  String
+  purchaseDate DateTime? @db.Date
+  note         String?
+  createdAt    DateTime  @default(now())
+
+  household Household     @relation(fields: [householdId], references: [id])
+  card      Card          @relation(fields: [cardId], references: [id])
+  category  PlanCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([householdId, cardId])
+}
+
+/// Resumen de una tarjeta para un mes: lo que hay que pagar.
+model PlanCardStatement {
+  id           String      @id @default(cuid())
+  householdId  String
+  cardId       String
+  period       String
+  dueDate      DateTime?   @db.Date
+  totalArs     Decimal     @db.Decimal(14, 2)
+  minimumArs   Decimal?    @db.Decimal(14, 2)
+  usdAmount    Decimal?    @db.Decimal(14, 2)
+  payMode      PlanPayMode @default(TOTAL)
+  customAmount Decimal?    @db.Decimal(14, 2)
+  isPaid       Boolean     @default(false)
+  paidAt       DateTime?
+  createdAt    DateTime    @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+  card      Card      @relation(fields: [cardId], references: [id])
+
+  @@unique([cardId, period])
+  @@index([householdId, period])
+}
+
+/// Patrimonio: algo que tenés (ASSET) o que debés (DEBT).
+model PlanBalanceItem {
+  id          String          @id @default(cuid())
+  householdId String
+  type        PlanBalanceType
+  name        String
+  currency    Currency        @default(ARS)
+  isArchived  Boolean         @default(false)
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+
+  household Household          @relation(fields: [householdId], references: [id])
+  values    PlanBalanceValue[]
+
+  @@index([householdId])
+}
+
+/// Saldo de un ítem de patrimonio al cierre de un mes.
+model PlanBalanceValue {
+  id     String  @id @default(cuid())
+  itemId String
+  period String
+  amount Decimal @db.Decimal(14, 2)
+
+  item PlanBalanceItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, period])
 }

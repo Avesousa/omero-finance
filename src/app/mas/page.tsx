@@ -1,9 +1,15 @@
 import Link from "next/link";
-import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, User, TrendingUp, Wallet, Zap, UserCircle } from "lucide-react";
+import { BarChart2, Banknote, ChevronRight, DollarSign, Home, ListOrdered, PiggyBank, User, TrendingUp, Wallet, Zap, UserCircle, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const MENU_ITEMS = [
+  {
+    href:  "/plan",
+    icon:  Sparkles,
+    label: "Plan simple",
+    desc:  "La versión nueva y más fácil: mes, ingresos, gastos, tarjetas y presupuesto",
+  },
   {
     href:  "/mas/dashboard",
     icon:  BarChart2,
