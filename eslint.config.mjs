@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // App nativa (Expo): tiene su propia configuración.
+    "mobile/**",
   ]),
 ]);
 

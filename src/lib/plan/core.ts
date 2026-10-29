@@ -1008,6 +1008,55 @@ export function buildSummary(input: SummaryInput): Summary {
   };
 }
 
+// ─── Para el día a día ────────────────────────────────────────────────────────
+
+export interface DailyAllowance {
+  /** Días que quedan del mes contando hoy (o el mes entero si todavía no empezó). */
+  daysLeft: number;
+  /** Libre repartido en esos días. 0 si no queda libre. */
+  perDay: number;
+}
+
+/**
+ * Cuánto se puede gastar por día sin tocar lo reservado: el libre repartido en los días
+ * que quedan. Null para un mes que ya terminó.
+ */
+export function dailyAllowance(freeArs: number, period: string, today: string): DailyAllowance | null {
+  const todayPeriod = today.slice(0, 7);
+  if (period < todayPeriod) return null;
+  const days = daysInPeriod(period);
+  const daysLeft = period === todayPeriod ? days - Number(today.slice(8, 10)) + 1 : days;
+  return { daysLeft, perDay: freeArs > 0 ? round2(freeArs / daysLeft) : 0 };
+}
+
+export interface SpendingSlice {
+  categoryId: string | null;
+  name: string;
+  amount: number;
+  /** Parte del total, de 0 a 1. */
+  share: number;
+}
+
+/**
+ * En qué se va el mes: lo cargado por categoría (pagado o no, tarjetas incluidas), de mayor a
+ * menor. Las que pasan de `max` se juntan en una sola fila "Otras".
+ */
+export function spendingByCategory(rows: BudgetRow[], max = 5): { total: number; slices: SpendingSlice[]; others: SpendingSlice | null } {
+  const withSpend = rows.filter((r) => r.actual > 0.5).sort((a, b) => b.actual - a.actual);
+  const total = withSpend.reduce((sum, r) => sum + r.actual, 0);
+  const share = (n: number) => (total > 0 ? n / total : 0);
+  const top = withSpend.length > max + 1 ? withSpend.slice(0, max) : withSpend;
+  const rest = withSpend.slice(top.length);
+  const restAmount = rest.reduce((sum, r) => sum + r.actual, 0);
+  return {
+    total,
+    slices: top.map((r) => ({ categoryId: r.categoryId, name: r.name, amount: r.actual, share: share(r.actual) })),
+    others: rest.length > 0
+      ? { categoryId: null, name: rest.length === 1 ? rest[0].name : `Otras ${rest.length} categorías`, amount: restAmount, share: share(restAmount) }
+      : null,
+  };
+}
+
 // ─── Patrimonio ───────────────────────────────────────────────────────────────
 
 /** Saldo de un ítem en `period`: el del mes o, si falta, el último anterior. */

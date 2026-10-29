@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronRight, Plus, Settings2 } from "lucide-react";
-import { CardBrandIcon } from "@/components/tdc/card-brand";
+import { CardBrandIcon } from "./card-brand";
 import {
   addMonths, cardLabel, cardLines, cardSubtitle, cardTitle, fmtArs, fmtMoney, fmtUsd, installmentFor, numberToInput, parseMoney,
   periodLabel, periodShort, projectInstallments, round2, statementToPay, toArs,

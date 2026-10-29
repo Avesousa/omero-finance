@@ -1,4 +1,4 @@
-// Omero Finance — Prisma Schema v1.0
+// Omero Finance — Prisma Schema v2 (solo Plan simple; la app clásica se borró)
 
 generator client {
   provider = "prisma-client-js"
@@ -18,25 +18,9 @@ model Household {
   type      HouseholdType @default(PERSONAL)
   createdAt DateTime      @default(now())
 
-  users             User[]
-  invitations       HouseholdInvitation[]
-  incomes           Income[]
-  creditCards       CreditCardStatement[]
-  cards             Card[]
-  fixedTemplates    FixedExpenseTemplate[]
-  fixedExpenses     FixedExpense[]
-  groceries         GroceryExpense[]
-  householdExpenses HouseholdExpense[]
-  personalExpenses  PersonalExpense[]
-  rentPayments      RentPayment[]
-  savings           Saving[]
-  loans             Loan[]
-  debts             Debt[]
-  mpMovements       MercadoPagoMovement[]
-  budgetConfigs     BudgetConfig[]
-  exchangeRates     ExchangeRate[]
-  accounts          Account[]
-  accountTransfers  AccountTransfer[]
+  users       User[]
+  invitations HouseholdInvitation[]
+  cards       Card[]
 
   // Plan simple (/plan)
   planMonths         PlanMonth[]
@@ -60,22 +44,8 @@ model User {
   avatarColor  String   @default("#6366F1")
   createdAt    DateTime @default(now())
 
-  household               Household             @relation(fields: [householdId], references: [id])
-  sessions                Session[]
-  incomesCreated          Income[]              @relation("IncomeCreatedBy")
-  creditCardsCreated      CreditCardStatement[] @relation("CardCreatedBy")
-  fixedExpensesCreated    FixedExpense[]        @relation("FixedCreatedBy")
-  groceriesCreated        GroceryExpense[]      @relation("GroceryCreatedBy")
-  householdExpCreated     HouseholdExpense[]    @relation("HouseholdExpCreatedBy")
-  personalExpOwned        PersonalExpense[]     @relation("PersonalExpOwner")
-  personalExpCreated      PersonalExpense[]     @relation("PersonalExpCreatedBy")
-  rentCreated             RentPayment[]         @relation("RentCreatedBy")
-  savingsCreated          Saving[]              @relation("SavingCreatedBy")
-  loansOwned              Loan[]                @relation("LoanOwner")
-  loansCreated            Loan[]                @relation("LoanCreatedBy")
-  debtsCreated            Debt[]                @relation("DebtCreatedBy")
-  mpMovementsCategorized  MercadoPagoMovement[] @relation("MPCategorizedBy")
-  accounts                Account[]
+  household Household @relation(fields: [householdId], references: [id])
+  sessions  Session[]
 }
 
 model Session {
@@ -86,76 +56,6 @@ model Session {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// ─────────────────────────────────────────────
-// Income
-// ─────────────────────────────────────────────
-
-model Income {
-  id                 String     @id @default(cuid())
-  householdId        String
-  createdById        String
-  month              String
-  year               Int
-  type               IncomeType
-  currency           Currency   @default(ARS)
-  amount             Decimal    @db.Decimal(14, 2)
-  amountArs          Decimal?   @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal?   @db.Decimal(10, 4)
-  description        String?
-  isPersonal         Boolean    @default(false)
-  createdAt          DateTime   @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("IncomeCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Credit Cards
-// ─────────────────────────────────────────────
-
-model CreditCardStatement {
-  id                 String   @id @default(cuid())
-  householdId        String
-  createdById        String
-  month              String
-  year               Int
-  cardName           String
-  ownerUserId        String?
-  dueDate            DateTime
-  minimumPayment     Decimal? @db.Decimal(14, 2)
-  totalAmountArs     Decimal  @db.Decimal(14, 2)
-  usdAmount          Decimal? @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal? @db.Decimal(10, 4)
-  customAmount       Decimal? @db.Decimal(14, 2)
-  amountToPay        Decimal  @db.Decimal(14, 2)
-  payMinimum         Boolean   @default(false)
-  committedOverride  Decimal?  @db.Decimal(14, 2)
-  isPaid             Boolean   @default(false)
-  paidAt             DateTime?
-  paymentSource      String?
-  createdAt          DateTime  @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("CardCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Fixed Expense Templates (recurring catalog)
-// ─────────────────────────────────────────────
-
-model FixedExpenseTemplate {
-  id          String   @id @default(cuid())
-  householdId String
-  concept     String
-  currency    Currency @default(ARS)
-  amount      Decimal  @db.Decimal(14, 2)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
 }
 
 // ─────────────────────────────────────────────
@@ -176,309 +76,6 @@ model Card {
   planStatements PlanCardStatement[]
 }
 
-// ─────────────────────────────────────────────
-// Fixed Expenses
-// ─────────────────────────────────────────────
-
-model FixedExpense {
-  id                 String   @id @default(cuid())
-  householdId        String
-  createdById        String
-  concept            String
-  subcategory        String?
-  currency           Currency @default(ARS)
-  amount             Decimal  @db.Decimal(14, 2)
-  amountArs          Decimal? @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal? @db.Decimal(10, 4)
-  isPaid             Boolean  @default(false)
-  month              String
-  year               Int
-  createdAt          DateTime @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("FixedCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Grocery Expenses
-// ─────────────────────────────────────────────
-
-model GroceryExpense {
-  id                 String   @id @default(cuid())
-  householdId        String
-  createdById        String
-  month              String
-  year               Int
-  description        String
-  cardName           String?
-  currency           Currency @default(ARS)
-  amount             Decimal  @db.Decimal(14, 2)
-  amountArs          Decimal? @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal? @db.Decimal(10, 4)
-  createdAt          DateTime @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("GroceryCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Household General Expenses
-// ─────────────────────────────────────────────
-
-model HouseholdExpense {
-  id                 String      @id @default(cuid())
-  householdId        String
-  createdById        String
-  month              String
-  year               Int
-  description        String
-  cardName           String?
-  expenseType        ExpenseType @default(UNNECESSARY)
-  currency           Currency    @default(ARS)
-  amount             Decimal     @db.Decimal(14, 2)
-  amountArs          Decimal?    @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal?    @db.Decimal(10, 4)
-  createdAt          DateTime    @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("HouseholdExpCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Personal Expenses
-// ─────────────────────────────────────────────
-
-model PersonalExpense {
-  id                 String   @id @default(cuid())
-  householdId        String
-  userId             String
-  createdById        String
-  month              String
-  year               Int
-  concept            String
-  cardName           String?
-  currency           Currency @default(ARS)
-  amount             Decimal  @db.Decimal(14, 2)
-  amountArs          Decimal? @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal? @db.Decimal(10, 4)
-  isPaid             Boolean  @default(true)
-  createdAt          DateTime @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  owner     User      @relation("PersonalExpOwner", fields: [userId], references: [id])
-  createdBy User      @relation("PersonalExpCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Rent & Building Fees
-// ─────────────────────────────────────────────
-
-model RentPayment {
-  id                 String   @id @default(cuid())
-  householdId        String
-  createdById        String
-  month              String
-  year               Int
-  type               RentType
-  apartment          String
-  currency           Currency @default(ARS)
-  amount             Decimal  @db.Decimal(14, 2)
-  amountArs          Decimal? @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal? @db.Decimal(10, 4)
-  description        String?
-  cbuAlias           String?
-  createdAt          DateTime @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("RentCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Savings & Investments
-// ─────────────────────────────────────────────
-
-model Saving {
-  id                 String     @id @default(cuid())
-  householdId        String
-  createdById        String
-  date               DateTime
-  description        String
-  type               SavingType
-  currency           Currency   @default(ARS)
-  amount             Decimal    @db.Decimal(14, 2)
-  amountArs          Decimal?   @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal?   @db.Decimal(10, 4)
-  platform           String?
-  createdAt          DateTime   @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("SavingCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Loans
-// ─────────────────────────────────────────────
-
-model Loan {
-  id                 String          @id @default(cuid())
-  householdId        String
-  ownerUserId        String
-  createdById        String
-  direction          LoanDirection
-  counterpart        String
-  paymentMethod      String?
-  currency           Currency        @default(ARS)
-  principal          Decimal         @db.Decimal(14, 2)
-  principalArs       Decimal?        @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal?        @db.Decimal(10, 4)
-  installments       Int
-  installmentUnit    InstallmentUnit @default(MONTHLY)
-  interestRate       Decimal         @db.Decimal(6, 4)
-  totalAmount        Decimal         @db.Decimal(14, 2)
-  notes              String?
-  createdAt          DateTime        @default(now())
-
-  household          Household        @relation(fields: [householdId], references: [id])
-  owner              User             @relation("LoanOwner", fields: [ownerUserId], references: [id])
-  createdBy          User             @relation("LoanCreatedBy", fields: [createdById], references: [id])
-  installmentRecords LoanInstallment[]
-}
-
-model LoanInstallment {
-  id                String   @id @default(cuid())
-  loanId            String
-  installmentNumber Int
-  dueDate           DateTime
-  amount            Decimal  @db.Decimal(14, 2)
-  currency          Currency @default(ARS)
-  isPaid            Boolean  @default(false)
-  paidDate          DateTime?
-
-  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
-}
-
-// ─────────────────────────────────────────────
-// Debts to collect
-// ─────────────────────────────────────────────
-
-model Debt {
-  id                 String     @id @default(cuid())
-  householdId        String
-  createdById        String
-  date               DateTime
-  concept            String
-  debtor             String
-  currency           Currency   @default(ARS)
-  totalAmount        Decimal    @db.Decimal(14, 2)
-  totalArs           Decimal?   @db.Decimal(14, 2)
-  dollarRateSnapshot Decimal?   @db.Decimal(10, 4)
-  amountPaid         Decimal    @default(0) @db.Decimal(14, 2)
-  status             DebtStatus @default(ACTIVE)
-  createdAt          DateTime   @default(now())
-
-  household Household @relation(fields: [householdId], references: [id])
-  createdBy User      @relation("DebtCreatedBy", fields: [createdById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// MercadoPago
-// ─────────────────────────────────────────────
-
-model MercadoPagoMovement {
-  id              String           @id @default(cuid())
-  householdId     String
-  mpReferenceId   String           @unique
-  releaseDate     DateTime
-  transactionType String
-  netAmount       Decimal          @db.Decimal(14, 2)
-  partialBalance  Decimal?         @db.Decimal(14, 2)
-  currency        Currency         @default(ARS)
-  status          MPMovementStatus @default(PENDING)
-  category        String?
-  subCategory     String?
-  linkedExpenseId String?
-  notes           String?
-  categorizedById String?
-  syncedAt        DateTime         @default(now())
-
-  household     Household @relation(fields: [householdId], references: [id])
-  categorizedBy User?     @relation("MPCategorizedBy", fields: [categorizedById], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Budget Config
-// ─────────────────────────────────────────────
-
-model BudgetConfig {
-  id               String         @id @default(cuid())
-  householdId      String
-  month            String
-  year             Int
-  category         BudgetCategory
-  manualPercentage Decimal?       @db.Decimal(6, 4)
-  manualAmount     Decimal?       @db.Decimal(14, 2)
-  manualCurrency   Currency       @default(ARS)
-  isReserved       Boolean        @default(true)
-
-  household Household @relation(fields: [householdId], references: [id])
-
-  @@unique([householdId, month, year, category])
-}
-
-// ─────────────────────────────────────────────
-// Exchange Rate
-// ─────────────────────────────────────────────
-
-model ExchangeRate {
-  id          String     @id @default(cuid())
-  householdId String?
-  date        DateTime   @unique
-  usdArs      Decimal    @db.Decimal(10, 4)
-  source      RateSource @default(API)
-
-  household Household? @relation(fields: [householdId], references: [id])
-}
-
-// ─────────────────────────────────────────────
-// Accounts
-// ─────────────────────────────────────────────
-
-model Account {
-  id          String      @id @default(cuid())
-  householdId String
-  userId      String?
-  name        String
-  type        AccountType @default(CHECKING)
-  currency    Currency    @default(ARS)
-  balance     Decimal     @default(0) @db.Decimal(14, 2)
-  isDefault   Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-
-  household     Household        @relation(fields: [householdId], references: [id])
-  user          User?            @relation(fields: [userId], references: [id])
-  transfersFrom AccountTransfer[] @relation("TransferFrom")
-  transfersTo   AccountTransfer[] @relation("TransferTo")
-}
-
-model AccountTransfer {
-  id            String   @id @default(cuid())
-  householdId   String
-  fromAccountId String
-  toAccountId   String
-  amount        Decimal  @db.Decimal(14, 2)
-  currency      Currency @default(ARS)
-  description   String?
-  createdAt     DateTime @default(now())
-
-  household   Household @relation(fields: [householdId], references: [id])
-  fromAccount Account   @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Cascade)
-  toAccount   Account   @relation("TransferTo",   fields: [toAccountId],   references: [id], onDelete: Cascade)
-}
-
-// ─────────────────────────────────────────────
-// Enums
-// ─────────────────────────────────────────────
-
 enum UserRole {
   ADMIN
   MEMBER
@@ -487,78 +84,6 @@ enum UserRole {
 enum Currency {
   ARS
   USD
-}
-
-enum IncomeType {
-  SUELDO
-  FREELANCE
-  AHORROS
-  PAGO_DEUDA
-  REMANENTES
-  PRESTAMO
-  INVERSION
-}
-
-enum ExpenseType {
-  NECESSARY
-  UNNECESSARY
-}
-
-enum RentType {
-  ALQUILER
-  EXPENSAS
-  TRABAJOS
-}
-
-enum SavingType {
-  AHORRO
-  VIAJE
-  INVERSION
-}
-
-enum LoanDirection {
-  DADO
-  TOMADO
-}
-
-enum InstallmentUnit {
-  WEEKLY
-  MONTHLY
-}
-
-enum DebtStatus {
-  ACTIVE
-  SETTLED
-}
-
-enum MPMovementStatus {
-  PENDING
-  CATEGORIZED
-}
-
-enum BudgetCategory {
-  ALQUILER
-  TDC
-  GASTOS_FIJOS
-  MERCADO
-  GASTOS_LIBRES
-  AHORRO_CASA
-  AHORRO_VACACIONES
-  INVERSION_AHORRO
-  OTROS
-}
-
-enum RateSource {
-  API
-  MANUAL
-}
-
-enum AccountType {
-  CHECKING
-  SAVINGS
-  INVESTMENT
-  CASH
-  DIGITAL
 }
 
 enum HouseholdType {
@@ -575,10 +100,6 @@ enum InvitationStatus {
   EXPIRED
 }
 
-// ─────────────────────────────────────────────
-// Household Invitations (for SHARED households)
-// ─────────────────────────────────────────────
-
 model HouseholdInvitation {
   id          String           @id @default(cuid())
   householdId String
@@ -593,8 +114,7 @@ model HouseholdInvitation {
 }
 
 // ═════════════════════════════════════════════
-// Plan simple (/plan)
-// Tablas nuevas e independientes del resto de la app.
+// Plan simple (/plan) — toda la app.
 // El mes se guarda como "YYYY-MM" en `period`.
 // ═════════════════════════════════════════════
 

@@ -74,18 +74,13 @@ export function resolvePeriod(raw: string | string[] | undefined): string {
   return isValidPeriod(value) ? value : currentPeriod();
 }
 
+/** Dólar para un mes sin iniciar: el del último mes iniciado antes de ese. */
 async function latestUsdRate(householdId: string, period: string): Promise<number> {
   const prevMonth = await prisma.planMonth.findFirst({
     where: { householdId, period: { lt: period } },
     orderBy: { period: "desc" },
   });
-  const rate = await prisma.exchangeRate.findFirst({
-    where: { OR: [{ householdId }, { householdId: null }] },
-    orderBy: { date: "desc" },
-  });
-  if (rate) return Number(rate.usdArs);
-  if (prevMonth) return Number(prevMonth.usdRate);
-  return 0;
+  return prevMonth ? Number(prevMonth.usdRate) : 0;
 }
 
 export async function loadPlan(householdId: string, period: string): Promise<PlanData> {

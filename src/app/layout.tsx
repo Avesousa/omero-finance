@@ -3,7 +3,6 @@ import { Geist } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { appleStartupImages } from "@/lib/apple-startup";
 
@@ -78,11 +77,8 @@ export default function RootLayout({
             <ThemeToggle />
           </header>
 
-          {/* Main content — padded for bottom nav */}
+          {/* Contenido: deja lugar para la barra de navegación de abajo */}
           <main className="flex-1 mb-nav">{children}</main>
-
-          {/* Bottom nav */}
-          <BottomNav />
         </ThemeProvider>
       </body>
     </html>
