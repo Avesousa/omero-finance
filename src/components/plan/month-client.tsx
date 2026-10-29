@@ -385,6 +385,18 @@ function MonthSummary({ data }: { data: PlanData }) {
 
   return (
     <>
+      {data.inboxPendingCount > 0 && (
+        <Link
+          href="/plan/por-confirmar"
+          className="flex items-center justify-between gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-opacity active:opacity-70"
+          style={{ backgroundColor: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
+        >
+          <span>
+            Tenés {data.inboxPendingCount} {data.inboxPendingCount === 1 ? "pago" : "pagos"} con Apple Pay por confirmar
+          </span>
+          <ChevronRight size={16} className="flex-shrink-0" />
+        </Link>
+      )}
       {/* Disponible o Libre, a elección */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
         <div className="gradient-strip h-1 w-full" />

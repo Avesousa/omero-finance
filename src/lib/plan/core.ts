@@ -1126,3 +1126,67 @@ export function numberToInput(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return "";
   return formatMoneyInput(String(round2(n)).replace(".", ","));
 }
+
+// ─── Pagos que llegan solos (Apple Pay / Atajos de iOS) ───────────────────────
+
+/**
+ * Lee el importe que manda iOS, en formato es-AR o en-US:
+ * "$ 12.345,67", "$1,234.56", "US$ 10,50", "USD 10.50", 1234.5…
+ * Devuelve `amount: null` si no hay un monto positivo legible.
+ */
+export function parseWalletAmount(raw: unknown): { amount: number | null; currency: Currency } {
+  if (typeof raw === "number") {
+    return { amount: Number.isFinite(raw) && raw > 0 ? round2(raw) : null, currency: "ARS" };
+  }
+  if (typeof raw !== "string") return { amount: null, currency: "ARS" };
+
+  const currency: Currency = /US\$|USD|U\$S|U\$/i.test(raw) ? "USD" : "ARS";
+  if (raw.includes("-") || raw.includes("−")) return { amount: null, currency };
+
+  const s = raw.replace(/[^\d.,]/g, "");
+  if (!/\d/.test(s)) return { amount: null, currency };
+
+  const lastDot = s.lastIndexOf(".");
+  const lastComma = s.lastIndexOf(",");
+  let decimalAt = -1;
+  if (lastDot >= 0 && lastComma >= 0) {
+    // Con los dos separadores, el último es el decimal.
+    decimalAt = Math.max(lastDot, lastComma);
+  } else {
+    const sep = lastDot >= 0 ? "." : lastComma >= 0 ? "," : null;
+    if (sep) {
+      const count = s.split(sep).length - 1;
+      const at = s.lastIndexOf(sep);
+      const after = s.length - at - 1;
+      const intPart = s.slice(0, at).replace(/[.,]/g, "");
+      // Un solo separador seguido de exactamente 3 dígitos es de miles ("12.345"), salvo "0.123".
+      if (count === 1 && (after !== 3 || /^0*$/.test(intPart))) decimalAt = at;
+    }
+  }
+
+  const digits = (t: string) => t.replace(/[.,]/g, "");
+  const text = decimalAt >= 0
+    ? `${digits(s.slice(0, decimalAt)) || "0"}.${digits(s.slice(decimalAt + 1)) || "0"}`
+    : digits(s);
+  const n = Number(text);
+  if (!Number.isFinite(n) || n <= 0) return { amount: null, currency };
+  const amount = round2(n);
+  return { amount: amount > 0 ? amount : null, currency };
+}
+
+/** Clave estable de un comercio: sin mayúsculas, tildes ni número de sucursal. */
+export function normalizeMerchant(s: string): string {
+  let t = s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  const patterns = [
+    /\s*[-–]\s*suc(?:ursal)?\.?\s*\d+$/,
+    /\s*#\s*\d+$/,
+    /\s+0*\d{2,}$/,
+  ];
+  for (const re of patterns) t = t.replace(re, "").trim();
+  return t;
+}
+
+/** Clave estable del nombre de una tarjeta de Wallet. */
+export function normalizeWalletCard(s: string): string {
+  return s.replace(/\s+/g, " ").trim().toLowerCase();
+}

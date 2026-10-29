@@ -32,6 +32,9 @@ model Household {
   planCardStatements PlanCardStatement[]
   planBalanceItems   PlanBalanceItem[]
   planLoans          PlanLoan[]
+  planApiTokens      PlanApiToken[]
+  planInboxItems     PlanInboxItem[]
+  planInboxRules     PlanInboxRule[]
 }
 
 model User {
@@ -46,6 +49,7 @@ model User {
 
   household Household @relation(fields: [householdId], references: [id])
   sessions  Session[]
+  planApiTokens PlanApiToken[]
 }
 
 model Session {
@@ -416,4 +420,70 @@ model PlanBalanceValue {
   item PlanBalanceItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, period])
+}
+
+// ─────────────────────────────────────────────
+// Por confirmar (pagos que llegan solos, ej. Apple Pay vía Atajos de iOS)
+// ─────────────────────────────────────────────
+
+/// Clave personal para que un atajo de iOS mande pagos. Se guarda solo el hash (sha256).
+model PlanApiToken {
+  id          String    @id @default(cuid())
+  householdId String
+  userId      String
+  name        String
+  tokenHash   String    @unique
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+}
+
+enum PlanInboxStatus {
+  PENDING
+  CONFIRMED
+  DISMISSED
+}
+
+/// Un pago recibido que todavía hay que confirmar (categoría y cómo se pagó).
+model PlanInboxItem {
+  id          String          @id @default(cuid())
+  householdId String
+  source      String
+  merchant    String?
+  /// null cuando no vino monto o no se pudo leer.
+  amount      Decimal?        @db.Decimal(14, 2)
+  currency    Currency        @default(ARS)
+  rawAmount   String?
+  walletCard  String?
+  occurredAt  DateTime        @default(now())
+  status      PlanInboxStatus @default(PENDING)
+  entryId     String?
+  purchaseId  String?
+  createdAt   DateTime        @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+
+  @@index([householdId, status])
+}
+
+/// Lo que aprendemos al confirmar: comercio -> categoría, tarjeta de Wallet -> tarjeta/débito.
+model PlanInboxRule {
+  id          String   @id @default(cuid())
+  householdId String
+  /// "MERCHANT" | "WALLET_CARD"
+  kind        String
+  key         String
+  categoryId  String?
+  /// WALLET_CARD: null = débito/efectivo.
+  cardId      String?
+  updatedAt   DateTime @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id])
+
+  @@unique([householdId, kind, key])
 }

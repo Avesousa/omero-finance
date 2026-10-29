@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, HandCoins, PiggyBank, Scale, Share2, Tags, UserRound } from "lucide-react";
+import { ChevronRight, HandCoins, Inbox, PiggyBank, Scale, Share2, Smartphone, Tags, UserRound } from "lucide-react";
 import { planContext, type PlanSearchParams } from "@/lib/plan/page";
 import { currentPeriod } from "@/lib/plan/core";
 
@@ -13,6 +13,8 @@ export default async function Page({ searchParams }: { searchParams: PlanSearchP
     { href: `/plan/presupuesto${query}`, icon: PiggyBank, label: "Presupuesto", desc: "Cuánto pensás gastar por categoría y cómo venís" },
     { href: `/plan/prestamos${query}`, icon: HandCoins, label: "Préstamos y deudas", desc: "Lo que debés y lo que te deben, con sus cuotas e intereses" },
     { href: `/plan/patrimonio${query}`, icon: Scale, label: "Patrimonio y deudas", desc: "Lo que tenés, lo que debés y si el neto sube mes a mes" },
+    { href: "/plan/por-confirmar", icon: Inbox, label: "Por confirmar", desc: "Pagos con Apple Pay que llegaron solos y esperan tu toque" },
+    { href: "/plan/apple-pay", icon: Smartphone, label: "Apple Pay automático", desc: "Conectá el iPhone para que tus pagos lleguen solos" },
     { href: "/plan/categorias", icon: Tags, label: "Categorías", desc: "Las de gastos y las de ingresos" },
     { href: `/plan/exportar${query}`, icon: Share2, label: "Exportar resumen", desc: "El mes en un texto para compartir con una AI o con otra persona" },
     { href: "/plan/perfil", icon: UserRound, label: "Perfil", desc: "Tus datos, contraseña, hogar y cerrar sesión" },
