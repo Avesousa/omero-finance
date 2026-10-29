@@ -52,14 +52,14 @@ function CopyButton({ value, label = "Copiar" }: { value: string; label?: string
   );
 }
 
-export function ApplePayClient({ tokens }: { tokens: TokenRow[] }) {
+export function ApplePayClient({ tokens, endpoint }: { tokens: TokenRow[]; endpoint: string }) {
   const action = useAction();
   const [name, setName] = useState("iPhone");
   const [asking, setAsking] = useState(false);
   const [fresh, setFresh] = useState<{ id: string; token: string } | null>(null);
   const [test, setTest] = useState<"idle" | "busy" | "ok" | string>("idle");
 
-  const url = typeof window === "undefined" ? "" : `${window.location.origin}/api/plan/inbox/apple-pay`;
+  const url = endpoint;
 
   function create() {
     return action.run(async () => {

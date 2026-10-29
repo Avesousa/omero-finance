@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { normalizeMerchant, normalizeWalletCard } from "@/lib/plan/core";
+import { addMonths, normalizeMerchant, normalizeWalletCard } from "@/lib/plan/core";
 import { RULE_MERCHANT, RULE_WALLET_CARD } from "@/lib/plan/inbox";
 import {
   ApiError, categoryIdOrNull, readBody, requireCard, requireStartedMonth, v, withSession,
@@ -33,9 +33,12 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     let cardId: string | null = null;
     let installments = 1;
+    // Con tarjeta, la primera cuota va en un resumen posterior: por defecto el del mes siguiente.
+    let firstPeriod = addMonths(period, 1);
     if (method === "CARD") {
       cardId = await requireCard(householdId, body.cardId);
       installments = v.int(body.installments ?? 1, "Cuotas", 1, 120);
+      if (body.firstPeriod != null && body.firstPeriod !== "") firstPeriod = v.nearPeriod(body.firstPeriod);
     } else {
       await requireStartedMonth(householdId, period);
     }
@@ -65,7 +68,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         const purchase = await tx.planCardPurchase.create({
           data: {
             householdId, cardId: cardId!, description: name, amount, currency, installments,
-            firstPeriod: period, categoryId, purchaseDate: date, note: "Apple Pay",
+            firstPeriod, categoryId, purchaseDate: date, note: "Apple Pay",
           },
         });
         purchaseId = purchase.id;

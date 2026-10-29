@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  cardLabel, fmtMoney, numberToInput, parseMoney, todayIso,
+  addMonths, cardLabel, fmtMoney, numberToInput, parseMoney, todayIso,
   type CardDTO, type CategoryDTO, type Currency,
 } from "@/lib/plan/core";
 import type { InboxItemDTO } from "@/lib/plan/inbox";
@@ -103,6 +103,8 @@ function ConfirmSheet({ item, categories, cards, today, onClose }: {
     item.suggestedMethod === "CARD" ? item.suggestedCardId : item.suggestedMethod === "DEBIT" ? DEBIT : null,
   );
   const [installments, setInstallments] = useState("1");
+  // null = sigue la fecha (resumen del mes siguiente); se toca solo si el usuario lo cambia.
+  const [firstPeriodText, setFirstPeriodText] = useState<string | null>(null);
   const [date, setDate] = useState(() => {
     const d = dayOf(item.occurredAt);
     return d > today ? today : d;
@@ -111,6 +113,8 @@ function ConfirmSheet({ item, categories, cards, today, onClose }: {
   const expenseCategories = categories.filter((c) => c.kind === "EXPENSE" && !c.systemKey && !c.isArchived);
   const isCard = how != null && how !== DEBIT;
   const parsed = parseMoney(amount);
+
+  const firstPeriod = firstPeriodText ?? (date ? addMonths(date.slice(0, 7), 1) : "");
 
   function confirm() {
     if (!(parsed > 0)) return action.setError("Ingresá el monto");
@@ -125,7 +129,7 @@ function ConfirmSheet({ item, categories, cards, today, onClose }: {
         categoryId,
         date,
         method: isCard ? "CARD" : "DEBIT",
-        ...(isCard ? { cardId: how, installments: count } : {}),
+        ...(isCard ? { cardId: how, installments: count, firstPeriod } : {}),
       }),
       onClose,
     );
@@ -155,17 +159,27 @@ function ConfirmSheet({ item, categories, cards, today, onClose }: {
         />
       </Field>
       {isCard && (
-        <Field label="Cuotas">
-          <TextInput
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={120}
-            aria-label="Cantidad de cuotas"
-            value={installments}
-            onChange={(e) => setInstallments(e.target.value)}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Cuotas">
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={120}
+              aria-label="Cantidad de cuotas"
+              value={installments}
+              onChange={(e) => setInstallments(e.target.value)}
+            />
+          </Field>
+          <Field label="Primera cuota en">
+            <TextInput
+              type="month"
+              aria-label="Resumen de la primera cuota"
+              value={firstPeriod}
+              onChange={(e) => e.target.value && setFirstPeriodText(e.target.value)}
+            />
+          </Field>
+        </div>
       )}
       <Field label="Fecha">
         <TextInput type="date" aria-label="Fecha" value={date} onChange={(e) => setDate(e.target.value)} />
