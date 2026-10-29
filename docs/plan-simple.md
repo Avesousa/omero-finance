@@ -1,21 +1,24 @@
 # Plan simple (`/plan`)
 
-Sección nueva, aparte de la app clásica, pensada para cargar rápido y con poca fricción.
+Es toda la app: la app clásica se eliminó y la raíz `/` redirige a `/plan`. Pensada para cargar rápido y con poca fricción.
 Usa los mismos tokens de diseño (`globals.css`) y componentes base (`components/ui`).
-La app clásica no cambia: se entra desde **Más → Plan simple** y se vuelve desde **Plan → Más → App clásica**.
+El perfil y cerrar sesión están en **Más → Perfil** (`/plan/perfil`).
 
 ## Puesta en marcha
 
 ```bash
-git switch -c feat/plan-simple     # los cambios están sin commitear sobre main
-npx prisma migrate dev             # aplica 20261002120000_add_plan_simple y regenera el cliente
+cp .env.example .env               # secretos y conexión a la base; .env lo ignora git
+npx prisma migrate deploy          # aplica las migraciones pendientes (nunca migrate dev contra la base real)
 npm run dev                        # http://localhost:3000/plan
 ```
 
-La migración solo **crea** tablas y enums nuevos (`Plan*`); no modifica ni borra nada existente.
-El SQL se escribió a mano siguiendo las convenciones de Prisma (no se pudo descargar el
-schema engine en el entorno donde se generó). Si `migrate dev` detecta alguna diferencia mínima,
-va a proponer una migración de ajuste: es seguro aceptarla.
+Los secretos van en `.env` (ignorado por git); la plantilla es `.env.example`.
+
+Migraciones relevantes:
+
+- `20261028120000_drop_classic_app`: borra las tablas de la app clásica **sin exportarlas**.
+  Es irreversible; la decisión la tomó Avelino.
+- `20261029120000_add_plan_inbox`: agrega las tablas de Apple Pay (claves, bandeja y reglas). Solo agrega.
 
 Las categorías por defecto se crean solas la primera vez que el hogar entra a `/plan`.
 
@@ -32,6 +35,9 @@ Las categorías por defecto se crean solas la primera vez que el hogar entra a `
 | `/plan/patrimonio` | Lo que tenés, lo que debés y el neto mes a mes. Los préstamos y las tarjetas con resumen cargado aparecen solos. |
 | `/plan/categorias` | Categorías de gastos y de ingresos. |
 | `/plan/exportar` | Resumen del mes en Markdown o JSON para copiar, compartir o descargar (`src/lib/plan/export.ts`). |
+| `/plan/por-confirmar` | Pagos que llegaron solos y esperan confirmación: categoría + cómo pagaste. |
+| `/plan/apple-pay` | Claves para el atajo de Apple Pay y paso a paso para configurarlo. |
+| `/plan/perfil` | Tus datos, contraseña, hogar y cerrar sesión. |
 
 El mes se elige con `?period=YYYY-MM` y se mantiene al navegar.
 
@@ -52,6 +58,30 @@ Sin conexión no funciona: todos los datos se leen del servidor.
 Para publicarla más adelante en el App Store, el camino es envolver esta misma web con Capacitor
 (proyecto de Xcode + cuenta de Apple Developer). Apple suele rechazar apps que son solo un sitio
 envuelto, así que conviene sumar algo nativo (notificaciones de vencimientos, Face ID, widgets).
+
+## Apple Pay automático (Atajos de iOS)
+
+Cada pago con Apple Pay puede llegar solo a `/plan/por-confirmar`.
+
+- Una automatización **Transacción** de Atajos (iOS 17 o superior) se dispara en cada pago con Apple Pay
+  y hace `POST /api/plan/inbox/apple-pay` con `Authorization: Bearer <clave>` y un JSON con
+  `amount`, `merchant`, `card` y `name`.
+- **Claves** (`PlanApiToken`): se crean y se revocan desde `/plan/apple-pay`. Se muestran una sola vez;
+  en la base se guarda solo el hash sha256.
+- **Monto**: `parseWalletAmount` acepta formatos es-AR y en-US (`$ 12.345,67`, `$1,234.56`) y detecta USD
+  (`US$`, `USD`, `U$S`).
+- **Duplicados**: el mismo comercio y monto dentro de 3 minutos se ignoran.
+- **Bandeja** (`PlanInboxItem`): cada pago queda en `PENDING`; al confirmarlo pasa a `CONFIRMED`,
+  y si se descarta, a `DISMISSED`.
+- **Confirmar**:
+  - Con débito o efectivo crea un gasto del mes (pide el mes, entre los iniciados).
+  - Con tarjeta crea una compra en cuotas, con la primera cuota por defecto en el resumen del mes siguiente (editable).
+- **Aprende** (`PlanInboxRule`): comercio → categoría, y tarjeta de Wallet → tarjeta o débito.
+  Sirve para precompletar la próxima vez.
+- **Límites**:
+  - Solo pagos con Apple Pay (iPhone o reloj).
+  - A veces la automatización no se dispara, o vuelve a "Preguntar antes de ejecutar" después de actualizar iOS.
+  - Si el banco no informa el monto, el pago queda como "Sin monto".
 
 ## Reglas de cálculo
 
@@ -128,11 +158,12 @@ prisma/migrations/20261004120000_add_plan_loan_rate_and_balance/   tasa anual, I
 src/lib/plan/core.ts        lógica pura + formato
 src/lib/plan/server.ts      carga de datos y helpers de API (sesión, validación)
 src/lib/plan/loans.ts       préstamos: validación, generación de cuotas y cierre
+src/lib/plan/inbox.ts       claves de API y bandeja de Apple Pay
 src/lib/plan/page.ts        sesión + mes para las páginas
 src/app/plan/**             páginas (server components)
 src/app/api/plan/**         rutas (todas filtran por householdId)
 src/components/plan/**      componentes cliente
+mobile/                     proyecto Expo inicial, todavía sin configurar; excluido de TypeScript y ESLint de la web
 ```
 
-Cambios en archivos existentes: `prisma/schema.prisma` (modelos nuevos y relaciones inversas),
-`src/components/layout/bottom-nav.tsx` (se oculta dentro de `/plan`) y `src/app/mas/page.tsx` (link a Plan simple).
+De la app clásica quedaron solo el login, los hogares, los usuarios y el catálogo de tarjetas (`Card`), que Plan simple usa.
