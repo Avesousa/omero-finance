@@ -51,4 +51,4 @@ export function setLanguage(lng: Language): Promise<unknown> {
 
 export default i18n;
 export { useTranslation } from "react-i18next";
-export { formatMoney, formatDate, formatPercent, formatNumber } from "./format";
+export { formatMoney, formatMoneyCompact, formatDate, formatPercent, formatNumber, formatPeriod } from "./format";

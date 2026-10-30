@@ -21,6 +21,8 @@ export const queryKeys = {
   home: (period?: string) => ["home", period ?? "current"] as const,
   pending: ["pending-payments"] as const,
   notifications: ["notifications"] as const,
+  cards: (period?: string) => ["cards", period ?? "current"] as const,
+  wealth: (period?: string) => ["wealth", period ?? "current"] as const,
 };
 
 /** Resumen del mes para Inicio. */
@@ -58,6 +60,34 @@ export function useConfirmPayment() {
   );
   return useMutation({
     mutationFn: ({ id, amount }: { id: string; amount?: number }) => dataSource.confirmPayment(id, amount),
+    onSuccess: refresh,
+  });
+}
+
+/** Tarjetas del mes: resúmenes, vencimientos y cuotas. */
+export function useCards(period?: string) {
+  return useQuery({ queryKey: queryKeys.cards(period), queryFn: () => dataSource.getCards(period) });
+}
+
+/** Patrimonio del mes: activos, deudas e historial. */
+export function useWealth(period?: string) {
+  return useQuery({ queryKey: queryKeys.wealth(period), queryFn: () => dataSource.getWealth(period) });
+}
+
+/** Mutación: marcar pagado el resumen de una tarjeta. Refresca tarjetas, patrimonio e Inicio. */
+export function useMarkStatementPaid() {
+  const qc = useQueryClient();
+  const refresh = useCallback(
+    () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ["cards"] }),
+        qc.invalidateQueries({ queryKey: ["wealth"] }),
+        qc.invalidateQueries({ queryKey: ["home"] }),
+      ]),
+    [qc],
+  );
+  return useMutation({
+    mutationFn: ({ cardId, period }: { cardId: string; period: string }) => dataSource.markStatementPaid(cardId, period),
     onSuccess: refresh,
   });
 }

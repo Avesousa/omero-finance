@@ -29,6 +29,38 @@
       "comeback": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "cards": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "cardsDue": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "cardsOverdue": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "cardsAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "wealth": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "wealthUp": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "wealthDown": {
+        "tranqui": "",
+        "atrevido": ""
       }
     }
   },

@@ -14,3 +14,4 @@ export { VStack, HStack, Spacer, type StackProps } from "./Stack";
 export { TextField, type TextFieldProps } from "./TextField";
 export { hitSlopFor } from "./hitSlop";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
+export { BrandMark, type BrandMarkProps, type BrandMarkBrand } from "./BrandMark";

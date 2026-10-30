@@ -46,5 +46,9 @@
       "title": "Cargar",
       "body": "Pronto vas a poder cargar un gasto en un minuto desde acá."
     }
+  },
+  "period": {
+    "prev": "Mes anterior",
+    "next": "Mes siguiente"
   }
 }

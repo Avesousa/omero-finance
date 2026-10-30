@@ -10,7 +10,18 @@ export const MOODS: readonly Mood[] = ["calma", "feliz", "atento", "festeja"];
 export const MASCOT_IDS: readonly MascotId[] = ["omero", "pincho", "mati", "zorro"];
 
 /** Momentos con frase propia (claves en `mascots:<id>.lines.<momento>`). */
-export type MascotMoment = "dailyRemainder" | "allGood" | "pendingConfirm" | "debtDown" | "comeback";
+export type MascotMoment =
+  | "dailyRemainder"
+  | "allGood"
+  | "pendingConfirm"
+  | "debtDown"
+  | "comeback"
+  | "cards"
+  | "cardsDue" | "cardsOverdue"
+  | "cardsAllPaid"
+  | "wealth"
+  | "wealthUp"
+  | "wealthDown";
 
 /** Props de cada dibujo. Dibuja elementos SVG en un viewBox 0 0 200 200 (los envuelve <Mascot/>). */
 export interface DrawingProps {

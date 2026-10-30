@@ -37,7 +37,7 @@ export function HeroGasto({ perDay, daysLeft, available, free, view, onViewChang
       <Text variant="label" tone="onPrimary">
         {t("hero.label")}
       </Text>
-      <Amount testID="hero-amount" variant="heroAmount" tone="onPrimary" value={big} />
+      <Amount testID="hero-amount" variant="heroAmount" tone="onPrimary" value={big} fitChars={9} />
       <Text testID="hero-subtitle" variant="secondaryStrong" tone="onPrimary" style={{ lineHeight: 18 }}>
         {view === "available" ? t("hero.availableHint") : t("hero.perDay", { count: daysLeft })}
       </Text>

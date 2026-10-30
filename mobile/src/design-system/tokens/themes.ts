@@ -33,6 +33,10 @@ export interface ThemeColors {
   onHeroToggle: string;
   /** Contorno de la muestra "Otros" en leyendas de gráficos. */
   chartOutline: string;
+  /** Barras de gráficos de barras (tenues). */
+  chartBar: string;
+  /** Barra resaltada de un gráfico de barras (la actual). */
+  chartHighlight: string;
   /** Serie de colores para barras/leyendas (5 posiciones; la última es "Otros"). */
   chart: readonly [string, string, string, string, string];
 }
@@ -84,6 +88,8 @@ const tranqui: ThemeDefinition = {
     heroToggle: palette.white,
     onHeroToggle: t.ink,
     chartOutline: t.chartOutline,
+    chartBar: t.chartBar,
+    chartHighlight: t.primary,
     chart: [t.primary, t.accent, t.positive, t.warning, t.border],
   },
 };
@@ -116,6 +122,8 @@ const atrevido: ThemeDefinition = {
     heroToggle: a.accent,
     onHeroToggle: a.onAccent,
     chartOutline: a.chartOutline,
+    chartBar: a.chartBar,
+    chartHighlight: a.accent,
     chart: [a.primary, a.accent, a.positive, a.warning, a.border],
   },
 };

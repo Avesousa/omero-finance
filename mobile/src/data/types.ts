@@ -67,3 +67,72 @@ export interface AppNotifications {
   pending: PendingPayment[];
   notices: AppNotice[];
 }
+
+export type Currency = "ARS" | "USD";
+export type CardBrand = "VISA" | "MC" | "AMEX";
+
+export interface CardStatement {
+  /** 'YYYY-MM' */
+  period: string;
+  /** 'YYYY-MM-DD' */
+  dueDate: string | null;
+  totalArs: number;
+  minimumArs: number | null;
+  usdAmount: number | null;
+  isPaid: boolean;
+}
+
+export interface Card {
+  id: string;
+  name: string;
+  entity: string | null;
+  brand: CardBrand | null;
+  owner: string | null;
+}
+
+/** Compra en cuotas: se reparte en `installments` cuotas iguales desde `firstPeriod`. */
+export interface CardPurchase {
+  id: string;
+  cardId: string;
+  description: string;
+  categoryName: string | null;
+  currency: Currency;
+  total: number;
+  installments: number;
+  firstPeriod: string;
+}
+
+export interface CardsOverview {
+  period: string;
+  today: string;
+  usdRate: number;
+  cards: Card[];
+  /** Resúmenes cargados (cualquier mes). */
+  statements: (CardStatement & { cardId: string })[];
+  purchases: CardPurchase[];
+}
+
+export type WealthKind = "asset" | "debt";
+export type WealthSource = "manual" | "loan" | "card";
+
+export interface WealthItem {
+  id: string;
+  kind: WealthKind;
+  source: WealthSource;
+  name: string;
+  currency: Currency;
+  /** Saldo al cierre del mes (en su moneda). */
+  amount: number;
+  /** Saldo del mes anterior (para el delta), null si no había. */
+  previous: number | null;
+  /** Solo préstamos: avance pagado 0..1 y cuotas que faltan. */
+  loan?: { paidRatio: number; installmentsLeft: number | null };
+}
+
+export interface WealthOverview {
+  period: string;
+  usdRate: number;
+  items: WealthItem[];
+  /** Patrimonio neto en ARS de los últimos 6 meses, el último = `period`. */
+  history: { period: string; netArs: number }[];
+}

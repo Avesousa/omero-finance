@@ -29,6 +29,38 @@
       "comeback": {
         "tranqui": "Qué bueno verte. Arrancamos de nuevo cuando quieras.",
         "atrevido": "Volviste. Sin drama: cargamos lo que falta y listo."
+      },
+      "cards": {
+        "tranqui": "Acá ves qué vence y cuánto pagás con cada tarjeta. Sin apuro.",
+        "atrevido": "Las tarjetas, sin vueltas. Veamos cuánto se hizo el gracioso el plástico."
+      },
+      "cardsDue": {
+        "tranqui": "{{name}} está por vencer. Lo dejamos listo con tiempo.",
+        "tranqui_one": "{{name}} vence en {{count}} día. Lo dejamos listo hoy.",
+        "tranqui_other": "{{name}} vence en {{count}} días. Con tiempo no hay sobresaltos.",
+        "atrevido": "{{name}} está por vencer. El reloj no espera.",
+        "atrevido_one": "{{name}} vence en {{count}} día. Ni se te ocurra dormirte.",
+        "atrevido_other": "{{name}} vence en {{count}} días. El reloj corre, ¿eh?"
+      },
+      "cardsOverdue": {
+        "tranqui": "{{name}} ya venció. Pagala apenas puedas y seguimos tranquilos.",
+        "atrevido": "{{name}} ya venció. Dale hoy, que los intereses no perdonan."
+      },
+      "cardsAllPaid": {
+        "tranqui": "Todas las tarjetas al día. Qué alivio.",
+        "atrevido": "Tarjetas en cero. Hoy se duerme como un bebé."
+      },
+      "wealth": {
+        "tranqui": "Acá se ve cómo crece lo tuyo, mes a mes. Paso a paso.",
+        "atrevido": "Tu plata, en limpio. Sin maquillaje ni excusas."
+      },
+      "wealthUp": {
+        "tranqui": "Tu patrimonio subió {{amount}} este mes. Muy bien.",
+        "atrevido": "+{{amount}} este mes. Se nota quién viene ordenado."
+      },
+      "wealthDown": {
+        "tranqui": "Este mes bajó un poco. Pasa: miramos juntos qué se puede ajustar.",
+        "atrevido": "Mes en baja. Sin culpa: lo miramos y lo damos vuelta."
       }
     }
   },

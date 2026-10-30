@@ -1,5 +1,5 @@
-import { ComingSoonScreen } from "../../src/features/placeholders/ComingSoonScreen";
+import { CardsScreen } from "../../src/features/cards/CardsScreen";
 
 export default function Tarjetas() {
-  return <ComingSoonScreen kind="cards" />;
+  return <CardsScreen />;
 }

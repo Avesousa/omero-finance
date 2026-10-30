@@ -1,0 +1,38 @@
+{
+  "title": "",
+  "currency": {
+    "label": "",
+    "ARS": "",
+    "USD": ""
+  },
+  "hero": {
+    "label": "",
+    "assets": "",
+    "debts": "",
+    "split": "",
+    "vsPrevious": ""
+  },
+  "trend": {
+    "title": ""
+  },
+  "assets": {
+    "title": ""
+  },
+  "debts": {
+    "title": ""
+  },
+  "row": {
+    "approx": "",
+    "installmentsLeft_one": "",
+    "installmentsLeft_other": "",
+    "paidRatio": "",
+    "share": ""
+  },
+  "rate": "",
+  "state": {
+    "loading": "",
+    "errorTitle": "",
+    "errorBody": "",
+    "emptyGroup": ""
+  }
+}

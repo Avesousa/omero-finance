@@ -7,3 +7,15 @@ export { FixedProgressCard, type FixedProgressCardProps } from "./FixedProgressC
 export { StoryTeaserCard, type StoryTeaserCardProps } from "./StoryTeaserCard";
 export { PendingConfirmCard, type PendingConfirmCardProps } from "./PendingConfirmCard";
 export { NoticeRow, type NoticeRowProps } from "./NoticeRow";
+
+// — tarjetas —
+export { ScreenHeader, type ScreenHeaderProps } from "./ScreenHeader";
+export { CardsSummaryHero, type CardsSummaryHeroProps } from "./CardsSummaryHero";
+export { CardStatementCard, type CardStatementCardProps, type CardStatementStatus } from "./CardStatementCard";
+export { InstallmentsCard, type InstallmentsCardProps, type InstallmentItem } from "./InstallmentsCard";
+export { CommittedMonthsCard, type CommittedMonthsCardProps } from "./CommittedMonthsCard";
+
+// — patrimonio —
+export { WealthHero, type WealthHeroProps } from "./WealthHero";
+export { WealthTrendCard, type WealthTrendCardProps } from "./WealthTrendCard";
+export { WealthGroupCard, type WealthGroupCardProps, type WealthGroupRow } from "./WealthGroupCard";

@@ -8,3 +8,6 @@ export { StatTile, type StatTileProps } from "./StatTile";
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
 export { MascotAvatar, type MascotAvatarProps } from "./MascotAvatar";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
+export { PeriodSwitcher, type PeriodSwitcherProps } from "./PeriodSwitcher";
+export { MiniBarChart, type MiniBarChartProps, type MiniBarDatum } from "./MiniBarChart";
+export { DeltaBadge, type DeltaBadgeProps } from "./DeltaBadge";

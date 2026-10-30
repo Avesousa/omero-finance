@@ -1,5 +1,5 @@
-import { ComingSoonScreen } from "../../src/features/placeholders/ComingSoonScreen";
+import { WealthScreen } from "../../src/features/wealth/WealthScreen";
 
 export default function Patrimonio() {
-  return <ComingSoonScreen kind="wealth" />;
+  return <WealthScreen />;
 }

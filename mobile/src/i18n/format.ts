@@ -34,7 +34,8 @@ export function formatMoney(amount: number, currency: string = "ARS"): string {
     return new Intl.NumberFormat(activeLocale(), {
       style: "currency",
       currency,
-      currencyDisplay: "narrowSymbol",
+      // ARS como "$"; otras monedas con símbolo explícito ("US$") para no confundirlas.
+      currencyDisplay: currency === "ARS" ? "narrowSymbol" : "symbol",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     })
@@ -99,4 +100,35 @@ export function formatDate(input: string | Date, style: DateStyle = "short"): st
 /** Primera letra en mayúscula ("noviembre 2026" → "Noviembre 2026"). */
 export function capitalize(text: string): string {
   return text.charAt(0).toLocaleUpperCase(activeLocale()) + text.slice(1);
+}
+
+/**
+ * Período 'YYYY-MM' legible: `long` → "noviembre 2026" (usar `capitalize` si va solo),
+ * `short` → "nov" (etiquetas de gráficos).
+ */
+export function formatPeriod(period: string, style: "long" | "short" = "long"): string {
+  if (style === "long") return formatDate(period, "monthYear");
+  const date = parseLocal(period);
+  try {
+    return new Intl.DateTimeFormat(activeLocale(), { month: "short" }).format(date).replace(".", "");
+  } catch {
+    return formatDate(date, "month").slice(0, 3);
+  }
+}
+
+/** Sufijos de miles/millones por locale (Hermes no garantiza `notation: "compact"`). */
+const COMPACT_SUFFIX: Record<string, { k: string; m: string }> = {
+  "es-AR": { k: "mil", m: "M" },
+  "pt-BR": { k: "mil", m: "mi" },
+  "en-US": { k: "K", m: "M" },
+};
+
+/** Monto abreviado para gráficos: `$ 2,5 M`, `$ 399 mil`. */
+export function formatMoneyCompact(amount: number, currency: string = "ARS"): string {
+  const abs = Math.abs(amount);
+  if (abs < 1000) return formatMoney(amount, currency);
+  const suffix = COMPACT_SUFFIX[activeLocale()] ?? COMPACT_SUFFIX["es-AR"];
+  const [value, unit, digits] = abs >= 1_000_000 ? [abs / 1_000_000, suffix.m, 1] : [abs / 1000, suffix.k, abs < 10_000 ? 1 : 0];
+  const symbol = formatMoney(0, currency).replace(/[\d\s.,]/g, "");
+  return `${amount < 0 ? "-" : ""}${symbol} ${formatNumber(value, digits).replace(/[,.]0$/, "")} ${unit}`;
 }
