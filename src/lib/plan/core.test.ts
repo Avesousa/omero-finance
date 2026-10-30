@@ -5,9 +5,10 @@ import {
   buildSummary, balanceAt, isReceivable, netWorth, pastPaymentPlan, cardLabel, cardSubtitle, cardTitle,
   parseMoney, formatMoneyInput, numberToInput,
   monthlyRatePct, frenchInstallment, loanState, isLoanFinished, proposeLoanPayment, buildLoanProposal,
-  loanDueDate, loanPaymentLabel, loanBalanceItem, loanRateLabel, statementDebt, cardDebts, cardsBalanceItem,
+  loanDueDate, loanPaymentLabel, loanBalanceItem, loanRateLabel, dailyAllowance, spendingByCategory, statementDebt, cardDebts, cardsBalanceItem,
   type CardDTO, type LoanDTO, type LoanPaymentDTO, type CategoryDTO, type EntryDTO, type PurchaseDTO, type StatementDTO,
   type BalanceItemDTO, type RecurringDTO,
+  parseWalletAmount, normalizeMerchant, normalizeWalletCard,
 } from "./core";
 
 const card = (id: string, name: string, extra: Partial<CardDTO> = {}): CardDTO => ({
@@ -741,5 +742,68 @@ describe("préstamos y deudas", () => {
       expect(s.availableArs).toBe(1_000_000);
       expect(s.freeArs).toBe(1_000_000 - 300_000 - 100_000);
     });
+  });
+});
+
+describe("para el día a día", () => {
+  it("reparte el libre en los días que quedan, contando hoy", () => {
+    expect(dailyAllowance(310_000, "2026-10", "2026-10-01")).toEqual({ daysLeft: 31, perDay: 10_000 });
+    expect(dailyAllowance(100_000, "2026-10", "2026-10-28")).toEqual({ daysLeft: 4, perDay: 25_000 });
+    expect(dailyAllowance(90_000, "2026-11", "2026-10-28")).toEqual({ daysLeft: 30, perDay: 3_000 });
+    // sin libre no hay margen; un mes que terminó no aplica
+    expect(dailyAllowance(-50_000, "2026-10", "2026-10-28")).toEqual({ daysLeft: 4, perDay: 0 });
+    expect(dailyAllowance(100_000, "2026-09", "2026-10-28")).toBeNull();
+  });
+
+  it("ordena el gasto por categoría y junta el resto", () => {
+    const row = (name: string, actual: number) => ({
+      categoryId: name, name, isCards: false, budget: 0, actual, paid: 0, pending: 0, earmarked: 0, remaining: 0, status: "ok" as const,
+    });
+    const rows = [row("Súper", 300), row("Tarjetas", 500), row("Salidas", 100), row("Nada", 0), row("Auto", 50), row("Luz", 30), row("Gym", 20)];
+    const r = spendingByCategory(rows, 3);
+    expect(r.total).toBe(1000);
+    expect(r.slices.map((x) => x.name)).toEqual(["Tarjetas", "Súper", "Salidas"]);
+    expect(r.slices[0].share).toBe(0.5);
+    expect(r.others).toMatchObject({ name: "Otras 3 categorías", amount: 100, share: 0.1 });
+    // si sobra una sola, se muestra con su nombre en lugar de "Otras 1"
+    expect(spendingByCategory(rows.slice(0, 5), 3).slices.map((x) => x.name)).toEqual(["Tarjetas", "Súper", "Salidas", "Auto"]);
+    expect(spendingByCategory([], 3)).toEqual({ total: 0, slices: [], others: null });
+  });
+});
+
+describe("pagos de Apple Pay", () => {
+  it("lee importes en formato es-AR y en-US", () => {
+    const ars = (a: number) => ({ amount: a, currency: "ARS" });
+    expect(parseWalletAmount("$ 12.345,67")).toEqual(ars(12345.67));
+    expect(parseWalletAmount("$12.345")).toEqual(ars(12345));
+    expect(parseWalletAmount("ARS 1.234,5")).toEqual(ars(1234.5));
+    expect(parseWalletAmount("12345.67")).toEqual(ars(12345.67));
+    expect(parseWalletAmount("$1,234.56")).toEqual(ars(1234.56));
+    expect(parseWalletAmount("1.234.567")).toEqual(ars(1234567));
+    expect(parseWalletAmount("1,5")).toEqual(ars(1.5));
+    expect(parseWalletAmount("0.123")).toEqual(ars(0.12));
+    expect(parseWalletAmount(1234.5)).toEqual(ars(1234.5));
+  });
+
+  it("detecta dólares", () => {
+    expect(parseWalletAmount("US$ 10,50")).toEqual({ amount: 10.5, currency: "USD" });
+    expect(parseWalletAmount("USD 10.50")).toEqual({ amount: 10.5, currency: "USD" });
+    expect(parseWalletAmount("U$S 3")).toEqual({ amount: 3, currency: "USD" });
+  });
+
+  it("devuelve null si no hay un monto válido", () => {
+    for (const raw of ["", null, undefined, "abc", "$", "0", "-500", "$ -12,50", 0, -3, NaN, {}]) {
+      expect(parseWalletAmount(raw).amount).toBeNull();
+    }
+  });
+
+  it("normaliza comercios y tarjetas de Wallet", () => {
+    expect(normalizeMerchant("  CARREFOUR   Express #123 ")).toBe("carrefour express");
+    expect(normalizeMerchant("Farmacity 0042")).toBe("farmacity");
+    expect(normalizeMerchant("Café Martínez - Suc 5")).toBe("cafe martinez");
+    expect(normalizeMerchant("Starbucks")).toBe("starbucks");
+    expect(normalizeMerchant("7 Eleven")).toBe("7 eleven");
+    expect(normalizeMerchant("   ")).toBe("");
+    expect(normalizeWalletCard("  Visa   Galicia ")).toBe("visa galicia");
   });
 });

@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, CreditCard, HandCoins, Hourglass, Pencil, PiggyBank, Repeat, ShoppingBag, Wallet,
+  ArrowDownLeft, ArrowUpRight, CalendarDays, Check, ChevronDown, ChevronRight, CreditCard, HandCoins, Hourglass, Pencil,
+  PiggyBank, Repeat, ShoppingBag, Wallet,
 } from "lucide-react";
 import {
-  addDays, addMonths, buildSummary, cardLines, fmtArs, fmtMoney, numberToInput, parseMoney, periodLabel, toArs,
-  type Currency, type Kind,
+  addDays, addMonths, buildSummary, cardLines, dailyAllowance, fmtArs, fmtMoney, numberToInput, parseMoney, periodLabel,
+  spendingByCategory, toArs,
+  type Currency, type EntryDTO, type Kind,
 } from "@/lib/plan/core";
 import type { PlanData } from "@/lib/plan/server";
 import { BudgetRowView } from "./budget-rows";
@@ -239,6 +241,11 @@ function MonthSummary({ data }: { data: PlanData }) {
     [data],
   );
 
+  const daily = dailyAllowance(summary.freeArs, data.period, data.today);
+  const spending = spendingByCategory(summary.rows);
+  // Lo último que se cargó a mano (los fijos y las cuotas tienen su lugar en Gastos y Préstamos).
+  const recent = data.entries.filter((e) => !e.recurringId && !e.loanId).slice(0, 5);
+
   const negative = summary.availableArs < 0;
   const hasBudget = data.budgets.length > 0;
   const href = (path: string) => withPeriod(path, data.period);
@@ -378,6 +385,18 @@ function MonthSummary({ data }: { data: PlanData }) {
 
   return (
     <>
+      {data.inboxPendingCount > 0 && (
+        <Link
+          href="/plan/por-confirmar"
+          className="flex items-center justify-between gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-opacity active:opacity-70"
+          style={{ backgroundColor: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
+        >
+          <span>
+            Tenés {data.inboxPendingCount} {data.inboxPendingCount === 1 ? "pago" : "pagos"} con Apple Pay por confirmar
+          </span>
+          <ChevronRight size={16} className="flex-shrink-0" />
+        </Link>
+      )}
       {/* Disponible o Libre, a elección */}
       <div className="rounded-2xl overflow-hidden" style={cardStyle}>
         <div className="gradient-strip h-1 w-full" />
@@ -498,11 +517,55 @@ function MonthSummary({ data }: { data: PlanData }) {
         </button>
       </div>
 
+      {/* Cuánto por día */}
+      {daily && <DailyCard daily={daily} free={summary.freeArs} />}
+
       {/* Carga rápida */}
-      <div className="grid grid-cols-2 gap-3">
-        <QuickButton onClick={() => setSheet("EXPENSE")} icon={ArrowUpRight} label="Cargar gasto" />
-        <QuickButton onClick={() => setSheet("INCOME")} icon={ArrowDownLeft} label="Cargar ingreso" />
+      <div className="grid grid-cols-[1fr_auto] gap-3">
+        <QuickButton onClick={() => setSheet("EXPENSE")} icon={ArrowUpRight} label="Cargar gasto" primary />
+        <QuickButton onClick={() => setSheet("INCOME")} icon={ArrowDownLeft} label="Ingreso" />
       </div>
+
+      {/* En qué va el mes */}
+      {spending.total > 0.5 && (
+        <section className="space-y-2">
+          <SectionTitle right={<span className="text-xs font-semibold tabular-nums" style={{ color: "var(--text-primary)" }}>{fmtArs(spending.total)}</span>}>
+            En qué va el mes
+          </SectionTitle>
+          <div className="rounded-2xl p-4 space-y-3" style={cardStyle} data-testid="spending">
+            {[...spending.slices, ...(spending.others ? [spending.others] : [])].map((slice, i) => (
+              <Link key={`${slice.categoryId ?? "otras"}-${i}`} href={href("/plan/presupuesto")} className="block space-y-1.5" title={`${slice.name}: ${fmtArs(slice.amount)}`}>
+                <span className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="truncate" style={{ color: "var(--text-primary)" }}>{slice.name}</span>
+                  <span className="flex-shrink-0 tabular-nums" style={{ color: "var(--text-primary)" }}>
+                    {fmtArs(slice.amount)}
+                    <span className="ml-1.5 text-[11px]" style={{ color: "var(--text-secondary)" }}>{Math.round(slice.share * 100)} %</span>
+                  </span>
+                </span>
+                <span className="block h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-elevated)" }}>
+                  <span
+                    className="block h-full rounded-full"
+                    style={{ width: `${Math.max(2, slice.share * 100)}%`, backgroundColor: slice.categoryId ? "var(--accent)" : "var(--text-secondary)" }}
+                  />
+                </span>
+              </Link>
+            ))}
+            <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>Todo lo cargado del mes, pagado o no, tarjetas incluidas.</p>
+          </div>
+        </section>
+      )}
+
+      {/* Últimos movimientos */}
+      {recent.length > 0 && (
+        <section className="space-y-2">
+          <SectionTitle right={<Link href={href("/plan/gastos")} className="text-xs font-semibold" style={{ color: "var(--accent)" }}>Ver todo</Link>}>
+            Últimos movimientos
+          </SectionTitle>
+          <ListCard>
+            {recent.map((e) => <RecentRow key={e.id} entry={e} data={data} />)}
+          </ListCard>
+        </section>
+      )}
 
       {/* Para mirar */}
       {(notices.length > 0 || fixedPending > 0.5) && (
@@ -590,17 +653,85 @@ function MonthSummary({ data }: { data: PlanData }) {
   );
 }
 
-function QuickButton({ onClick, icon: Icon, label }: { onClick: () => void; icon: React.ElementType; label: string }) {
+function QuickButton({ onClick, icon: Icon, label, primary = false }: {
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+  primary?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold"
-      style={{ backgroundColor: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
+      className="h-12 px-5 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold active:scale-[0.98] transition-transform"
+      style={primary
+        ? { backgroundColor: "var(--accent)", color: "var(--accent-foreground)" }
+        : { backgroundColor: "var(--accent-subtle)", color: "var(--accent)", border: "1px solid var(--accent-border)" }}
     >
       <Icon size={16} />
       {label}
     </button>
+  );
+}
+
+/** Cuánto se puede gastar por día sin tocar lo reservado. */
+function DailyCard({ daily, free }: { daily: { daysLeft: number; perDay: number }; free: number }) {
+  const room = daily.perDay > 0.5;
+  return (
+    <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={cardStyle} data-testid="daily">
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: room ? "var(--accent-subtle)" : "var(--bg-elevated)" }}
+      >
+        <CalendarDays size={18} style={{ color: room ? "var(--accent)" : "var(--text-secondary)" }} />
+      </div>
+      <div className="min-w-0">
+        {room ? (
+          <>
+            <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Podés gastar <strong className="tabular-nums">{fmtArs(daily.perDay)}</strong> por día
+            </p>
+            <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              {daily.daysLeft === 1 ? "Queda 1 día" : `Quedan ${daily.daysLeft} días`} · sale del libre ({fmtArs(free)}), sin tocar lo reservado
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm" style={{ color: "var(--text-primary)" }}>Este mes no queda margen libre</p>
+            <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              Lo que gastes fuera del presupuesto sale de lo reservado. Mirá en Libre qué se puede mover.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RecentRow({ entry, data }: { entry: EntryDTO; data: PlanData }) {
+  const income = entry.kind === "INCOME";
+  const category = data.categories.find((c) => c.id === entry.categoryId)?.name ?? "Sin categoría";
+  const [, m, d] = (entry.date ?? "").split("-");
+  return (
+    <Link href={withPeriod(income ? "/plan/ingresos" : "/plan/gastos", data.period)} className="flex items-center gap-3 px-4 py-3">
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: income ? "var(--accent-subtle)" : "var(--bg-elevated)" }}
+      >
+        {income
+          ? <ArrowDownLeft size={14} style={{ color: "var(--accent-green)" }} />
+          : <Check size={14} style={{ color: "var(--text-secondary)" }} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm truncate" style={{ color: "var(--text-primary)" }}>{entry.name}</p>
+        <p className="text-[11px] truncate" style={{ color: "var(--text-secondary)" }}>
+          {category}{d ? ` · ${Number(d)}/${Number(m)}` : ""}
+        </p>
+      </div>
+      <p className="text-sm font-semibold tabular-nums flex-shrink-0" style={{ color: income ? "var(--accent-green)" : "var(--text-primary)" }}>
+        {income ? "+" : "−"} {fmtMoney(entry.amount, entry.currency)}
+      </p>
+    </Link>
   );
 }
 

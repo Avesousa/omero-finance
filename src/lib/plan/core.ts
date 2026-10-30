@@ -1008,6 +1008,55 @@ export function buildSummary(input: SummaryInput): Summary {
   };
 }
 
+// ─── Para el día a día ────────────────────────────────────────────────────────
+
+export interface DailyAllowance {
+  /** Días que quedan del mes contando hoy (o el mes entero si todavía no empezó). */
+  daysLeft: number;
+  /** Libre repartido en esos días. 0 si no queda libre. */
+  perDay: number;
+}
+
+/**
+ * Cuánto se puede gastar por día sin tocar lo reservado: el libre repartido en los días
+ * que quedan. Null para un mes que ya terminó.
+ */
+export function dailyAllowance(freeArs: number, period: string, today: string): DailyAllowance | null {
+  const todayPeriod = today.slice(0, 7);
+  if (period < todayPeriod) return null;
+  const days = daysInPeriod(period);
+  const daysLeft = period === todayPeriod ? days - Number(today.slice(8, 10)) + 1 : days;
+  return { daysLeft, perDay: freeArs > 0 ? round2(freeArs / daysLeft) : 0 };
+}
+
+export interface SpendingSlice {
+  categoryId: string | null;
+  name: string;
+  amount: number;
+  /** Parte del total, de 0 a 1. */
+  share: number;
+}
+
+/**
+ * En qué se va el mes: lo cargado por categoría (pagado o no, tarjetas incluidas), de mayor a
+ * menor. Las que pasan de `max` se juntan en una sola fila "Otras".
+ */
+export function spendingByCategory(rows: BudgetRow[], max = 5): { total: number; slices: SpendingSlice[]; others: SpendingSlice | null } {
+  const withSpend = rows.filter((r) => r.actual > 0.5).sort((a, b) => b.actual - a.actual);
+  const total = withSpend.reduce((sum, r) => sum + r.actual, 0);
+  const share = (n: number) => (total > 0 ? n / total : 0);
+  const top = withSpend.length > max + 1 ? withSpend.slice(0, max) : withSpend;
+  const rest = withSpend.slice(top.length);
+  const restAmount = rest.reduce((sum, r) => sum + r.actual, 0);
+  return {
+    total,
+    slices: top.map((r) => ({ categoryId: r.categoryId, name: r.name, amount: r.actual, share: share(r.actual) })),
+    others: rest.length > 0
+      ? { categoryId: null, name: rest.length === 1 ? rest[0].name : `Otras ${rest.length} categorías`, amount: restAmount, share: share(restAmount) }
+      : null,
+  };
+}
+
 // ─── Patrimonio ───────────────────────────────────────────────────────────────
 
 /** Saldo de un ítem en `period`: el del mes o, si falta, el último anterior. */
@@ -1076,4 +1125,68 @@ export function formatMoneyInput(text: string): string {
 export function numberToInput(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return "";
   return formatMoneyInput(String(round2(n)).replace(".", ","));
+}
+
+// ─── Pagos que llegan solos (Apple Pay / Atajos de iOS) ───────────────────────
+
+/**
+ * Lee el importe que manda iOS, en formato es-AR o en-US:
+ * "$ 12.345,67", "$1,234.56", "US$ 10,50", "USD 10.50", 1234.5…
+ * Devuelve `amount: null` si no hay un monto positivo legible.
+ */
+export function parseWalletAmount(raw: unknown): { amount: number | null; currency: Currency } {
+  if (typeof raw === "number") {
+    return { amount: Number.isFinite(raw) && raw > 0 ? round2(raw) : null, currency: "ARS" };
+  }
+  if (typeof raw !== "string") return { amount: null, currency: "ARS" };
+
+  const currency: Currency = /US\$|USD|U\$S|U\$/i.test(raw) ? "USD" : "ARS";
+  if (raw.includes("-") || raw.includes("−")) return { amount: null, currency };
+
+  const s = raw.replace(/[^\d.,]/g, "");
+  if (!/\d/.test(s)) return { amount: null, currency };
+
+  const lastDot = s.lastIndexOf(".");
+  const lastComma = s.lastIndexOf(",");
+  let decimalAt = -1;
+  if (lastDot >= 0 && lastComma >= 0) {
+    // Con los dos separadores, el último es el decimal.
+    decimalAt = Math.max(lastDot, lastComma);
+  } else {
+    const sep = lastDot >= 0 ? "." : lastComma >= 0 ? "," : null;
+    if (sep) {
+      const count = s.split(sep).length - 1;
+      const at = s.lastIndexOf(sep);
+      const after = s.length - at - 1;
+      const intPart = s.slice(0, at).replace(/[.,]/g, "");
+      // Un solo separador seguido de exactamente 3 dígitos es de miles ("12.345"), salvo "0.123".
+      if (count === 1 && (after !== 3 || /^0*$/.test(intPart))) decimalAt = at;
+    }
+  }
+
+  const digits = (t: string) => t.replace(/[.,]/g, "");
+  const text = decimalAt >= 0
+    ? `${digits(s.slice(0, decimalAt)) || "0"}.${digits(s.slice(decimalAt + 1)) || "0"}`
+    : digits(s);
+  const n = Number(text);
+  if (!Number.isFinite(n) || n <= 0) return { amount: null, currency };
+  const amount = round2(n);
+  return { amount: amount > 0 ? amount : null, currency };
+}
+
+/** Clave estable de un comercio: sin mayúsculas, tildes ni número de sucursal. */
+export function normalizeMerchant(s: string): string {
+  let t = s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  const patterns = [
+    /\s*[-–]\s*suc(?:ursal)?\.?\s*\d+$/,
+    /\s*#\s*\d+$/,
+    /\s+0*\d{2,}$/,
+  ];
+  for (const re of patterns) t = t.replace(re, "").trim();
+  return t;
+}
+
+/** Clave estable del nombre de una tarjeta de Wallet. */
+export function normalizeWalletCard(s: string): string {
+  return s.replace(/\s+/g, " ").trim().toLowerCase();
 }
