@@ -271,7 +271,7 @@ export interface NewIncomeInput {
 }
 
 /** Entrada de voz: el audio grabado (URI local) o texto escrito. */
-export type VoiceInput = { audioUri: string; mimeType: string } | { text: string };
+export type VoiceInput = { audioUri: string; mimeType: string; durationMs?: number } | { text: string };
 
 /** Error que la app le avisa al admin (`POST /api/plan/errors`). */
 export interface ErrorReport {

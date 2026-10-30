@@ -2,7 +2,7 @@ import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSession } from "../lib/session";
-import { DATA_SOURCE } from "../src/data";
+import { REQUIRES_LOGIN } from "../src/data";
 import { useAppFonts, useTheme } from "../src/design-system";
 import { AppProviders } from "../src/providers/AppProviders";
 
@@ -13,8 +13,8 @@ function Shell() {
 
   if (!fontsReady || !ready) return <View style={{ flex: 1, backgroundColor: theme.colors.bg }} />;
 
-  // En modo mock no se exige sesión; en modo api se mantiene el login.
-  const allowed = DATA_SOURCE === "mock" || signedIn;
+  // Con todo en mock no se exige sesión; si los datos o la voz van a la api, se mantiene el login.
+  const allowed = !REQUIRES_LOGIN || signedIn;
   return (
     <>
       <StatusBar style={theme.statusBar} />

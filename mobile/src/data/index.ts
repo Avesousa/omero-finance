@@ -7,7 +7,7 @@ import { notificationBadgeCount } from "./selectors";
 import { AppError, reportAppError, toAppError } from "./errors";
 import type { NewIncomeInput, NewLoanInput, VoiceInput } from "./types";
 
-export { DATA_SOURCE } from "./sources";
+export { DATA_SOURCE, VOICE_SOURCE, REQUIRES_LOGIN } from "./sources";
 export * from "./types";
 export * from "./selectors";
 export { AppError, reportAppError, toAppError } from "./errors";

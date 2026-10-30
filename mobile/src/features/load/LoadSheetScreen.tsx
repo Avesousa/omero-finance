@@ -101,7 +101,7 @@ export function LoadSheetScreen() {
 
   const finishRecording = useCallback(async () => {
     const audio = await recorder.stop();
-    if (audio) submit({ audioUri: audio.uri, mimeType: audio.mimeType });
+    if (audio) submit({ audioUri: audio.uri, mimeType: audio.mimeType, durationMs: audio.durationMs });
     else setResult({ moment: "voiceUnclear", mood: "atento" });
   }, [recorder, submit]);
 

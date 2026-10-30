@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { todayIso } from "@/lib/plan/core";
 import { reportError } from "@/lib/plan/errors";
 import { ensurePlanDefaults, withSession } from "@/lib/plan/server";
-import { VoiceError, interpretVoice, shouldReport, toVoiceApiError, type VoiceInput } from "@/lib/plan/voice-server";
+import { VoiceError, decodeAudioJson, interpretVoice, shouldReport, toVoiceApiError, type VoiceInput } from "@/lib/plan/voice-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,14 +21,18 @@ async function readInput(req: NextRequest): Promise<VoiceInput> {
       };
     }
     const body = await req.json();
-    return { text: typeof body?.text === "string" ? body.text : null };
-  } catch {
+    return {
+      audio: body?.audio ? decodeAudioJson(body.audio) : null,
+      text: typeof body?.text === "string" ? body.text : null,
+    };
+  } catch (e) {
+    if (e instanceof VoiceError) throw e;
     throw new VoiceError("Cuerpo inválido", "bad_audio", false);
   }
 }
 
 /**
- * POST /api/plan/voice — multipart (campo `audio`) o JSON `{ text }`.
+ * POST /api/plan/voice — multipart (campo `audio`), JSON `{ text }` o JSON `{ audio: { base64, mimeType, name? } }`.
  * 200 `{ outcome: VoiceOutcome }`; error `{ error, code, retryable, reported }`:
  * 503 reintentable, 400 audio inválido, 500 el resto (queda registrado para el admin).
  * Nunca guarda nada: devuelve un borrador para confirmar.

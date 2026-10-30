@@ -24,6 +24,8 @@ export interface OpenAILike {
 
 export interface VoiceDeps {
   openai?: OpenAILike;
+  /** Observador opcional de la respuesta cruda del modelo (diagnóstico; no altera el resultado). */
+  onExtraction?: (raw: VoiceExtraction) => void;
 }
 
 export interface VoiceInput {
@@ -108,6 +110,23 @@ function toFile(audio: Blob): File {
   return new File([audio], existing || `audio.${ext}`, { type });
 }
 
+/**
+ * Decodifica el audio que llega como JSON `{ base64, mimeType, name? }` y arma el `File` para OpenAI
+ * (que decide el formato por la extensión: m4a/mp4 → `.m4a`). `bad_audio` si está vacío o pasa el tope.
+ */
+export function decodeAudioJson(raw: unknown): File {
+  const a = raw as { base64?: unknown; mimeType?: unknown; name?: unknown } | null;
+  if (!a || typeof a.base64 !== "string" || !a.base64) throw new VoiceError("Audio vacío", "bad_audio", false);
+  const buf = Buffer.from(a.base64, "base64");
+  if (!buf.length) throw new VoiceError("Audio vacío", "bad_audio", false);
+  if (buf.length > MAX_AUDIO_BYTES) throw new VoiceError("Audio demasiado grande", "bad_audio", false);
+  const type = typeof a.mimeType === "string" && a.mimeType ? a.mimeType : "audio/mp4";
+  const ext = EXT.find(([re]) => re.test(type))?.[1] ?? "m4a";
+  const given = typeof a.name === "string" && a.name ? a.name : `voz.${ext}`;
+  const name = /m4a|mp4|aac/.test(type) ? given.replace(/\.[^.]*$/, "") + ".m4a" : given;
+  return new File([buf], name, { type });
+}
+
 async function transcribe(openai: OpenAILike, audio: Blob): Promise<string> {
   if (!audio.size) throw new VoiceError("Audio vacío", "bad_audio", false);
   if (audio.size > MAX_AUDIO_BYTES) throw new VoiceError("Audio demasiado grande", "bad_audio", false);
@@ -172,5 +191,6 @@ export async function interpretVoice(
   if (!transcript) return resolveVoiceOutcome("", null, ctx);
 
   const extraction = await extract(openai, transcript, ctx);
+  deps.onExtraction?.(extraction);
   return resolveVoiceOutcome(transcript, extraction, ctx);
 }
