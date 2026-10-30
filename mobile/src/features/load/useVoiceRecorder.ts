@@ -38,7 +38,7 @@ const VOICE_OPTIONS: RecordingOptions = {
   web: { mimeType: "audio/webm", bitsPerSecond: 32000 },
 };
 
-const MIME_TYPE = Platform.OS === "web" ? "audio/webm" : "audio/m4a";
+const MIME_TYPE = Platform.OS === "web" ? "audio/webm" : "audio/mp4";
 /** Por debajo de esto no hay nada que transcribir: se descarta como un toque accidental. */
 const MIN_DURATION_MS = 400;
 /** Tope de grabación (el servidor rechaza audios de más de 10 MB; esto queda muy por debajo). */

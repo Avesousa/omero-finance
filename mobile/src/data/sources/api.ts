@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+import { getInfoAsync, readAsStringAsync } from "expo-file-system/legacy";
 import { api, API_URL, getToken } from "../../../lib/api";
 import type { InboxItemDTO, PlanData } from "../../../lib/types";
 import type { VoiceApiError, VoiceOutcome } from "../../domain";
@@ -7,26 +9,70 @@ import type { NewIncomeInput, PendingPayment, VoiceInput } from "../types";
 
 const VOICE_TIMEOUT_MS = 45_000;
 
+/** Lee el audio grabado como base64 + tamaño en bytes. Falla con `bad_audio` si no existe o está vacío. */
+async function readAudio(uri: string): Promise<{ base64: string; bytes: number }> {
+  const bad = () => new AppError("No pude leer el audio grabado.", { code: "bad_audio" });
+  try {
+    if (Platform.OS === "web") {
+      const blob = await fetch(uri).then((r) => r.blob());
+      if (!blob.size) throw bad();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      return { base64: dataUrl.slice(dataUrl.indexOf(",") + 1), bytes: blob.size };
+    }
+    const info = await getInfoAsync(uri);
+    if (!info.exists || !("size" in info) || !info.size) throw bad();
+    const base64 = await readAsStringAsync(uri, { encoding: "base64" });
+    if (!base64) throw bad();
+    return { base64, bytes: info.size };
+  } catch (e) {
+    throw e instanceof AppError ? e : bad();
+  }
+}
+
+function logVoiceError(e: unknown, extra: { status?: number; audioBytes?: number; durationMs?: number }) {
+  if (!__DEV__) return;
+  const err = e as { code?: string; message?: string };
+  // Nunca se loguea el token ni el base64.
+  console.warn("[voz]", { ...extra, code: err?.code, message: err?.message });
+}
+
 /**
- * `POST /api/plan/voice`. No usa `api()` porque necesita multipart y los campos `code/retryable/reported`
- * del error, que `api()` descarta.
+ * `POST /api/plan/voice`. No usa `api()` porque necesita los campos `code/retryable/reported`
+ * del error, que `api()` descarta. El audio viaja como JSON base64 (el FormData con `{ uri }`
+ * no se sube bien con el `fetch` de `expo/fetch` del SDK 58).
  */
 async function postVoice(input: VoiceInput): Promise<VoiceOutcome> {
+  const meta: { status?: number; audioBytes?: number; durationMs?: number } = {};
+  try {
+    return await postVoiceInner(input, meta);
+  } catch (e) {
+    logVoiceError(e, meta);
+    throw e;
+  }
+}
+
+async function postVoiceInner(
+  input: VoiceInput,
+  meta: { status?: number; audioBytes?: number; durationMs?: number },
+): Promise<VoiceOutcome> {
   if (!API_URL) throw new AppError("Falta configurar EXPO_PUBLIC_API_URL.", { code: "internal" });
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = { Accept: "application/json", "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  let body: FormData | string;
+  let body: string;
   if ("text" in input) {
-    headers["Content-Type"] = "application/json";
     body = JSON.stringify({ text: input.text });
   } else {
-    const form = new FormData();
-    const ext = input.mimeType.includes("mp4") || input.mimeType.includes("m4a") ? "m4a" : input.mimeType.split("/")[1] || "m4a";
-    // React Native acepta `{ uri, name, type }` como parte de un FormData.
-    form.append("audio", { uri: input.audioUri, name: `voz.${ext}`, type: input.mimeType } as unknown as Blob);
-    body = form;
+    if ("durationMs" in input && typeof input.durationMs === "number") meta.durationMs = input.durationMs;
+    const audio = await readAudio(input.audioUri);
+    meta.audioBytes = audio.bytes;
+    body = JSON.stringify({ audio: { base64: audio.base64, mimeType: input.mimeType, name: "voz.m4a" } });
   }
 
   const controller = new AbortController();
@@ -43,6 +89,7 @@ async function postVoice(input: VoiceInput): Promise<VoiceOutcome> {
   } finally {
     clearTimeout(timer);
   }
+  meta.status = res.status;
 
   let json: unknown = null;
   try {

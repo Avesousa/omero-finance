@@ -1,5 +1,5 @@
 import {
-  MAX_AUDIO_BYTES, VoiceError, classifyProviderError, interpretVoice, shouldReport, toVoiceApiError,
+  MAX_AUDIO_BYTES, VoiceError, decodeAudioJson, classifyProviderError, interpretVoice, shouldReport, toVoiceApiError,
   type OpenAILike,
 } from "./voice-server";
 import type { VoiceContext } from "./voice";
@@ -139,5 +139,19 @@ describe("registro y respuesta", () => {
     expect(toVoiceApiError(new VoiceError("detalle interno", "internal", false), true)).toEqual({
       error: "Error interno", code: "internal", retryable: false, reported: true,
     });
+  });
+});
+
+describe("decodeAudioJson", () => {
+  const b64 = (n: number) => Buffer.alloc(n, 1).toString("base64");
+  it("decodifica y fuerza .m4a para audio/mp4", async () => {
+    const f = decodeAudioJson({ base64: b64(50), mimeType: "audio/mp4", name: "voz.mp4" });
+    expect(f.name).toBe("voz.m4a");
+    expect(f.size).toBe(50);
+  });
+  it("rechaza vacío, sin base64 y demasiado grande con bad_audio", () => {
+    for (const raw of [null, {}, { base64: "" }, { base64: b64(MAX_AUDIO_BYTES + 1), mimeType: "audio/mp4" }]) {
+      expect(() => decodeAudioJson(raw)).toThrow(expect.objectContaining({ code: "bad_audio" }));
+    }
   });
 });
