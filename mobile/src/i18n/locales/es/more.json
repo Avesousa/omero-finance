@@ -1,0 +1,27 @@
+{
+  "title": "Más",
+  "mode": {
+    "title": "Modo",
+    "tranqui": "Tranqui",
+    "atrevido": "Atrevido",
+    "hint": "Cambia los colores y el tono de la voz. Los números son los mismos."
+  },
+  "mascot": {
+    "title": "Mascota",
+    "hint": "Te acompaña y cuenta tu progreso como una historia.",
+    "select": "Elegir a {{name}}",
+    "selected": "Elegida"
+  },
+  "language": {
+    "title": "Idioma",
+    "es": "Español",
+    "pt-BR": "Português (Brasil)",
+    "en": "English",
+    "comingSoon": "Próximamente"
+  },
+  "account": {
+    "title": "Cuenta",
+    "signedInAs": "Sesión iniciada como {{name}}"
+  },
+  "comingSoon": "Próximamente"
+}

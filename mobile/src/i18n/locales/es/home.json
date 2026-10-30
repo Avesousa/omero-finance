@@ -1,0 +1,36 @@
+{
+  "hero": {
+    "label": "HOY PODÉS GASTAR",
+    "perDay_one": "por día · queda {{count}} día",
+    "perDay_other": "por día · quedan {{count}} días",
+    "toggleLabel": "Elegir qué monto ver",
+    "available": "Disponible",
+    "free": "Libre",
+    "sticker": "A FUEGO"
+  },
+  "income": "Ingresos",
+  "pendingToPay": "Pendiente de pago",
+  "spending": {
+    "title": "En qué se va el mes",
+    "categories": {
+      "rent": "Alquiler",
+      "groceries": "Súper",
+      "outings": "Salidas",
+      "transport": "Transporte",
+      "other": "Otros"
+    }
+  },
+  "fixed": {
+    "title": "Fijos pagados",
+    "progress": "{{paid}} de {{total}}",
+    "summary": "Fijos pagados {{paid}} de {{total}}"
+  },
+  "alert": {
+    "pendingApplePay_one": "{{count}} pago con Apple Pay por confirmar",
+    "pendingApplePay_other": "{{count}} pagos con Apple Pay por confirmar"
+  },
+  "story": {
+    "teaser": "Capítulo {{n}} · {{title}}",
+    "teaserLabel": "Tu historia con {{mascot}}"
+  }
+}

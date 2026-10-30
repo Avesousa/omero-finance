@@ -1,0 +1,50 @@
+{
+  "app": {
+    "name": "Omero",
+    "tagline": "Tu plata, con calma."
+  },
+  "header": {
+    "greeting": "Hola, {{name}}",
+    "notificationsLabel": "Notificaciones",
+    "notificationsBadge_one": "Notificaciones, {{count}} pendiente",
+    "notificationsBadge_other": "Notificaciones, {{count}} pendientes"
+  },
+  "actions": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "save": "Guardar",
+    "retry": "Reintentar",
+    "logout": "Cerrar sesión",
+    "login": "Entrar",
+    "seeAll": "Ver todo"
+  },
+  "status": {
+    "loading": "Cargando…",
+    "error": "Algo salió mal. Intentá de nuevo.",
+    "comingSoon": "Próximamente"
+  },
+  "login": {
+    "email": "Email",
+    "emailPlaceholder": "vos@ejemplo.com",
+    "password": "Contraseña",
+    "passwordPlaceholder": "••••••••",
+    "missingFields": "Poné tu email y tu contraseña."
+  },
+  "comingSoon": {
+    "heading": "Estamos puliendo esto",
+    "cards": {
+      "title": "Tarjetas",
+      "body": "Acá vas a ver tus tarjetas, lo que gastaste con cada una y cuándo vencen. Está en camino."
+    },
+    "wealth": {
+      "title": "Patrimonio",
+      "body": "Acá vas a ver cómo crece tu plata mes a mes: fondo de emergencia, deudas y metas. Está en camino."
+    },
+    "add": {
+      "title": "Cargar",
+      "body": "Pronto vas a poder cargar un gasto en un minuto desde acá."
+    }
+  }
+}

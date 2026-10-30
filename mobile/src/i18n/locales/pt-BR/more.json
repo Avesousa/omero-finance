@@ -1,0 +1,27 @@
+{
+  "title": "",
+  "mode": {
+    "title": "",
+    "tranqui": "",
+    "atrevido": "",
+    "hint": ""
+  },
+  "mascot": {
+    "title": "",
+    "hint": "",
+    "select": "",
+    "selected": ""
+  },
+  "language": {
+    "title": "",
+    "es": "",
+    "pt-BR": "",
+    "en": "",
+    "comingSoon": ""
+  },
+  "account": {
+    "title": "",
+    "signedInAs": ""
+  },
+  "comingSoon": ""
+}

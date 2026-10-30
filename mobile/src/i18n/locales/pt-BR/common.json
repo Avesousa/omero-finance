@@ -1,0 +1,50 @@
+{
+  "app": {
+    "name": "",
+    "tagline": ""
+  },
+  "header": {
+    "greeting": "",
+    "notificationsLabel": "",
+    "notificationsBadge_one": "",
+    "notificationsBadge_other": ""
+  },
+  "actions": {
+    "confirm": "",
+    "cancel": "",
+    "close": "",
+    "back": "",
+    "save": "",
+    "retry": "",
+    "logout": "",
+    "login": "",
+    "seeAll": ""
+  },
+  "status": {
+    "loading": "",
+    "error": "",
+    "comingSoon": ""
+  },
+  "login": {
+    "email": "",
+    "emailPlaceholder": "",
+    "password": "",
+    "passwordPlaceholder": "",
+    "missingFields": ""
+  },
+  "comingSoon": {
+    "heading": "",
+    "cards": {
+      "title": "",
+      "body": ""
+    },
+    "wealth": {
+      "title": "",
+      "body": ""
+    },
+    "add": {
+      "title": "",
+      "body": ""
+    }
+  }
+}

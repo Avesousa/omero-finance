@@ -1,0 +1,171 @@
+{
+  "common": {
+    "mood": {
+      "calma": "",
+      "feliz": "",
+      "atento": "",
+      "festeja": ""
+    },
+    "label": "",
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    }
+  },
+  "omero": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    }
+  },
+  "pincho": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    }
+  },
+  "mati": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    }
+  },
+  "zorro": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    }
+  }
+}

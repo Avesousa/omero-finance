@@ -1,0 +1,171 @@
+{
+  "common": {
+    "mood": {
+      "calma": "tranquilo",
+      "feliz": "contento",
+      "atento": "atento",
+      "festeja": "festejando"
+    },
+    "label": "{{name}} {{mood}}",
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "Hoy podés gastar {{amount}}. Vamos con calma.",
+        "atrevido": "Hoy hay {{amount}}. No te hagas el millonario."
+      },
+      "allGood": {
+        "tranqui": "Semana cerrada: todo confirmado.",
+        "atrevido": "Semana impecable. Ni un peso suelto."
+      },
+      "pendingConfirm": {
+        "tranqui_one": "Llegó {{count}} pago de Apple Pay. ¿Lo confirmamos?",
+        "tranqui_other": "Llegaron {{count}} pagos de Apple Pay. ¿Los confirmamos?",
+        "atrevido_one": "Detecté {{count}} pago. ¿Me decís qué fue o adivino?",
+        "atrevido_other": "Detecté {{count}} pagos. ¿Me decís qué fueron o adivino?"
+      },
+      "debtDown": {
+        "tranqui": "Bajaste {{amount}} del préstamo. Bien hecho.",
+        "atrevido": "Le sacaste {{amount}} al préstamo. Respeto."
+      },
+      "comeback": {
+        "tranqui": "Qué bueno verte. Arrancamos de nuevo cuando quieras.",
+        "atrevido": "Volviste. Sin drama: cargamos lo que falta y listo."
+      }
+    }
+  },
+  "omero": {
+    "name": "Omero",
+    "species": "el hornero",
+    "story": {
+      "oneLiner": "Pájaro constructor. Levanta su casa barro a barro, como vos tu patrimonio.",
+      "chapter1": "Primer ladrillo",
+      "chapter2": "Las paredes",
+      "chapter3": "La casa con puerta"
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "Vas bien. Hoy podés gastar tranquilo.",
+        "atrevido": "Hoy hay {{amount}}. No te hagas el millonario."
+      },
+      "allGood": {
+        "tranqui": "Cargaste lo de hoy. Un ladrillo más, de a poco se arma.",
+        "atrevido": "Todo cargado. Ni un ladrillo suelto. Así me gusta."
+      },
+      "pendingConfirm": {
+        "tranqui_one": "Llegó {{count}} pago con Apple Pay. ¿Lo confirmamos?",
+        "tranqui_other": "Llegaron {{count}} pagos con Apple Pay. ¿Los confirmamos?",
+        "atrevido_one": "Detecté {{count}} pago. ¿Me decís qué fue o adivino?",
+        "atrevido_other": "Detecté {{count}} pagos. ¿Me decís qué fueron o adivino?"
+      },
+      "debtDown": {
+        "tranqui": "Bajaste {{amount}} del préstamo. Sacamos un andamio.",
+        "atrevido": "Le sacaste {{amount}} al préstamo. Sacamos un andamio. Respeto."
+      },
+      "comeback": {
+        "tranqui": "Qué bueno verte. Arrancamos de nuevo cuando quieras.",
+        "atrevido": "Volviste. Sin drama: cargamos lo que falta y listo."
+      }
+    }
+  },
+  "pincho": {
+    "name": "Pincho",
+    "species": "el carpincho",
+    "story": {
+      "oneLiner": "Animal del Delta, el más tranqui. Sabe que lo importante llega flotando.",
+      "chapter1": "La laguna seca",
+      "chapter2": "Llega el agua",
+      "chapter3": "El Delta propio"
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "Todo en orden. Hoy podés gastar {{amount}} y flotar tranquilo.",
+        "atrevido": "Yo floto tranqui. Hoy hay {{amount}}: cargá lo del súper y flotamos los dos."
+      },
+      "allGood": {
+        "tranqui": "Todo en orden. Pincho flota tranquilo.",
+        "atrevido": "Laguna en calma y gastos cargados. Así sí."
+      },
+      "pendingConfirm": {
+        "tranqui_one": "Llegó {{count}} pago flotando. ¿Lo confirmamos?",
+        "tranqui_other": "Llegaron {{count}} pagos flotando. ¿Los confirmamos?",
+        "atrevido_one": "Me flota {{count}} pago sin nombre. ¿Me decís qué fue?",
+        "atrevido_other": "Me flotan {{count}} pagos sin nombre. ¿Me decís qué fueron?"
+      },
+      "debtDown": {
+        "tranqui": "Bajaste {{amount}} del préstamo. Un camalote menos río abajo.",
+        "atrevido": "Le sacaste {{amount}} al préstamo. Ese camalote se fue río abajo. Respeto."
+      },
+      "comeback": {
+        "tranqui": "Qué bueno verte. La laguna te esperaba.",
+        "atrevido": "Volviste. Sin drama: la laguna se llena igual, cargá lo que falta."
+      }
+    }
+  },
+  "mati": {
+    "name": "Mati",
+    "species": "el mate",
+    "story": {
+      "oneLiner": "Un mate de calabaza con bombilla. Un minuto por día y listo.",
+      "chapter1": "La primera cebada",
+      "chapter2": "La ronda",
+      "chapter3": "La mateada del mes"
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "¿Un mate y cargamos lo de hoy? Hoy podés gastar {{amount}}.",
+        "atrevido": "Hoy hay {{amount}}. Cebalo con cabeza y no te hagas el millonario."
+      },
+      "allGood": {
+        "tranqui": "Termo lleno. Todo cargado, un mate más tranquilos.",
+        "atrevido": "Todo cargado. Cebador del día, sin discusión."
+      },
+      "pendingConfirm": {
+        "tranqui_one": "Hay {{count}} pago esperando. ¿Lo confirmamos con un mate?",
+        "tranqui_other": "Hay {{count}} pagos esperando. ¿Los confirmamos con un mate?",
+        "atrevido_one": "Tengo {{count}} pago sin confirmar. Cebalo y seguimos.",
+        "atrevido_other": "Tengo {{count}} pagos sin confirmar. Cebalos y seguimos."
+      },
+      "debtDown": {
+        "tranqui": "Bajaste {{amount}} del préstamo. Bien hecho.",
+        "atrevido": "Le sacaste {{amount}} al préstamo. Mate de campeones."
+      },
+      "comeback": {
+        "tranqui": "Qué bueno verte. ¿Arrancamos con un mate?",
+        "atrevido": "Este mate está lavado. Cebá un gasto y arrancamos de nuevo."
+      }
+    }
+  },
+  "zorro": {
+    "name": "Zorro",
+    "species": "el zorro gris",
+    "story": {
+      "oneLiner": "Pícaro estratega de la pampa. Siempre tiene un mapa y una jugada.",
+      "chapter1": "El mapa roto",
+      "chapter2": "La ruta",
+      "chapter3": "El tesoro"
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "Tenés {{amount}} para hoy. El mapa dice que vamos bien.",
+        "atrevido": "Hoy hay {{amount}}. Ni un peso suelto y llegamos al tesoro."
+      },
+      "allGood": {
+        "tranqui": "Encontraste otra pieza del mapa. Vamos bien.",
+        "atrevido": "Esquivaste todas las trampas. Zorro aprueba."
+      },
+      "pendingConfirm": {
+        "tranqui_one": "Hay {{count}} pago por confirmar. Una pista más para el mapa.",
+        "tranqui_other": "Hay {{count}} pagos por confirmar. Más pistas para el mapa.",
+        "atrevido_one": "Vi {{count}} gasto suelto. ¿Lo cargás vos o lo cazo yo?",
+        "atrevido_other": "Vi {{count}} gastos sueltos. ¿Los cargás vos o los cazo yo?"
+      },
+      "debtDown": {
+        "tranqui": "Bajaste {{amount}} del préstamo. Un obstáculo menos en la ruta.",
+        "atrevido": "Le sacaste {{amount}} al préstamo. Esa trampa ya no muerde. Respeto."
+      },
+      "comeback": {
+        "tranqui": "Qué bueno verte. Retomamos la ruta cuando quieras.",
+        "atrevido": "Volviste. Sin drama: el mapa sigue acá, cargá lo que falta."
+      }
+    }
+  }
+}

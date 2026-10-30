@@ -1,0 +1,25 @@
+{
+  "title": "",
+  "pending": {
+    "title": "",
+    "confirm": "",
+    "confirmLabel": "",
+    "noAmount": "",
+    "empty": "",
+    "emptyHint": ""
+  },
+  "notices": {
+    "title": "",
+    "empty": "",
+    "emptyHint": "",
+    "due": "",
+    "weekClosed": "",
+    "debtDown": "",
+    "unread": ""
+  },
+  "when": {
+    "today": "",
+    "yesterday": "",
+    "other": ""
+  }
+}

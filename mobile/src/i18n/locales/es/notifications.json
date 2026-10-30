@@ -1,0 +1,25 @@
+{
+  "title": "Notificaciones",
+  "pending": {
+    "title": "Por confirmar",
+    "confirm": "Confirmar",
+    "confirmLabel": "Confirmar pago de {{merchant}}",
+    "noAmount": "Sin monto",
+    "empty": "No hay pagos por confirmar",
+    "emptyHint": "Cuando llegue un pago con Apple Pay, lo ves acá."
+  },
+  "notices": {
+    "title": "Avisos",
+    "empty": "No hay avisos por ahora",
+    "emptyHint": "Te avisamos cuando venza algo o cierres una semana.",
+    "due": "Vence {{name}} el {{date}} ({{amount}})",
+    "weekClosed": "Cerraste la semana {{n}}",
+    "debtDown": "Bajaste {{amount}} del préstamo",
+    "unread": "Sin leer"
+  },
+  "when": {
+    "today": "hoy {{time}}",
+    "yesterday": "ayer {{time}}",
+    "other": "{{date}} {{time}}"
+  }
+}

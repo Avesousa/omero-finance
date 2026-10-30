@@ -1,0 +1,10 @@
+{
+  "navigation": "Navegación principal",
+  "home": "Inicio",
+  "cards": "Tarjetas",
+  "add": "Cargar",
+  "wealth": "Patrimonio",
+  "more": "Más",
+  "badge_one": "{{count}} pendiente",
+  "badge_other": "{{count}} pendientes"
+}
