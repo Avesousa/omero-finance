@@ -1,0 +1,45 @@
+{
+  "header": {
+    "with": ""
+  },
+  "composer": {
+    "placeholder": "",
+    "inputLabel": "",
+    "send": "",
+    "sendAudio": "",
+    "mic": "",
+    "micBusy": "",
+    "micUnavailable": "",
+    "cancel": "",
+    "recording": "",
+    "recordingTime": "",
+    "cancelHint": ""
+  },
+  "audio": {
+    "play": "",
+    "pause": "",
+    "heard": ""
+  },
+  "typing": {
+    "label": ""
+  },
+  "draft": {
+    "kind": "",
+    "unnamed": "",
+    "missingAmount": "",
+    "fixed": "",
+    "review": "",
+    "saved": "",
+    "dismissed": "",
+    "resume": ""
+  },
+  "quick": {
+    "income": "",
+    "debt": "",
+    "expense": "",
+    "statement": "",
+    "soon": "",
+    "label": ""
+  },
+  "retry": ""
+}

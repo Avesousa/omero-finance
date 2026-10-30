@@ -8,6 +8,7 @@ import esCards from "./locales/es/cards.json";
 import esWealth from "./locales/es/wealth.json";
 import esDebts from "./locales/es/debts.json";
 import esIncome from "./locales/es/income.json";
+import esLoad from "./locales/es/load.json";
 import ptCommon from "./locales/pt-BR/common.json";
 import ptHome from "./locales/pt-BR/home.json";
 import ptMascots from "./locales/pt-BR/mascots.json";
@@ -18,6 +19,7 @@ import ptCards from "./locales/pt-BR/cards.json";
 import ptWealth from "./locales/pt-BR/wealth.json";
 import ptDebts from "./locales/pt-BR/debts.json";
 import ptIncome from "./locales/pt-BR/income.json";
+import ptLoad from "./locales/pt-BR/load.json";
 import enCommon from "./locales/en/common.json";
 import enHome from "./locales/en/home.json";
 import enMascots from "./locales/en/mascots.json";
@@ -28,6 +30,7 @@ import enCards from "./locales/en/cards.json";
 import enWealth from "./locales/en/wealth.json";
 import enDebts from "./locales/en/debts.json";
 import enIncome from "./locales/en/income.json";
+import enLoad from "./locales/en/load.json";
 
 /** Recursos de es (fuente de verdad de las claves). pt-BR y en tienen las mismas claves, vacías. */
 export const esResources = {
@@ -41,13 +44,14 @@ export const esResources = {
   wealth: esWealth,
   debts: esDebts,
   income: esIncome,
+  load: esLoad,
 };
 
 export const resources = {
   es: esResources,
-  "pt-BR": { common: ptCommon, tabs: ptTabs, home: ptHome, notifications: ptNotifications, more: ptMore, mascots: ptMascots, cards: ptCards, wealth: ptWealth, debts: ptDebts, income: ptIncome },
-  en: { common: enCommon, tabs: enTabs, home: enHome, notifications: enNotifications, more: enMore, mascots: enMascots, cards: enCards, wealth: enWealth, debts: enDebts, income: enIncome },
+  "pt-BR": { common: ptCommon, tabs: ptTabs, home: ptHome, notifications: ptNotifications, more: ptMore, mascots: ptMascots, cards: ptCards, wealth: ptWealth, debts: ptDebts, income: ptIncome, load: ptLoad },
+  en: { common: enCommon, tabs: enTabs, home: enHome, notifications: enNotifications, more: enMore, mascots: enMascots, cards: enCards, wealth: enWealth, debts: enDebts, income: enIncome, load: enLoad },
 };
 
-export const NAMESPACES = ["common", "tabs", "home", "notifications", "more", "mascots", "cards", "wealth", "debts", "income"] as const;
+export const NAMESPACES = ["common", "tabs", "home", "notifications", "more", "mascots", "cards", "wealth", "debts", "income", "load"] as const;
 export type Namespace = (typeof NAMESPACES)[number];

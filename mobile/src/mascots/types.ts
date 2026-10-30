@@ -37,7 +37,9 @@ export type MascotMoment =
   | "voiceErrorReported"
   | "voicePermission"
   | "voiceDraftReady"
-  | "incomeSaved";
+  | "incomeSaved"
+  | "loadGreeting"
+  | "draftDismissed";
 
 /** Props de cada dibujo. Dibuja elementos SVG en un viewBox 0 0 200 200 (los envuelve <Mascot/>). */
 export interface DrawingProps {

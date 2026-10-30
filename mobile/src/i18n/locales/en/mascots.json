@@ -129,6 +129,14 @@
       "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "actions": {
@@ -211,6 +219,14 @@
         "atrevido": ""
       },
       "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
         "tranqui": "",
         "atrevido": ""
       }
@@ -310,6 +326,14 @@
       "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -407,6 +431,14 @@
       "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -502,6 +534,14 @@
         "atrevido": ""
       },
       "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
         "tranqui": "",
         "atrevido": ""
       }
