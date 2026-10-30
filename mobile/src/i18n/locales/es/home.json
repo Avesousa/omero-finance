@@ -1,0 +1,48 @@
+{
+  "hero": {
+    "label": "HOY PODÉS GASTAR",
+    "perDay_one": "por día · queda {{count}} día",
+    "perDay_other": "por día · quedan {{count}} días",
+    "toggleLabel": "Elegir qué monto ver",
+    "available": "Disponible",
+    "free": "Libre",
+    "sticker": "A FUEGO",
+    "availableHint": "disponible este mes · lo que queda después de lo ya pagado",
+    "summaryFree": "Libre",
+    "summaryAvailable": "Disponible"
+  },
+  "income": "Ingresos",
+  "pendingToPay": "Pendiente de pago",
+  "spending": {
+    "title": "En qué se va el mes",
+    "categories": {
+      "rent": "Alquiler",
+      "groceries": "Súper",
+      "outings": "Salidas",
+      "transport": "Transporte",
+      "other": "Otros"
+    },
+    "total": "Total {{amount}}",
+    "summary": "Gastos del mes por categoría"
+  },
+  "fixed": {
+    "title": "Fijos pagados",
+    "progress": "{{paid}} de {{total}}",
+    "summary": "Fijos pagados {{paid}} de {{total}}",
+    "amounts": "{{paid}} de {{total}}"
+  },
+  "alert": {
+    "pendingApplePay_one": "{{count}} pago con Apple Pay por confirmar",
+    "pendingApplePay_other": "{{count}} pagos con Apple Pay por confirmar"
+  },
+  "story": {
+    "teaser": "Capítulo {{n}} · {{title}}",
+    "teaserLabel": "Tu historia con {{mascot}}",
+    "progress": "Avance del capítulo {{percent}}"
+  },
+  "state": {
+    "errorTitle": "No pudimos cargar tu mes",
+    "errorBody": "Revisá tu conexión y volvé a intentar.",
+    "loading": "Cargando tu mes"
+  }
+}

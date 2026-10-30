@@ -1,0 +1,48 @@
+{
+  "hero": {
+    "label": "",
+    "perDay_one": "",
+    "perDay_other": "",
+    "toggleLabel": "",
+    "available": "",
+    "free": "",
+    "sticker": "",
+    "availableHint": "",
+    "summaryFree": "",
+    "summaryAvailable": ""
+  },
+  "income": "",
+  "pendingToPay": "",
+  "spending": {
+    "title": "",
+    "categories": {
+      "rent": "",
+      "groceries": "",
+      "outings": "",
+      "transport": "",
+      "other": ""
+    },
+    "total": "",
+    "summary": ""
+  },
+  "fixed": {
+    "title": "",
+    "progress": "",
+    "summary": "",
+    "amounts": ""
+  },
+  "alert": {
+    "pendingApplePay_one": "",
+    "pendingApplePay_other": ""
+  },
+  "story": {
+    "teaser": "",
+    "teaserLabel": "",
+    "progress": ""
+  },
+  "state": {
+    "errorTitle": "",
+    "errorBody": "",
+    "loading": ""
+  }
+}

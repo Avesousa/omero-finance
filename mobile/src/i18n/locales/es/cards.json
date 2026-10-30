@@ -1,0 +1,50 @@
+{
+  "title": "Tarjetas",
+  "summary": {
+    "label": "ESTE MES PAGÁS",
+    "paid": "Pagado {{amount}}",
+    "estimated": "Incluye {{amount}} estimado"
+  },
+  "list": {
+    "title": "Tus tarjetas"
+  },
+  "statement": {
+    "status": {
+      "paid": "Pagado",
+      "overdue": "Venció el {{date}}",
+      "dueToday": "Vence hoy",
+      "dueSoon_one": "Vence en {{count}} día",
+      "dueSoon_other": "Vence en {{count}} días",
+      "upcoming": "Vence el {{date}}",
+      "estimated": "Estimado por cuotas",
+      "empty": "Sin movimientos"
+    },
+    "minimum": "Mínimo {{amount}}",
+    "usd": "Más {{amount}} en dólares",
+    "installments_one": "{{count}} cuota este mes",
+    "installments_other": "{{count}} cuotas este mes",
+    "markPaid": "Marcar pagado",
+    "markPaidLabel": "Marcar pagado el resumen de {{name}}",
+    "loadStatement": "Cargar resumen",
+    "loadStatementLabel": "Cargar el resumen de {{name}}"
+  },
+  "installments": {
+    "title": "Cuotas de este mes",
+    "item": "cuota {{number}}/{{of}}",
+    "seeAll": "Ver todas ({{count}})",
+    "showLess": "Ver menos",
+    "empty": "No tenés cuotas este mes."
+  },
+  "committed": {
+    "title": "Lo que ya comprometiste en cuotas",
+    "total": "Total en 6 meses: {{amount}}",
+    "chartLabel": "Cuotas comprometidas por mes"
+  },
+  "state": {
+    "loading": "Cargando tarjetas…",
+    "errorTitle": "No pudimos cargar tus tarjetas",
+    "errorBody": "Revisá tu conexión e intentá de nuevo.",
+    "emptyTitle": "Todavía no hay tarjetas",
+    "emptyBody": "Cuando agregues una tarjeta, acá vas a ver sus resúmenes y vencimientos."
+  }
+}

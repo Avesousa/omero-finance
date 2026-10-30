@@ -1,0 +1,53 @@
+{
+  "title": "Patrimonio",
+  "currency": {
+    "label": "Elegir moneda",
+    "ARS": "ARS",
+    "USD": "USD"
+  },
+  "hero": {
+    "label": "TU PATRIMONIO",
+    "assets": "Tenés {{amount}}",
+    "debts": "Debés {{amount}}",
+    "split": "Activos {{assets}}, deudas {{debts}}",
+    "vsPrevious": "vs. mes anterior"
+  },
+  "trend": {
+    "title": "Cómo viene creciendo"
+  },
+  "assets": {
+    "title": "Lo que tenés"
+  },
+  "debts": {
+    "title": "Lo que debés"
+  },
+  "row": {
+    "approx": "≈ {{amount}}",
+    "installmentsLeft_one": "Falta {{count}} cuota",
+    "installmentsLeft_other": "Faltan {{count}} cuotas",
+    "paidRatio": "{{percent}} pagado",
+    "share": "{{percent}} del total"
+  },
+  "rate": "Dólar a {{rate}}",
+  "state": {
+    "loading": "Cargando tu patrimonio",
+    "errorTitle": "No pudimos cargar tu patrimonio",
+    "errorBody": "Probá de nuevo en un momento.",
+    "emptyGroup": "Todavía no hay nada acá."
+  },
+  "nest": {
+    "chapter": "Capítulo {{n}} de 3 · {{title}}",
+    "chapterProgress": "{{percent}} del capítulo",
+    "equity": "{{percent}} de lo que tenés ya es tuyo",
+    "scene": "{{name}}, capítulo {{n}} de 3"
+  },
+  "goals": {
+    "title": "Metas",
+    "of": "{{saved}} de {{target}}",
+    "progress": "{{percent}} de la meta {{name}}",
+    "monthly_one": "Aportá {{amount}}/mes · falta {{count}} mes",
+    "monthly_other": "Aportá {{amount}}/mes · faltan {{count}} meses",
+    "missing": "Faltan {{amount}}",
+    "reached": "Meta cumplida"
+  }
+}

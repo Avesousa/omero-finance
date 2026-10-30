@@ -1,0 +1,93 @@
+{
+  "app": {
+    "name": "",
+    "tagline": ""
+  },
+  "header": {
+    "greeting": "",
+    "notificationsLabel": "",
+    "notificationsBadge_one": "",
+    "notificationsBadge_other": ""
+  },
+  "actions": {
+    "confirm": "",
+    "cancel": "",
+    "close": "",
+    "back": "",
+    "save": "",
+    "retry": "",
+    "logout": "",
+    "login": "",
+    "seeAll": ""
+  },
+  "status": {
+    "loading": "",
+    "error": "",
+    "comingSoon": ""
+  },
+  "login": {
+    "email": "",
+    "emailPlaceholder": "",
+    "password": "",
+    "passwordPlaceholder": "",
+    "missingFields": ""
+  },
+  "comingSoon": {
+    "heading": "",
+    "cards": {
+      "title": "",
+      "body": ""
+    },
+    "wealth": {
+      "title": "",
+      "body": ""
+    },
+    "add": {
+      "title": "",
+      "body": ""
+    },
+    "debts": {
+      "title": "",
+      "body": ""
+    }
+  },
+  "period": {
+    "prev": "",
+    "next": ""
+  },
+  "load": {
+    "title": "",
+    "subtitle": "",
+    "expense": {
+      "title": "",
+      "body": ""
+    },
+    "income": {
+      "title": "",
+      "body": ""
+    },
+    "debt": {
+      "title": "",
+      "body": ""
+    },
+    "statement": {
+      "title": "",
+      "body": ""
+    }
+  },
+  "voice": {
+    "title": "",
+    "micStart": "",
+    "micStop": "",
+    "micDisabled": "",
+    "recording": "",
+    "thinking": "",
+    "orWrite": "",
+    "textLabel": "",
+    "textPlaceholder": "",
+    "send": "",
+    "retry": "",
+    "manual": "",
+    "webHint": ""
+  }
+}

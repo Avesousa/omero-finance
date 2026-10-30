@@ -1,0 +1,34 @@
+{
+  "title": "",
+  "pending": {
+    "title": "",
+    "confirm": "",
+    "confirmLabel": "",
+    "noAmount": "",
+    "empty": "",
+    "emptyHint": "",
+    "subtitle": "",
+    "noMerchant": "",
+    "confirmed": "",
+    "confirmError": "",
+    "meta": ""
+  },
+  "notices": {
+    "title": "",
+    "empty": "",
+    "emptyHint": "",
+    "due": "",
+    "weekClosed": "",
+    "debtDown": "",
+    "unread": ""
+  },
+  "when": {
+    "today": "",
+    "yesterday": "",
+    "other": ""
+  },
+  "state": {
+    "errorTitle": "",
+    "errorBody": ""
+  }
+}

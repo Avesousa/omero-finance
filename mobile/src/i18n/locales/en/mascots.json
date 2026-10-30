@@ -1,0 +1,529 @@
+{
+  "common": {
+    "mood": {
+      "calma": "",
+      "feliz": "",
+      "atento": "",
+      "festeja": ""
+    },
+    "label": "",
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "cards": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "cardsDue": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "cardsOverdue": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "cardsAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "wealth": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "wealthUp": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "wealthDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debts": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debtsDueSoon": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtsAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "owedPending": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "owedAllCollected": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    },
+    "actions": {
+      "expense": "",
+      "debt": "",
+      "card_purchase": "",
+      "card_statement": ""
+    }
+  },
+  "omero": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
+      },
+      "short": "",
+      "title": ""
+    }
+  },
+  "pincho": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
+      },
+      "short": "",
+      "title": ""
+    }
+  },
+  "mati": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
+      },
+      "short": "",
+      "title": ""
+    }
+  },
+  "zorro": {
+    "name": "",
+    "species": "",
+    "story": {
+      "oneLiner": "",
+      "chapter1": "",
+      "chapter2": "",
+      "chapter3": ""
+    },
+    "lines": {
+      "dailyRemainder": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "allGood": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "pendingConfirm": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtDown": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
+      },
+      "short": "",
+      "title": ""
+    }
+  }
+}

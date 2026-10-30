@@ -35,6 +35,7 @@ model Household {
   planApiTokens      PlanApiToken[]
   planInboxItems     PlanInboxItem[]
   planInboxRules     PlanInboxRule[]
+  appErrorReports    AppErrorReport[]
 }
 
 model User {
@@ -486,4 +487,22 @@ model PlanInboxRule {
   household Household @relation(fields: [householdId], references: [id])
 
   @@unique([householdId, kind, key])
+}
+
+/// Errores que la app o la API registran para que el admin los revise (carga por voz, app móvil).
+model AppErrorReport {
+  id          String   @id @default(cuid())
+  householdId String?
+  userId      String?
+  /// "voice" | "app"
+  source      String
+  code        String
+  message     String
+  context     Json?
+  createdAt   DateTime @default(now())
+
+  household Household? @relation(fields: [householdId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([source, code])
 }

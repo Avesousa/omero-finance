@@ -1,0 +1,37 @@
+{
+  "form": {
+    "title": "",
+    "close": "",
+    "heard": "",
+    "missing": "",
+    "name": "",
+    "namePlaceholder": "",
+    "amount": "",
+    "amountPlaceholder": "",
+    "currency": "",
+    "currencyARS": "",
+    "currencyUSD": "",
+    "category": "",
+    "date": "",
+    "dateToday": "",
+    "dateYesterday": "",
+    "dateOther": "",
+    "dayOfMonth": "",
+    "dayPlaceholder": "",
+    "fixed": "",
+    "note": "",
+    "notePlaceholder": "",
+    "save": "",
+    "saving": "",
+    "saveError": "",
+    "categoriesError": ""
+  },
+  "errors": {
+    "name": "",
+    "amount": "",
+    "day": ""
+  },
+  "saved": {
+    "done": ""
+  }
+}

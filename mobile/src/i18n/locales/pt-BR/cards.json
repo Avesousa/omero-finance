@@ -1,0 +1,50 @@
+{
+  "title": "",
+  "summary": {
+    "label": "",
+    "paid": "",
+    "estimated": ""
+  },
+  "list": {
+    "title": ""
+  },
+  "statement": {
+    "status": {
+      "paid": "",
+      "overdue": "",
+      "dueToday": "",
+      "dueSoon_one": "",
+      "dueSoon_other": "",
+      "upcoming": "",
+      "estimated": "",
+      "empty": ""
+    },
+    "minimum": "",
+    "usd": "",
+    "installments_one": "",
+    "installments_other": "",
+    "markPaid": "",
+    "markPaidLabel": "",
+    "loadStatement": "",
+    "loadStatementLabel": ""
+  },
+  "installments": {
+    "title": "",
+    "item": "",
+    "seeAll": "",
+    "showLess": "",
+    "empty": ""
+  },
+  "committed": {
+    "title": "",
+    "total": "",
+    "chartLabel": ""
+  },
+  "state": {
+    "loading": "",
+    "errorTitle": "",
+    "errorBody": "",
+    "emptyTitle": "",
+    "emptyBody": ""
+  }
+}

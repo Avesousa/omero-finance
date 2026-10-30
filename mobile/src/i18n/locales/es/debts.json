@@ -1,0 +1,113 @@
+{
+  "hero": {
+    "oweLabel": "DEBÉS",
+    "owedLabel": "TE DEBEN",
+    "oweCaption": "Este mes pagás {{amount}}",
+    "owedCaption": "Este mes cobrás {{amount}}"
+  },
+  "toggle": {
+    "label": "Qué querés ver",
+    "owe": "Debo",
+    "owed": "Me deben"
+  },
+  "cards": {
+    "count_one": "{{count}} tarjeta",
+    "count_other": "{{count}} tarjetas",
+    "due": "vence el {{date}}",
+    "name": "Tu resumen de tarjeta"
+  },
+  "loan": {
+    "kind": {
+      "FIXED": "Cuota fija",
+      "OPEN": "Sin cuotas fijas",
+      "SCHEDULE": "Cronograma"
+    },
+    "rate": {
+      "annual": "{{pct}} % anual",
+      "monthly": "{{pct}} % mensual",
+      "annualTax": "{{pct}} % anual + IVA",
+      "monthlyTax": "{{pct}} % mensual + IVA"
+    },
+    "capitalApprox": "≈ {{amount}}",
+    "progress": {
+      "installment": "Cuota {{number}} de {{total}}",
+      "paidOwe": "Pagaste {{amount}}",
+      "paidOwed": "Cobraste {{amount}}"
+    },
+    "month": {
+      "due": "vence {{date}}",
+      "paid": "Pagada",
+      "pending": "Pendiente",
+      "collected": "Cobrada",
+      "title": "Cuota de {{month}}"
+    },
+    "markPaid": "Marcar pagada",
+    "markPaidLabel": "Marcar pagada la cuota de {{name}}",
+    "markCollected": "Marcar cobrada",
+    "markCollectedLabel": "Marcar cobrada la cuota de {{name}}"
+  },
+  "list": {
+    "finished": "Terminados",
+    "finishedToggle": "Mostrar u ocultar los terminados",
+    "addOwe": "Agregar deuda",
+    "addOwed": "Agregar algo que me deben",
+    "noneOwe": "No tenés deudas cargadas.",
+    "noneOwed": "Nadie te debe nada por ahora."
+  },
+  "state": {
+    "loading": "Cargando deudas…",
+    "errorTitle": "No pudimos cargar tus deudas",
+    "errorBody": "Revisá tu conexión e intentá de nuevo.",
+    "emptyTitle": "Todavía no cargaste deudas",
+    "emptyBody": "Cargá lo que debés o lo que te deben y lo seguimos cuota por cuota."
+  },
+  "form": {
+    "title": "Nueva deuda",
+    "titleOwed": "Algo que me deben",
+    "direction": "Tipo de movimiento",
+    "kindLabel": "Forma de pago",
+    "name": "Nombre",
+    "namePlaceholder": "Ej. Préstamo del banco",
+    "counterpart": "Con quién",
+    "counterpartPlaceholder": "Ej. Banco, un familiar, un amigo",
+    "currency": "Moneda",
+    "currencyARS": "Pesos",
+    "currencyUSD": "Dólares",
+    "amount": "Monto",
+    "amountPlaceholder": "0",
+    "installments": "Cantidad de cuotas",
+    "installmentsPlaceholder": "Ej. 12",
+    "rate": "Tasa de interés (%)",
+    "ratePlaceholder": "0 si no tiene",
+    "rateAnnual": "Anual",
+    "rateMonthly": "Mensual",
+    "rateBasis": "La tasa es anual o mensual",
+    "tax": "IVA sobre el interés (21 %)",
+    "startPeriod": "Primer mes",
+    "dueDay": "Día de vencimiento",
+    "dueDayPlaceholder": "Ej. 5",
+    "suggested": "Pago sugerido por mes (opcional)",
+    "suggestedPlaceholder": "Ej. 50.000",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saveError": "No pudimos guardar. Intentá de nuevo.",
+    "close": "Cerrar sin guardar"
+  },
+  "preview": {
+    "title": "Así quedaría",
+    "installment": "Cuota estimada {{amount}}",
+    "suggested": "Pago sugerido {{amount}}",
+    "total": "pagás {{amount}} en total",
+    "end": "termina en {{month}}",
+    "emptyFixed": "Completá el monto y las cuotas para ver la estimación.",
+    "emptyOpen": "Si sugerís un pago por mes, te mostramos cuándo terminás."
+  },
+  "errors": {
+    "name": "Ponele un nombre.",
+    "amount": "Ingresá un monto mayor a cero.",
+    "installments": "Ingresá la cantidad de cuotas (entre 1 y 600).",
+    "rate": "La tasa no puede ser negativa.",
+    "dueDay": "El día tiene que estar entre 1 y 31.",
+    "suggested": "El pago sugerido tiene que ser mayor a cero."
+  }
+}
