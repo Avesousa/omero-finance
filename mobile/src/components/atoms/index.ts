@@ -13,3 +13,4 @@ export { Amount, type AmountProps } from "./Amount";
 export { VStack, HStack, Spacer, type StackProps } from "./Stack";
 export { TextField, type TextFieldProps } from "./TextField";
 export { hitSlopFor } from "./hitSlop";
+export { Skeleton, type SkeletonProps } from "./Skeleton";

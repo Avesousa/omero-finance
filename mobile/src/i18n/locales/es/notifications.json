@@ -6,7 +6,12 @@
     "confirmLabel": "Confirmar pago de {{merchant}}",
     "noAmount": "Sin monto",
     "empty": "No hay pagos por confirmar",
-    "emptyHint": "Cuando llegue un pago con Apple Pay, lo ves acá."
+    "emptyHint": "Cuando llegue un pago con Apple Pay, lo ves acá.",
+    "subtitle": "Pagos que llegaron solos desde Apple Pay",
+    "noMerchant": "Pago sin comercio",
+    "confirmed": "Pago confirmado",
+    "confirmError": "No pudimos confirmar el pago. Probá de nuevo.",
+    "meta": "{{when}} · {{card}}"
   },
   "notices": {
     "title": "Avisos",
@@ -21,5 +26,9 @@
     "today": "hoy {{time}}",
     "yesterday": "ayer {{time}}",
     "other": "{{date}} {{time}}"
+  },
+  "state": {
+    "errorTitle": "No pudimos cargar tus avisos",
+    "errorBody": "Revisá tu conexión y volvé a intentar."
   }
 }

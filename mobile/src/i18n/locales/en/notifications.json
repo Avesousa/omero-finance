@@ -6,7 +6,12 @@
     "confirmLabel": "",
     "noAmount": "",
     "empty": "",
-    "emptyHint": ""
+    "emptyHint": "",
+    "subtitle": "",
+    "noMerchant": "",
+    "confirmed": "",
+    "confirmError": "",
+    "meta": ""
   },
   "notices": {
     "title": "",
@@ -21,5 +26,9 @@
     "today": "",
     "yesterday": "",
     "other": ""
+  },
+  "state": {
+    "errorTitle": "",
+    "errorBody": ""
   }
 }

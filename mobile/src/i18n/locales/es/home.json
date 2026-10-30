@@ -6,7 +6,10 @@
     "toggleLabel": "Elegir qué monto ver",
     "available": "Disponible",
     "free": "Libre",
-    "sticker": "A FUEGO"
+    "sticker": "A FUEGO",
+    "availableHint": "disponible este mes · lo que queda después de lo ya pagado",
+    "summaryFree": "Libre",
+    "summaryAvailable": "Disponible"
   },
   "income": "Ingresos",
   "pendingToPay": "Pendiente de pago",
@@ -18,12 +21,15 @@
       "outings": "Salidas",
       "transport": "Transporte",
       "other": "Otros"
-    }
+    },
+    "total": "Total {{amount}}",
+    "summary": "Gastos del mes por categoría"
   },
   "fixed": {
     "title": "Fijos pagados",
     "progress": "{{paid}} de {{total}}",
-    "summary": "Fijos pagados {{paid}} de {{total}}"
+    "summary": "Fijos pagados {{paid}} de {{total}}",
+    "amounts": "{{paid}} de {{total}}"
   },
   "alert": {
     "pendingApplePay_one": "{{count}} pago con Apple Pay por confirmar",
@@ -31,6 +37,12 @@
   },
   "story": {
     "teaser": "Capítulo {{n}} · {{title}}",
-    "teaserLabel": "Tu historia con {{mascot}}"
+    "teaserLabel": "Tu historia con {{mascot}}",
+    "progress": "Avance del capítulo {{percent}}"
+  },
+  "state": {
+    "errorTitle": "No pudimos cargar tu mes",
+    "errorBody": "Revisá tu conexión y volvé a intentar.",
+    "loading": "Cargando tu mes"
   }
 }

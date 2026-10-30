@@ -6,7 +6,10 @@
     "toggleLabel": "",
     "available": "",
     "free": "",
-    "sticker": ""
+    "sticker": "",
+    "availableHint": "",
+    "summaryFree": "",
+    "summaryAvailable": ""
   },
   "income": "",
   "pendingToPay": "",
@@ -18,12 +21,15 @@
       "outings": "",
       "transport": "",
       "other": ""
-    }
+    },
+    "total": "",
+    "summary": ""
   },
   "fixed": {
     "title": "",
     "progress": "",
-    "summary": ""
+    "summary": "",
+    "amounts": ""
   },
   "alert": {
     "pendingApplePay_one": "",
@@ -31,6 +37,12 @@
   },
   "story": {
     "teaser": "",
-    "teaserLabel": ""
+    "teaserLabel": "",
+    "progress": ""
+  },
+  "state": {
+    "errorTitle": "",
+    "errorBody": "",
+    "loading": ""
   }
 }
