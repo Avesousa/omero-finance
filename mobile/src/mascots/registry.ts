@@ -1,9 +1,13 @@
 import { palette } from "../design-system";
 import { MatiDrawing } from "./mati/Drawing";
+import { MatiNest } from "./mati/Nest";
 import { OmeroDrawing } from "./omero/Drawing";
+import { OmeroNest } from "./omero/Nest";
 import { PinchoDrawing } from "./pincho/Drawing";
+import { PinchoNest } from "./pincho/Nest";
 import type { MascotDefinition, MascotId } from "./types";
 import { ZorroDrawing } from "./zorro/Drawing";
+import { ZorroNest } from "./zorro/Nest";
 
 const atrevidoBackdrop = palette.atrevido.surface;
 
@@ -17,6 +21,7 @@ export const MASCOTS: Record<MascotId, MascotDefinition> = {
     i18nKey: "omero",
     backdrop: { tranqui: palette.backdrop.omero, atrevido: atrevidoBackdrop },
     Drawing: OmeroDrawing,
+    Nest: OmeroNest,
     story: { chapters: 3 },
   },
   pincho: {
@@ -24,6 +29,7 @@ export const MASCOTS: Record<MascotId, MascotDefinition> = {
     i18nKey: "pincho",
     backdrop: { tranqui: palette.backdrop.pincho, atrevido: atrevidoBackdrop },
     Drawing: PinchoDrawing,
+    Nest: PinchoNest,
     story: { chapters: 3 },
   },
   mati: {
@@ -31,6 +37,7 @@ export const MASCOTS: Record<MascotId, MascotDefinition> = {
     i18nKey: "mati",
     backdrop: { tranqui: palette.backdrop.mati, atrevido: atrevidoBackdrop },
     Drawing: MatiDrawing,
+    Nest: MatiNest,
     story: { chapters: 3 },
   },
   zorro: {
@@ -38,6 +45,7 @@ export const MASCOTS: Record<MascotId, MascotDefinition> = {
     i18nKey: "zorro",
     backdrop: { tranqui: palette.backdrop.zorro, atrevido: atrevidoBackdrop },
     Drawing: ZorroDrawing,
+    Nest: ZorroNest,
     story: { chapters: 3 },
   },
 };

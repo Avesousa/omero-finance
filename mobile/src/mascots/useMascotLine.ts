@@ -34,3 +34,18 @@ export function useMascotStory(id?: MascotId) {
     chapterTitle: (n: number) => translate(`${key}.story.chapter${n}`),
   };
 }
+
+/** Textos del nido de una mascota (nombre y frase del capítulo según el modo actual). */
+export function useMascotNest(id?: MascotId) {
+  const { mascotId } = useMascot();
+  const { mode } = useTheme();
+  const { t } = useTranslation("mascots");
+  const key = id ?? mascotId;
+  const translate = t as unknown as (k: string) => string;
+  return {
+    /** "El nido de Omero", "La laguna de Pincho"… */
+    name: translate(`${key}.nest.name`),
+    /** Frase del capítulo 1..3 en la voz del modo. */
+    caption: (chapter: number) => translate(`${key}.nest.caption.c${chapter}.${mode}`),
+  };
+}

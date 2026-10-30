@@ -1,5 +1,6 @@
 export { AppHeader, type AppHeaderProps } from "./AppHeader";
 export { TabBar, ADD_ROUTE } from "./TabBar";
+export { MoneyHero, type MoneyHeroProps } from "./MoneyHero";
 export { HeroGasto, type HeroGastoProps, type HeroView } from "./HeroGasto";
 export { MascotMessage, type MascotMessageProps } from "./MascotMessage";
 export { SpendingBreakdownCard, type SpendingBreakdownCardProps, type SpendingItem } from "./SpendingBreakdownCard";
@@ -19,3 +20,7 @@ export { CommittedMonthsCard, type CommittedMonthsCardProps } from "./CommittedM
 export { WealthHero, type WealthHeroProps } from "./WealthHero";
 export { WealthTrendCard, type WealthTrendCardProps } from "./WealthTrendCard";
 export { WealthGroupCard, type WealthGroupCardProps, type WealthGroupRow } from "./WealthGroupCard";
+
+// — nido y metas —
+export { NestCard, type NestCardProps } from "./NestCard";
+export { GoalsCard, type GoalsCardProps, type GoalRow } from "./GoalsCard";

@@ -34,5 +34,20 @@
     "errorTitle": "",
     "errorBody": "",
     "emptyGroup": ""
+  },
+  "nest": {
+    "chapter": "",
+    "chapterProgress": "",
+    "equity": "",
+    "scene": ""
+  },
+  "goals": {
+    "title": "",
+    "of": "",
+    "progress": "",
+    "monthly_one": "",
+    "monthly_other": "",
+    "missing": "",
+    "reached": ""
   }
 }

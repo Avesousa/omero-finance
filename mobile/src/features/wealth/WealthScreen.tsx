@@ -5,7 +5,9 @@ import { Skeleton, Text, VStack } from "../../components/atoms";
 import type { IconName } from "../../components/atoms";
 import { EmptyState, SegmentedToggle } from "../../components/molecules";
 import {
+  GoalsCard,
   MascotMessage,
+  NestCard,
   ScreenHeader,
   WealthGroupCard,
   WealthHero,
@@ -13,9 +15,10 @@ import {
   type WealthGroupRow,
 } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { itemShare, toArs, useWealth, wealthDelta, wealthTotals } from "../../data";
+import { equityRatio, goalProgress, itemShare, nestStage, toArs, useWealth, wealthDelta, wealthTotals } from "../../data";
 import type { Currency, WealthItem } from "../../data/types";
 import { formatMoney } from "../../i18n/format";
+import { useMascotNest } from "../../mascots";
 
 function iconFor(item: WealthItem): IconName {
   if (item.source === "loan") return "business-outline";
@@ -29,6 +32,7 @@ export function WealthScreen() {
   const { t: tc } = useTranslation("common");
   const qc = useQueryClient();
   const { data, isPending, isError, refetch } = useWealth();
+  const nestName = useMascotNest().name;
   const [currency, setCurrency] = useState<Currency>("ARS");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -75,7 +79,15 @@ export function WealthScreen() {
         .filter((i) => i.kind === kind)
         .sort((a, b) => toArs(b.amount, b.currency, rate) - toArs(a.amount, a.currency, rate))
         .map(toRow);
+    const stage = nestStage(equityRatio(totals.assets, totals.debts));
+    const goals = data.goals.map((g) => ({
+      ...g,
+      // Las metas se muestran en su moneda de origen en ambos modos.
+      ...goalProgress(g),
+    }));
     return {
+      stage,
+      goals,
       net: conv(totals.net),
       assets: conv(totals.assets),
       debts: conv(totals.debts),
@@ -90,6 +102,7 @@ export function WealthScreen() {
   const header = (
     <ScreenHeader
       title={t("title")}
+      subtitle={nestName}
       right={
         <SegmentedToggle<Currency>
           testID="wealth-currency"
@@ -135,6 +148,8 @@ export function WealthScreen() {
     <ScreenTemplate header={header} testID="wealth" refreshing={refreshing} onRefresh={onRefresh}>
       <WealthHero net={view.net} assets={view.assets} debts={view.debts} currency={currency} delta={delta} />
       <MascotMessage moment={moment} params={params} />
+      <NestCard chapter={view.stage.chapter} progress={view.stage.progress} equity={view.stage.equity} />
+      {view.goals.length > 0 ? <GoalsCard goals={view.goals} /> : null}
       <WealthTrendCard history={view.history} currency={currency} />
       <WealthGroupCard
         testID="wealth-assets"

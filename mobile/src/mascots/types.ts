@@ -29,6 +29,19 @@ export interface DrawingProps {
   mode: Mode;
 }
 
+/** Capítulo de la historia = etapa del nido. */
+export type NestChapter = 1 | 2 | 3;
+
+/** Props de una escena del nido: se dibuja a `size` px de ancho (viewBox 320x200) y trae su propio <Svg>. */
+export interface NestProps {
+  chapter: NestChapter;
+  /** Avance dentro del capítulo, 0..1. */
+  progress: number;
+  mode: Mode;
+  /** Ancho en px; el alto es size * 200 / 320. */
+  size: number;
+}
+
 export interface MascotDefinition {
   id: MascotId;
   /** Prefijo de claves en el namespace i18n `mascots` (`<i18nKey>.name`, `.species`, `.story.*`, `.lines.*`). */
@@ -36,5 +49,7 @@ export interface MascotDefinition {
   /** Color del círculo de fondo por modo. El anillo sale de `theme.colors.backdropRing`. */
   backdrop: Record<Mode, string>;
   Drawing: ComponentType<DrawingProps>;
+  /** Escena del nido en Patrimonio: el lugar que la mascota construye a medida que crece tu patrimonio. */
+  Nest: ComponentType<NestProps>;
   story: { chapters: number };
 }

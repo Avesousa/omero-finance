@@ -5,7 +5,9 @@ import type {
   CardsOverview,
   Currency,
   HomeSummary,
+  NestChapter,
   PendingPayment,
+  WealthGoal,
   WealthItem,
 } from "./types";
 
@@ -196,4 +198,32 @@ export function itemShare(item: WealthItem, items: WealthItem[], usdRate: number
   const total = group.reduce((sum, i) => sum + toArs(i.amount, i.currency, usdRate), 0);
   if (total <= 0) return 0;
   return Math.min(1, Math.max(0, toArs(item.amount, item.currency, usdRate) / total));
+}
+
+// ───────────── El nido ─────────────
+
+/** Qué parte de lo que tenés es realmente tuyo: activos / (activos + deudas), 0..1 (0 si ambos son 0). */
+export function equityRatio(assets: number, debts: number): number {
+  const total = assets + debts;
+  if (!Number.isFinite(total) || total <= 0) return 0;
+  return Math.min(1, Math.max(0, assets / total));
+}
+
+/**
+ * Etapa del nido según `equity` (0..1): capítulo 1 si < 1/3, 2 si < 2/3, 3 si >= 2/3.
+ * `progress` es el avance dentro del tercio (el capítulo 3 llega a 1 con equity 1).
+ */
+export function nestStage(equity: number): { chapter: NestChapter; progress: number; equity: number } {
+  const e = Number.isFinite(equity) ? Math.min(1, Math.max(0, equity)) : 0;
+  const x = e * 3;
+  const chapter: NestChapter = x < 1 ? 1 : x < 2 ? 2 : 3;
+  return { chapter, progress: Math.min(1, Math.max(0, x - (chapter - 1))), equity: e };
+}
+
+/** Avance de una meta: `ratio` 0..1, lo que `missing` (>= 0) y los meses que faltan si hay aporte mensual. */
+export function goalProgress(goal: WealthGoal): { ratio: number; missing: number; monthsLeft: number | null } {
+  const ratio = goal.target > 0 ? Math.min(1, Math.max(0, goal.saved / goal.target)) : 0;
+  const missing = Math.max(0, goal.target - goal.saved);
+  const monthsLeft = goal.monthly != null && goal.monthly > 0 ? Math.ceil(missing / goal.monthly) : null;
+  return { ratio, missing, monthsLeft };
 }

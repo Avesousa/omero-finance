@@ -20,7 +20,10 @@ const em = (size: number, value: number) => Math.round(size * value * 100) / 100
 
 /** Estilos tipográficos del DS (display = Unbounded, el resto = Manrope). */
 export const typography = {
-  heroAmount: { fontFamily: fontFamily.display900, fontSize: 44, lineHeight: 48, letterSpacing: em(44, -0.02) },
+  /** Monto de héroe: tamaño fijo pensado para `$ 100.000.000` (+ decimales en `heroAmountDecimals`). */
+  heroAmount: { fontFamily: fontFamily.display900, fontSize: 30, lineHeight: 36, letterSpacing: em(30, -0.02) },
+  /** Decimales del monto de héroe (`,00`), alineados por la base con `heroAmount`. */
+  heroAmountDecimals: { fontFamily: fontFamily.display800, fontSize: 17, lineHeight: 22 },
   screenTitle: { fontFamily: fontFamily.display800, fontSize: 24, lineHeight: 30, letterSpacing: em(24, -0.02) },
   cardTitle: { fontFamily: fontFamily.display700, fontSize: 15, lineHeight: 20, letterSpacing: em(15, -0.02) },
   number: { fontFamily: fontFamily.display800, fontSize: 18, lineHeight: 24, letterSpacing: em(18, -0.02) },

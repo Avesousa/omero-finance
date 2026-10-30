@@ -10,6 +10,7 @@ export { Surface, type SurfaceProps } from "./Surface";
 export { Divider } from "./Divider";
 export { Sticker, type StickerProps } from "./Sticker";
 export { Amount, type AmountProps } from "./Amount";
+export { HeroAmount, type HeroAmountProps } from "./HeroAmount";
 export { VStack, HStack, Spacer, type StackProps } from "./Stack";
 export { TextField, type TextFieldProps } from "./TextField";
 export { hitSlopFor } from "./hitSlop";

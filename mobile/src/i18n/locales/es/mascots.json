@@ -96,6 +96,23 @@
         "tranqui": "Qué bueno verte. Arrancamos de nuevo cuando quieras.",
         "atrevido": "Volviste. Sin drama: cargamos lo que falta y listo."
       }
+    },
+    "nest": {
+      "name": "El nido de Omero",
+      "caption": {
+        "c1": {
+          "tranqui": "Un ladrillo hoy, otro mañana. Así empieza toda casa.",
+          "atrevido": "Primer ladrillo. Poca cosa, pero es tuyo."
+        },
+        "c2": {
+          "tranqui": "Las paredes ya se levantan. Seguí de a poco.",
+          "atrevido": "Ya hay paredes. Ni se te ocurra frenar ahora."
+        },
+        "c3": {
+          "tranqui": "Ya tenés casa, y con puerta. Se siente, ¿no?",
+          "atrevido": "Casa propia, con puerta. Me saco la gorra."
+        }
+      }
     }
   },
   "pincho": {
@@ -129,6 +146,23 @@
       "comeback": {
         "tranqui": "Qué bueno verte. La laguna te esperaba.",
         "atrevido": "Volviste. Sin drama: la laguna se llena igual, cargá lo que falta."
+      }
+    },
+    "nest": {
+      "name": "La laguna de Pincho",
+      "caption": {
+        "c1": {
+          "tranqui": "La laguna está seca, pero el agua ya viene.",
+          "atrevido": "Seco, sí. Pero esto se llena."
+        },
+        "c2": {
+          "tranqui": "Se acerca el agua. Todo llega flotando.",
+          "atrevido": "Entró agua. Se está poniendo bueno."
+        },
+        "c3": {
+          "tranqui": "Tu propio Delta. A flotar tranquilo.",
+          "atrevido": "Delta propio. Yo floto, vos mandás."
+        }
       }
     }
   },
@@ -164,6 +198,23 @@
         "tranqui": "Qué bueno verte. ¿Arrancamos con un mate?",
         "atrevido": "Este mate está lavado. Cebá un gasto y arrancamos de nuevo."
       }
+    },
+    "nest": {
+      "name": "La ronda de Mati",
+      "caption": {
+        "c1": {
+          "tranqui": "Primera cebada: de a uno se empieza.",
+          "atrevido": "Una cebada y a arrancar."
+        },
+        "c2": {
+          "tranqui": "La ronda crece, cada vez hay más mates.",
+          "atrevido": "Se suma gente a la ronda. Se pone buena."
+        },
+        "c3": {
+          "tranqui": "La mateada del mes: todo en su lugar.",
+          "atrevido": "Mateada completa. Esto sí es plata bien cebada."
+        }
+      }
     }
   },
   "zorro": {
@@ -197,6 +248,23 @@
       "comeback": {
         "tranqui": "Qué bueno verte. Retomamos la ruta cuando quieras.",
         "atrevido": "Volviste. Sin drama: el mapa sigue acá, cargá lo que falta."
+      }
+    },
+    "nest": {
+      "name": "El tesoro del Zorro",
+      "caption": {
+        "c1": {
+          "tranqui": "El mapa está roto, pero las piezas están.",
+          "atrevido": "Mapa roto. Yo ya tengo la jugada."
+        },
+        "c2": {
+          "tranqui": "La ruta está clara. Un paso por vez.",
+          "atrevido": "Ruta armada. Cada paso acerca la X."
+        },
+        "c3": {
+          "tranqui": "Llegamos: el tesoro es tuyo.",
+          "atrevido": "Cofre abierto. Te lo ganaste, pícaro."
+        }
       }
     }
   }

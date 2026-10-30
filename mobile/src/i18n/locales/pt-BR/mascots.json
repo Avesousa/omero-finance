@@ -96,6 +96,23 @@
         "tranqui": "",
         "atrevido": ""
       }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
+      }
     }
   },
   "pincho": {
@@ -129,6 +146,23 @@
       "comeback": {
         "tranqui": "",
         "atrevido": ""
+      }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
       }
     }
   },
@@ -164,6 +198,23 @@
         "tranqui": "",
         "atrevido": ""
       }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
+      }
     }
   },
   "zorro": {
@@ -197,6 +248,23 @@
       "comeback": {
         "tranqui": "",
         "atrevido": ""
+      }
+    },
+    "nest": {
+      "name": "",
+      "caption": {
+        "c1": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c2": {
+          "tranqui": "",
+          "atrevido": ""
+        },
+        "c3": {
+          "tranqui": "",
+          "atrevido": ""
+        }
       }
     }
   }

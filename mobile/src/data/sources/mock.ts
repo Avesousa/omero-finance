@@ -1,5 +1,5 @@
 import type { DataSource } from "./DataSource";
-import { wealthTotals } from "../selectors";
+import { equityRatio, nestStage, wealthTotals } from "../selectors";
 import type {
   AppNotifications,
   Card,
@@ -7,6 +7,7 @@ import type {
   CardsOverview,
   HomeSummary,
   PendingPayment,
+  WealthGoal,
   WealthItem,
   WealthOverview,
 } from "../types";
@@ -15,7 +16,7 @@ const LATENCY_MS = 300;
 const wait = <T,>(value: T): Promise<T> => new Promise((resolve) => setTimeout(() => resolve(value), LATENCY_MS));
 
 // Datos del lienzo de diseño (ficticios): Noviembre 2026, quedan 27 días.
-const home: Omit<HomeSummary, "pendingConfirmCount"> = {
+const home: Omit<HomeSummary, "pendingConfirmCount" | "story"> = {
   greetingName: "Avelino",
   period: "2026-11",
   today: "2026-11-03",
@@ -32,7 +33,6 @@ const home: Omit<HomeSummary, "pendingConfirmCount"> = {
     { id: "other", labelKey: "spending.categories.other", amount: 20_000 },
   ],
   fixed: { paid: 3, total: 7, paidAmount: 1_126_000, totalAmount: 2_600_000 },
-  story: { chapter: 1, progress: 0.4 },
 };
 
 // Estado en memoria: confirmar un pago lo saca de la lista y baja el contador.
@@ -86,6 +86,18 @@ const wealthItems: WealthItem[] = [
   { id: "w7", kind: "debt", source: "manual", name: "Deuda con Papá", currency: "ARS", amount: 300_000, previous: 350_000 },
 ];
 
+const wealthGoals: WealthGoal[] = [
+  { id: "g1", name: "Fondo de emergencia", target: 1_500_000, saved: 450_000, monthly: 175_000, currency: "ARS" },
+  { id: "g2", name: "Vacaciones 2027", target: 900_000, saved: 120_000, monthly: null, currency: "ARS" },
+];
+
+/** Una sola fuente de verdad: la historia de Inicio sale del mismo nido que Patrimonio. */
+function storyFromWealth(): HomeSummary["story"] {
+  const { assets, debts } = wealthTotals(wealthItems, USD_RATE);
+  const { chapter, progress } = nestStage(equityRatio(assets, debts));
+  return { chapter, progress };
+}
+
 const wealthHistory: WealthOverview["history"] = [
   { period: "2026-06", netArs: 1_180_000 },
   { period: "2026-07", netArs: 1_420_000 },
@@ -96,7 +108,7 @@ const wealthHistory: WealthOverview["history"] = [
 ];
 
 export const mockSource: DataSource = {
-  getHome: async () => wait({ ...home, pendingConfirmCount: pending.length }),
+  getHome: async () => wait({ ...home, pendingConfirmCount: pending.length, story: storyFromWealth() }),
   getPendingPayments: async () => wait([...pending]),
   getNotifications: async () => wait({ pending: [...pending], notices: [...notices] }),
   confirmPayment: async (id) => {
@@ -117,6 +129,7 @@ export const mockSource: DataSource = {
       period,
       usdRate: USD_RATE,
       items: wealthItems.map((i) => ({ ...i })),
+      goals: wealthGoals.map((g) => ({ ...g })),
       history: wealthHistory.map((h) => ({ ...h })),
     }),
   markStatementPaid: async (cardId, period) => {

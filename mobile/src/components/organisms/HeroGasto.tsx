@@ -1,9 +1,8 @@
-import { View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../../design-system";
 import { formatMoney } from "../../i18n/format";
-import { Amount, Sticker, Surface, Text } from "../atoms";
+import { Sticker, Text } from "../atoms";
 import { SegmentedToggle } from "../molecules";
+import { MoneyHero } from "./MoneyHero";
 
 export type HeroView = "available" | "free";
 
@@ -27,41 +26,35 @@ export interface HeroGastoProps {
  */
 export function HeroGasto({ perDay, daysLeft, available, free, view, onViewChange }: HeroGastoProps) {
   const { t } = useTranslation("home");
-  const { space } = useTheme();
   const big = view === "available" ? available : perDay;
   return (
-    <Surface variant="hero" testID="hero" style={{ gap: space[1] }}>
-      <View style={{ position: "absolute", top: -space[3] + 2, right: space[4] }}>
-        <Sticker label={t("hero.sticker")} />
-      </View>
-      <Text variant="label" tone="onPrimary">
-        {t("hero.label")}
-      </Text>
-      <Amount testID="hero-amount" variant="heroAmount" tone="onPrimary" value={big} fitChars={9} />
-      <Text testID="hero-subtitle" variant="secondaryStrong" tone="onPrimary" style={{ lineHeight: 18 }}>
-        {view === "available" ? t("hero.availableHint") : t("hero.perDay", { count: daysLeft })}
-      </Text>
-      <View style={{ marginTop: space[2] + 2 }}>
-        <SegmentedToggle<HeroView>
-          testID="hero-toggle"
-          appearance="hero"
-          accessibilityLabel={t("hero.toggleLabel")}
-          value={view}
-          onChange={onViewChange}
-          options={[
-            { value: "available", label: t("hero.available") },
-            { value: "free", label: t("hero.free") },
-          ]}
-        />
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", gap: space[2], marginTop: space[1] + 2 }}>
-        <Text variant="secondaryStrong" tone="onPrimary">
-          {t("hero.summaryFree")} {formatMoney(free)}
+    <MoneyHero
+      testID="hero"
+      label={t("hero.label")}
+      amount={big}
+      amountTestID="hero-amount"
+      accessory={<Sticker label={t("hero.sticker")} />}
+      caption={
+        <Text testID="hero-subtitle" variant="secondaryStrong" tone="onPrimary" style={{ lineHeight: 18 }}>
+          {view === "available" ? t("hero.availableHint") : t("hero.perDay", { count: daysLeft })}
         </Text>
-        <Text variant="secondaryStrong" tone="onPrimary">
-          {t("hero.summaryAvailable")} {formatMoney(available)}
-        </Text>
-      </View>
-    </Surface>
+      }
+      footer={{
+        left: `${t("hero.summaryFree")} ${formatMoney(free)}`,
+        right: `${t("hero.summaryAvailable")} ${formatMoney(available)}`,
+      }}
+    >
+      <SegmentedToggle<HeroView>
+        testID="hero-toggle"
+        appearance="hero"
+        accessibilityLabel={t("hero.toggleLabel")}
+        value={view}
+        onChange={onViewChange}
+        options={[
+          { value: "available", label: t("hero.available") },
+          { value: "free", label: t("hero.free") },
+        ]}
+      />
+    </MoneyHero>
   );
 }

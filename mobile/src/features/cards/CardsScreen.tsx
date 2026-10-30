@@ -162,8 +162,8 @@ function CardsBody({
 
   return (
     <>
-      <MascotMessage moment={moment} params={params} mood={mood} />
       <CardsSummaryHero toPay={totals.toPay} paid={totals.paid} estimated={totals.estimated} />
+      <MascotMessage moment={moment} params={params} mood={mood} />
       <SectionHeader title={t("list.title")} />
       {rows.map(({ card, statement, status, days, installmentsCount, amount }) => (
         <CardStatementCard

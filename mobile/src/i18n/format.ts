@@ -47,6 +47,61 @@ export function formatMoney(amount: number, currency: string = "ARS"): string {
   }
 }
 
+export interface MoneyParts {
+  /** "-" para negativos, "" si no. */
+  sign: string;
+  symbol: string;
+  /** Parte entera con separadores de miles ("100.000.000"). */
+  integer: string;
+  /** Siempre 2 dígitos ("00"). */
+  decimals: string;
+  decimalSeparator: string;
+}
+
+/** Dinero partido para mostrar los decimales con otro estilo (siempre 2 decimales). */
+export function formatMoneyParts(amount: number, currency: string = "ARS"): MoneyParts {
+  const locale = activeLocale();
+  try {
+    const parts = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      currencyDisplay: currency === "ARS" ? "narrowSymbol" : "symbol",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).formatToParts(amount);
+    const pick = (type: string) =>
+      parts
+        .filter((p) => p.type === type)
+        .map((p) => p.value)
+        .join("")
+        .replace(nbsp, " ")
+        .trim();
+    const integer = parts
+      .filter((p) => p.type === "integer" || p.type === "group")
+      .map((p) => p.value)
+      .join("");
+    const decimals = pick("fraction");
+    if (!integer || !decimals) throw new Error("incomplete parts");
+    return {
+      sign: parts.some((p) => p.type === "minusSign") ? "-" : "",
+      symbol: pick("currency"),
+      integer,
+      decimals,
+      decimalSeparator: pick("decimal") || (locale === "en-US" ? "." : ","),
+    };
+  } catch {
+    const en = locale === "en-US";
+    const [int, dec] = Math.abs(amount).toFixed(2).split(".");
+    return {
+      sign: amount < 0 ? "-" : "",
+      symbol: currency === "ARS" ? "$" : currency === "USD" ? "US$" : currency,
+      integer: int.replace(/\B(?=(\d{3})+(?!\d))/g, en ? "," : "."),
+      decimals: dec,
+      decimalSeparator: en ? "." : ",",
+    };
+  }
+}
+
 /** Porcentaje a partir de una fracción (0.43 → "43 %"). */
 export function formatPercent(fraction: number, fractionDigits = 0): string {
   try {

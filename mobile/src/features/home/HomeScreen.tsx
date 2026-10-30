@@ -89,7 +89,7 @@ export function HomeScreen() {
       ) : null}
       <SpendingBreakdownCard items={items} total={spendingTotal(data.spendingByCategory)} />
       <FixedProgressCard {...data.fixed} />
-      <StoryTeaserCard chapter={data.story.chapter} progress={data.story.progress} />
+      <StoryTeaserCard chapter={data.story.chapter} progress={data.story.progress} onPress={() => router.push("/patrimonio")} />
     </ScreenTemplate>
   );
 }

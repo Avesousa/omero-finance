@@ -129,10 +129,24 @@ export interface WealthItem {
   loan?: { paidRatio: number; installmentsLeft: number | null };
 }
 
+/** Meta de ahorro. `monthly: null` = sin aporte definido. */
+export interface WealthGoal {
+  id: string;
+  name: string;
+  target: number;
+  saved: number;
+  monthly: number | null;
+  currency: Currency;
+}
+
+/** Capítulo de la historia / etapa del nido de la mascota. */
+export type NestChapter = 1 | 2 | 3;
+
 export interface WealthOverview {
   period: string;
   usdRate: number;
   items: WealthItem[];
+  goals: WealthGoal[];
   /** Patrimonio neto en ARS de los últimos 6 meses, el último = `period`. */
   history: { period: string; netArs: number }[];
 }
