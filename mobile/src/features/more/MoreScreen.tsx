@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Icon, Pill, Surface, Text, VStack } from "../../components/atoms";
 import { ListRow, MascotAvatar, SectionHeader, SegmentedToggle } from "../../components/molecules";
 import { ScreenTemplate } from "../../components/templates";
-import { DATA_SOURCE } from "../../data";
+import { REQUIRES_LOGIN } from "../../data";
 import { THEME_MODES, useTheme } from "../../design-system";
 import { SUPPORTED_ENABLED, SUPPORTED_LANGUAGES, currentLanguage } from "../../i18n";
 import { listMascots, useMascot, useMascotStory } from "../../mascots";
@@ -83,7 +83,7 @@ export function MoreScreen() {
         </Surface>
       </VStack>
 
-      {DATA_SOURCE === "api" ? (
+      {REQUIRES_LOGIN ? (
         <VStack gap={2}>
           <SectionHeader title={t("account.title")} />
           <Surface>

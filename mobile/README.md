@@ -20,9 +20,23 @@ Variables de entorno (archivo `.env` dentro de `mobile/`):
 | Variable | Valor | Para qué |
 |---|---|---|
 | `EXPO_PUBLIC_DATA_SOURCE` | `mock` (default) o `api` | `mock` usa datos de ejemplo; `api` usa el backend. Cualquier valor distinto de `api` cae en `mock`. |
+| `EXPO_PUBLIC_VOICE_SOURCE` | `api` o `mock` (default: igual a `EXPO_PUBLIC_DATA_SOURCE`) | De dónde sale la voz. Ver "Probar la voz de verdad". |
 | `EXPO_PUBLIC_API_URL` | `https://<tu-app>.vercel.app` o `http://<IP de tu compu>:3000` | URL del backend. Sin barra al final. Solo hace falta con `api`. |
 
 `.env.example` no trae `EXPO_PUBLIC_DATA_SOURCE`; si no lo agregás, igual corre en `mock`. Para probar el backend en local, usá la IP de tu compu (el teléfono no ve `localhost`). Si cambiás el `.env`, reiniciá con `npx expo start -c`.
+
+### Probar la voz de verdad
+
+Con `EXPO_PUBLIC_DATA_SOURCE=mock` y `EXPO_PUBLIC_VOICE_SOURCE=api`, `interpretVoice` y `reportError` van a la API real (OpenAI) y todo lo demás, incluidos `addIncome` y las categorías, sigue en mock: no se escribe nada en la base. Como la API pide sesión, en este modo la app muestra el login (hay que entrar con un usuario real). Está centralizado en `src/data/sources/index.ts`.
+
+Una limitación: las categorías que devuelve la voz son las reales del hogar, y el formulario usa las del mock, así que la categoría no se preselecciona (se elige a mano).
+
+Dos caminos:
+
+1. **Backend local**: en la raíz del repo, con `OPENAI_API_KEY` en `.env` (o `.env.local`), `npm run dev`. En `mobile/.env`: `EXPO_PUBLIC_API_URL=http://<IP de la compu>:3000`, `EXPO_PUBLIC_DATA_SOURCE=mock`, `EXPO_PUBLIC_VOICE_SOURCE=api`. Reiniciá con `npx expo start -c`.
+2. **Producción**: el deploy de Vercel con `OPENAI_API_KEY` configurada. En `mobile/.env`: `EXPO_PUBLIC_API_URL=https://<tu-app>.vercel.app` y las mismas dos variables.
+
+Para probar la interpretación sin la app: `npm run voice:try -- "cobré 45 mil de sueldo"`, `--audio ruta.m4a` o `--batch` (desde la raíz).
 
 Tests y tipos:
 

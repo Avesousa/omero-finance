@@ -24,6 +24,8 @@ export interface OpenAILike {
 
 export interface VoiceDeps {
   openai?: OpenAILike;
+  /** Observador opcional de la respuesta cruda del modelo (diagnóstico; no altera el resultado). */
+  onExtraction?: (raw: VoiceExtraction) => void;
 }
 
 export interface VoiceInput {
@@ -172,5 +174,6 @@ export async function interpretVoice(
   if (!transcript) return resolveVoiceOutcome("", null, ctx);
 
   const extraction = await extract(openai, transcript, ctx);
+  deps.onExtraction?.(extraction);
   return resolveVoiceOutcome(transcript, extraction, ctx);
 }
