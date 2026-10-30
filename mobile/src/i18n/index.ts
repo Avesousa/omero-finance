@@ -37,6 +37,14 @@ if (!i18n.isInitialized) {
     react: { useSuspense: false },
     initAsync: false,
   });
+} else {
+  // Recarga en caliente (Fast Refresh / cambio de rama con la app abierta): i18next ya estaba
+  // inicializado con los textos viejos, así que se vuelven a cargar todos los namespaces.
+  for (const [lng, namespaces] of Object.entries(resources)) {
+    for (const [ns, bundle] of Object.entries(namespaces)) {
+      i18n.addResourceBundle(lng, ns, bundle, true, true);
+    }
+  }
 }
 
 /** Idioma activo normalizado a los soportados. */
