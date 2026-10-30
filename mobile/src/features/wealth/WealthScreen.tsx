@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSectionTitle } from "../../navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton, Text, VStack } from "../../components/atoms";
 import type { IconName } from "../../components/atoms";
@@ -29,6 +30,7 @@ function iconFor(item: WealthItem): IconName {
 /** Patrimonio: neto del mes, evolución, lo que tenés y lo que debés, con toggle ARS | USD. */
 export function WealthScreen() {
   const { t } = useTranslation("wealth");
+  const sectionTitle = useSectionTitle("wealth");
   const { t: tc } = useTranslation("common");
   const qc = useQueryClient();
   const { data, isPending, isError, refetch } = useWealth();
@@ -101,7 +103,7 @@ export function WealthScreen() {
 
   const header = (
     <ScreenHeader
-      title={t("title")}
+      title={sectionTitle}
       subtitle={nestName}
       right={
         <SegmentedToggle<Currency>

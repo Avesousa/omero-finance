@@ -61,6 +61,30 @@
       "wealthDown": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "debts": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debtsDueSoon": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "debtsAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "owedPending": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "owedAllCollected": {
+        "tranqui": "",
+        "atrevido": ""
       }
     }
   },
@@ -112,7 +136,9 @@
           "tranqui": "",
           "atrevido": ""
         }
-      }
+      },
+      "short": "",
+      "title": ""
     }
   },
   "pincho": {
@@ -163,7 +189,9 @@
           "tranqui": "",
           "atrevido": ""
         }
-      }
+      },
+      "short": "",
+      "title": ""
     }
   },
   "mati": {
@@ -214,7 +242,9 @@
           "tranqui": "",
           "atrevido": ""
         }
-      }
+      },
+      "short": "",
+      "title": ""
     }
   },
   "zorro": {
@@ -265,7 +295,9 @@
           "tranqui": "",
           "atrevido": ""
         }
-      }
+      },
+      "short": "",
+      "title": ""
     }
   }
 }

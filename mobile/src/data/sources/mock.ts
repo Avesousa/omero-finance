@@ -1,11 +1,14 @@
 import type { DataSource } from "./DataSource";
-import { equityRatio, nestStage, wealthTotals } from "../selectors";
+import { proposeLoanPayment, type LoanDTO } from "../../domain/index.ts";
+import { cardsDebt, derivedWealthItems, equityRatio, nestStage, previewLoan, wealthTotals } from "../selectors.ts";
 import type {
   AppNotifications,
   Card,
   CardPurchase,
   CardsOverview,
+  DebtsOverview,
   HomeSummary,
+  NewLoanInput,
   PendingPayment,
   WealthGoal,
   WealthItem,
@@ -73,18 +76,101 @@ const purchases: CardPurchase[] = [
   { id: "b5", cardId: "c-mc", description: "Spotify anual", categoryName: "Suscripciones", currency: "USD", total: 60, installments: 1, firstPeriod: "2026-11" },
 ];
 
-const wealthItems: WealthItem[] = [
+// Activos manuales. Las deudas (préstamos, tarjetas) y lo que me deben se derivan de `loans` y las tarjetas.
+const manualWealthItems: WealthItem[] = [
   { id: "w1", kind: "asset", source: "manual", name: "Caja de ahorro Galicia", currency: "ARS", amount: 1_250_000, previous: 1_100_000 },
   { id: "w2", kind: "asset", source: "manual", name: "Mercado Pago (FCI)", currency: "ARS", amount: 820_000, previous: 760_000 },
   { id: "w3", kind: "asset", source: "manual", name: "Dólares ahorrados", currency: "USD", amount: 3_200, previous: 3_000 },
   { id: "w4", kind: "asset", source: "manual", name: "Plazo fijo", currency: "ARS", amount: 1_500_000, previous: 1_500_000 },
-  {
-    id: "w5", kind: "debt", source: "loan", name: "Préstamo Galicia", currency: "ARS", amount: 4_820_000, previous: 4_996_772,
-    loan: { paidRatio: 0.32, installmentsLeft: 34 },
-  },
-  { id: "w6", kind: "debt", source: "card", name: "Tarjetas", currency: "ARS", amount: 611_050, previous: 646_200 },
-  { id: "w7", kind: "debt", source: "manual", name: "Deuda con Papá", currency: "ARS", amount: 300_000, previous: 350_000 },
 ];
+
+let entrySeq = 0;
+const pay = (period: string, amount: number, interest: number, isDone: boolean): LoanDTO["payments"][number] => ({
+  entryId: `e${++entrySeq}`,
+  period,
+  amount,
+  interest,
+  isDone,
+});
+
+const baseLoan = {
+  categoryId: null,
+  interestFrequency: "MONTHLY" as const,
+  interestAnnual: false,
+  interestTaxPct: null,
+  isClosed: false,
+  note: null,
+  schedule: [] as LoanDTO["schedule"],
+  endDate: null,
+};
+
+// Estado en memoria: marcar una cuota pagada o agregar un préstamo lo muta.
+const loans: LoanDTO[] = [
+  {
+    ...baseLoan,
+    id: "l-galicia", direction: "OWE", mode: "FIXED", name: "Préstamo Galicia", counterpart: "Banco Galicia", currency: "ARS",
+    principal: 7_088_235, installments: 48, installmentAmount: 412_000,
+    interestRate: 55, interestAnnual: true, interestTaxPct: 21,
+    // Saldos según el banco: pisan la cuenta.
+    anchors: [{ period: "2026-10", amount: 4_996_772 }, { period: "2026-11", amount: 4_820_000 }],
+    startPeriod: "2026-07", createdPeriod: "2026-07", dueDay: 5,
+    payments: [
+      pay("2026-07", 412_000, 393_100, true),
+      pay("2026-08", 412_000, 392_050, true),
+      pay("2026-09", 412_000, 390_900, true),
+      pay("2026-10", 412_000, 277_115, true),
+      pay("2026-11", 412_000, 267_310, false),
+    ],
+  },
+  {
+    ...baseLoan,
+    id: "l-papa", direction: "OWE", mode: "OPEN", name: "Deuda con Papá", counterpart: "Papá", currency: "ARS",
+    principal: 400_000, installments: null, installmentAmount: 50_000, interestRate: null,
+    anchors: [], startPeriod: "2026-09", createdPeriod: "2026-09", dueDay: null,
+    payments: [pay("2026-09", 50_000, 0, true), pay("2026-10", 50_000, 0, true)],
+  },
+  {
+    ...baseLoan,
+    id: "l-juan", direction: "OWED", mode: "FIXED", name: "Préstamo a Juan", counterpart: "Juan", currency: "ARS",
+    principal: 400_000, installments: 4, installmentAmount: 100_000, interestRate: null,
+    anchors: [], startPeriod: "2026-09", createdPeriod: "2026-09", dueDay: null,
+    payments: [pay("2026-09", 100_000, 0, true), pay("2026-10", 100_000, 0, true)],
+  },
+  {
+    ...baseLoan,
+    id: "l-martina", direction: "OWED", mode: "OPEN", name: "Martina — pasajes", counterpart: "Martina", currency: "USD",
+    principal: 300, installments: null, installmentAmount: null, interestRate: null,
+    anchors: [], startPeriod: "2026-10", createdPeriod: "2026-10", dueDay: null,
+    payments: [],
+  },
+];
+
+let loanSeq = 0;
+
+function cloneLoan(l: LoanDTO): LoanDTO {
+  return {
+    ...l,
+    schedule: l.schedule.map((x) => ({ ...x })),
+    anchors: l.anchors?.map((x) => ({ ...x })),
+    payments: l.payments.map((x) => ({ ...x })),
+  };
+}
+
+function cardsOverviewAt(period: string): CardsOverview {
+  return {
+    period,
+    today: home.today,
+    usdRate: USD_RATE,
+    cards: [...cards],
+    statements: statements.map((st) => ({ ...st })),
+    purchases: [...purchases],
+  };
+}
+
+/** Patrimonio del período: activos manuales + deudas y "me deben" derivados de préstamos y tarjetas. */
+function wealthItemsAt(period: string): WealthItem[] {
+  return [...manualWealthItems, ...derivedWealthItems(loans, cardsOverviewAt(period), period, USD_RATE)];
+}
 
 const wealthGoals: WealthGoal[] = [
   { id: "g1", name: "Fondo de emergencia", target: 1_500_000, saved: 450_000, monthly: 175_000, currency: "ARS" },
@@ -93,19 +179,26 @@ const wealthGoals: WealthGoal[] = [
 
 /** Una sola fuente de verdad: la historia de Inicio sale del mismo nido que Patrimonio. */
 function storyFromWealth(): HomeSummary["story"] {
-  const { assets, debts } = wealthTotals(wealthItems, USD_RATE);
+  const { assets, debts } = wealthTotals(wealthItemsAt(CURRENT_PERIOD), USD_RATE);
   const { chapter, progress } = nestStage(equityRatio(assets, debts));
   return { chapter, progress };
 }
 
 const wealthHistory: WealthOverview["history"] = [
   { period: "2026-06", netArs: 1_180_000 },
-  { period: "2026-07", netArs: 1_420_000 },
-  { period: "2026-08", netArs: 1_650_000 },
-  { period: "2026-09", netArs: 1_910_000 },
-  { period: "2026-10", netArs: 2_230_000 },
-  { period: CURRENT_PERIOD, netArs: wealthTotals(wealthItems, USD_RATE).net },
+  { period: "2026-07", netArs: 1_620_000 },
+  { period: "2026-08", netArs: 2_050_000 },
+  { period: "2026-09", netArs: 2_500_000 },
+  { period: "2026-10", netArs: 2_850_000 },
 ];
+
+/** El último mes sale de los ítems (misma cuenta que el hero de Patrimonio). */
+function historyAt(): WealthOverview["history"] {
+  return [
+    ...wealthHistory.map((h) => ({ ...h })),
+    { period: CURRENT_PERIOD, netArs: wealthTotals(wealthItemsAt(CURRENT_PERIOD), USD_RATE).net },
+  ];
+}
 
 export const mockSource: DataSource = {
   getHome: async () => wait({ ...home, pendingConfirmCount: pending.length, story: storyFromWealth() }),
@@ -115,26 +208,68 @@ export const mockSource: DataSource = {
     pending = pending.filter((p) => p.id !== id);
     await wait(undefined);
   },
-  getCards: async (period = CURRENT_PERIOD) =>
-    wait<CardsOverview>({
-      period,
-      today: home.today,
-      usdRate: USD_RATE,
-      cards: [...cards],
-      statements: statements.map((st) => ({ ...st })),
-      purchases: [...purchases],
-    }),
+  getCards: async (period = CURRENT_PERIOD) => wait<CardsOverview>(cardsOverviewAt(period)),
   getWealth: async (period = CURRENT_PERIOD) =>
     wait<WealthOverview>({
       period,
       usdRate: USD_RATE,
-      items: wealthItems.map((i) => ({ ...i })),
+      items: wealthItemsAt(period).map((i) => ({ ...i })),
       goals: wealthGoals.map((g) => ({ ...g })),
-      history: wealthHistory.map((h) => ({ ...h })),
+      history: historyAt(),
     }),
   markStatementPaid: async (cardId, period) => {
     const st = statements.find((x) => x.cardId === cardId && x.period === period);
     if (st) st.isPaid = true;
     await wait(undefined);
+  },
+  getDebts: async (period = CURRENT_PERIOD) =>
+    wait<DebtsOverview>({
+      period,
+      today: home.today,
+      usdRate: USD_RATE,
+      loans: loans.map(cloneLoan),
+      cards: cardsDebt(cardsOverviewAt(period), period),
+    }),
+  markLoanPaid: async (loanId, period) => {
+    const loan = loans.find((l) => l.id === loanId);
+    if (loan) {
+      const existing = loan.payments.find((p) => p.period === period);
+      if (existing) {
+        existing.isDone = true;
+      } else {
+        const proposal = proposeLoanPayment(loan, period);
+        if (proposal) {
+          loan.payments.push(pay(period, proposal.amount, proposal.interest, true));
+          loan.payments.sort((a, b) => a.period.localeCompare(b.period));
+        }
+      }
+    }
+    await wait(undefined);
+  },
+  addLoan: async (input: NewLoanInput) => {
+    loanSeq += 1;
+    const loan: LoanDTO = {
+      ...baseLoan,
+      id: `l-new-${loanSeq}`,
+      direction: input.direction,
+      mode: input.mode,
+      name: input.name,
+      counterpart: input.counterpart,
+      currency: input.currency,
+      principal: input.principal,
+      installments: input.mode === "FIXED" ? input.installments : null,
+      installmentAmount: input.installmentAmount ?? (input.mode === "FIXED" ? previewLoan(input).installment : null),
+      interestRate: input.interestRate,
+      interestAnnual: input.interestAnnual,
+      interestTaxPct: input.interestTaxPct,
+      anchors: [],
+      startPeriod: input.startPeriod,
+      createdPeriod: CURRENT_PERIOD < input.startPeriod ? CURRENT_PERIOD : input.startPeriod,
+      dueDay: input.dueDay,
+      endDate: input.endDate,
+      payments: [],
+    };
+    loans.push(loan);
+    return wait(cloneLoan(loan));
   },
 };

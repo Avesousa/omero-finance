@@ -3,6 +3,7 @@ import { AppState, Platform } from "react-native";
 import { focusManager, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dataSource, DATA_SOURCE } from "./sources";
 import { notificationBadgeCount } from "./selectors";
+import type { NewLoanInput } from "./types";
 
 export { DATA_SOURCE } from "./sources";
 export * from "./types";
@@ -23,6 +24,7 @@ export const queryKeys = {
   notifications: ["notifications"] as const,
   cards: (period?: string) => ["cards", period ?? "current"] as const,
   wealth: (period?: string) => ["wealth", period ?? "current"] as const,
+  debts: (period?: string) => ["debts", period ?? "current"] as const,
 };
 
 /** Resumen del mes para Inicio. */
@@ -88,6 +90,42 @@ export function useMarkStatementPaid() {
   );
   return useMutation({
     mutationFn: ({ cardId, period }: { cardId: string; period: string }) => dataSource.markStatementPaid(cardId, period),
+    onSuccess: refresh,
+  });
+}
+
+/** Deudas del mes: préstamos (debo / me deben) y deuda de tarjetas. Usar `loanRow`/`debtsTotals` para mostrar. */
+export function useDebts(period?: string) {
+  return useQuery({ queryKey: queryKeys.debts(period), queryFn: () => dataSource.getDebts(period) });
+}
+
+function useRefreshDebts() {
+  const qc = useQueryClient();
+  return useCallback(
+    () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ["debts"] }),
+        qc.invalidateQueries({ queryKey: ["wealth"] }),
+        qc.invalidateQueries({ queryKey: ["home"] }),
+      ]),
+    [qc],
+  );
+}
+
+/** Mutación: marcar pagada/cobrada la cuota de un préstamo en un período. Refresca deudas, patrimonio e Inicio. */
+export function useMarkLoanPaid() {
+  const refresh = useRefreshDebts();
+  return useMutation({
+    mutationFn: ({ loanId, period }: { loanId: string; period: string }) => dataSource.markLoanPaid(loanId, period),
+    onSuccess: refresh,
+  });
+}
+
+/** Mutación: agregar un préstamo (`NewLoanInput`). Refresca deudas, patrimonio e Inicio. */
+export function useAddLoan() {
+  const refresh = useRefreshDebts();
+  return useMutation({
+    mutationFn: (input: NewLoanInput) => dataSource.addLoan(input),
     onSuccess: refresh,
   });
 }

@@ -1,4 +1,13 @@
-import type { AppNotifications, CardsOverview, HomeSummary, PendingPayment, WealthOverview } from "../types";
+import type { LoanDTO } from "../../domain";
+import type {
+  AppNotifications,
+  CardsOverview,
+  DebtsOverview,
+  HomeSummary,
+  NewLoanInput,
+  PendingPayment,
+  WealthOverview,
+} from "../types";
 
 /** Contrato de datos de la app. Implementaciones: `mock` (default) y `api`. */
 export interface DataSource {
@@ -14,6 +23,12 @@ export interface DataSource {
   getWealth(period?: string): Promise<WealthOverview>;
   /** Marca como pagado el resumen de una tarjeta en un período. */
   markStatementPaid(cardId: string, period: string): Promise<void>;
+  /** Deudas: préstamos (debo / me deben) y la deuda de tarjetas del período. */
+  getDebts(period?: string): Promise<DebtsOverview>;
+  /** Marca pagada (o cobrada) la cuota del período; si todavía no existe la crea con la cuota propuesta. */
+  markLoanPaid(loanId: string, period: string): Promise<void>;
+  /** Agrega un préstamo y lo devuelve ya con id. */
+  addLoan(input: NewLoanInput): Promise<LoanDTO>;
 }
 
 export class NotImplementedError extends Error {

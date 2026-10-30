@@ -45,10 +45,34 @@
     "add": {
       "title": "Cargar",
       "body": "Pronto vas a poder cargar un gasto en un minuto desde acá."
+    },
+    "debts": {
+      "title": "Deudas",
+      "body": "Acá vas a ver lo que debés y lo que te deben, cuota por cuota. Está en camino."
     }
   },
   "period": {
     "prev": "Mes anterior",
     "next": "Mes siguiente"
+  },
+  "load": {
+    "title": "Cargar",
+    "subtitle": "¿Qué querés cargar?",
+    "expense": {
+      "title": "Gasto",
+      "body": "Algo que pagaste hoy"
+    },
+    "income": {
+      "title": "Ingreso",
+      "body": "Sueldo, extra o cobro"
+    },
+    "debt": {
+      "title": "Deuda o préstamo",
+      "body": "Lo que debés o lo que te deben"
+    },
+    "statement": {
+      "title": "Resumen de tarjeta",
+      "body": "El cierre del mes de una tarjeta"
+    }
   }
 }

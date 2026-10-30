@@ -7,7 +7,7 @@ export interface ScreenTemplateProps {
   /** Encabezado fijo arriba (ej. `<AppHeader/>` o un título). Queda fuera del scroll. */
   header?: ReactNode;
   children: ReactNode;
-  /** Bordes con inset de zona segura. Default solo arriba (la barra de pestañas cubre el inferior); en modales usar `["top","bottom"]`. */
+  /** Bordes con inset de zona segura. Default solo arriba (la barra flotante deja su espacio con padding); en modales usar `["top","bottom"]`. */
   edges?: Edge[];
   /** Si es false, el contenido no hace scroll (pantalla fija). */
   scroll?: boolean;
@@ -20,7 +20,7 @@ export interface ScreenTemplateProps {
 
 /**
  * Layout de pantalla: fondo `bg`, zona segura, encabezado fijo opcional y contenido con
- * margen lateral space-5, separación space-4 entre bloques y aire abajo para el botón central.
+ * margen lateral space-5, separación space-4 entre bloques y aire abajo para que la barra flotante no tape nada (salvo en modales).
  */
 export function ScreenTemplate({
   header,
@@ -36,7 +36,7 @@ export function ScreenTemplate({
   const padding: ViewStyle = {
     paddingHorizontal: space[5],
     paddingTop: space[4],
-    paddingBottom: space[8] + (edges.includes("bottom") ? 0 : sizes.fabLift),
+    paddingBottom: edges.includes("bottom") ? space[8] : space[8] + sizes.tabBarHeight + space[3] * 2,
     gap: space[4],
   };
   return (

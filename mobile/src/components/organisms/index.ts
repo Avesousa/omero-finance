@@ -24,3 +24,7 @@ export { WealthGroupCard, type WealthGroupCardProps, type WealthGroupRow } from 
 // — nido y metas —
 export { NestCard, type NestCardProps } from "./NestCard";
 export { GoalsCard, type GoalsCardProps, type GoalRow } from "./GoalsCard";
+
+// — deudas —
+export { LoanCard, type LoanCardProps } from "./LoanCard";
+export { CardsDebtRow, type CardsDebtRowProps } from "./CardsDebtRow";

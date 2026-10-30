@@ -1,5 +1,5 @@
-import { ComingSoonScreen } from "../src/features/placeholders/ComingSoonScreen";
+import { LoadSheetScreen } from "../src/features/load/LoadSheetScreen";
 
 export default function Cargar() {
-  return <ComingSoonScreen kind="add" modal />;
+  return <LoadSheetScreen />;
 }

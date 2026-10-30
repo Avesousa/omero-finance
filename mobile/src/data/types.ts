@@ -1,3 +1,7 @@
+import type { Currency, LoanDirection, LoanDTO, LoanMode } from "../domain";
+
+export type { Currency, LoanDirection, LoanDTO, LoanMode } from "../domain";
+
 /** Un tramo del gráfico "En qué se va el mes". Usar `labelKey` (i18n) o, si viene del servidor, `name`. */
 export interface SpendingCategory {
   id: string;
@@ -68,7 +72,6 @@ export interface AppNotifications {
   notices: AppNotice[];
 }
 
-export type Currency = "ARS" | "USD";
 export type CardBrand = "VISA" | "MC" | "AMEX";
 
 export interface CardStatement {
@@ -149,4 +152,99 @@ export interface WealthOverview {
   goals: WealthGoal[];
   /** Patrimonio neto en ARS de los últimos 6 meses, el último = `period`. */
   history: { period: string; netArs: number }[];
+}
+
+// ───────────── Deudas y préstamos ─────────────
+
+/** Deuda de tarjetas del período (lo que falta pagar de los resúmenes + lo estimado por cuotas). */
+export interface CardsDebt {
+  /** Tarjetas con algo por pagar. */
+  count: number;
+  debtArs: number;
+  /** Vencimiento más cercano de un resumen sin pagar, 'YYYY-MM-DD'. */
+  nextDue: string | null;
+}
+
+export interface DebtsOverview {
+  period: string;
+  today: string;
+  usdRate: number;
+  loans: LoanDTO[];
+  cards: CardsDebt;
+}
+
+/** Los campos editables de un préstamo (lo que carga el formulario "Nueva deuda"). */
+export interface NewLoanInput {
+  direction: LoanDirection;
+  mode: Extract<LoanMode, "FIXED" | "OPEN">;
+  name: string;
+  counterpart: string | null;
+  currency: Currency;
+  principal: number;
+  /** FIXED: cantidad de cuotas. OPEN: null. */
+  installments: number | null;
+  /** FIXED: cuota del primer mes (null = la calcula el sistema francés). OPEN: pago sugerido por mes. */
+  installmentAmount: number | null;
+  /** % (mensual, o anual si `interestAnnual`). */
+  interestRate: number | null;
+  interestAnnual: boolean;
+  /** IVA sobre el interés, en % (ej. 21). */
+  interestTaxPct: number | null;
+  /** Primer mes, 'YYYY-MM'. */
+  startPeriod: string;
+  dueDay: number | null;
+  endDate: string | null;
+}
+
+/** Cuota del mes de un préstamo, en su moneda. */
+export interface LoanMonthPayment {
+  amount: number;
+  interest: number;
+  /** 'YYYY-MM-DD' o null si no tiene día de vencimiento. */
+  dueDate: string | null;
+  isDone: boolean;
+}
+
+/** Un préstamo listo para mostrar en el período. Importes en la moneda del préstamo salvo `capitalArs`. */
+export interface LoanRow {
+  id: string;
+  direction: LoanDirection;
+  mode: LoanMode;
+  name: string;
+  counterpart: string | null;
+  currency: Currency;
+  /** Saldo de capital al cierre del período. */
+  capital: number;
+  capitalArs: number;
+  /** 0..1. FIXED: cuotas pagas / total. OPEN: 1 − capital / principal. */
+  paidRatio: number;
+  /** Número de la cuota del mes (FIXED/SCHEDULE) o null. */
+  installmentNumber: number | null;
+  installmentsTotal: number | null;
+  monthPayment: LoanMonthPayment | null;
+  /** Tasa: `pct` tal cargado, anual o mensual, y si lleva IVA. Null si no tiene. */
+  rate: { pct: number; annual: boolean; withTax: boolean } | null;
+  finished: boolean;
+}
+
+export interface DebtsTotals {
+  /** Capital de préstamos OWE + deuda de tarjetas. */
+  oweArs: number;
+  /** Capital de préstamos OWED. */
+  owedArs: number;
+  /** Lo que falta pagar este mes: cuotas OWE sin pagar + tarjetas. */
+  monthToPayArs: number;
+  /** Lo que falta cobrar este mes: cuotas OWED sin cobrar. */
+  monthToCollectArs: number;
+  /** Cuotas OWE ya pagadas este mes (sin tarjetas). */
+  paidThisMonthArs: number;
+}
+
+export interface LoanPreview {
+  /** Cuota estimada (FIXED: sistema francés · OPEN: el pago sugerido), null si no se puede calcular. */
+  installment: number | null;
+  totalToPay: number | null;
+  totalInterest: number | null;
+  /** Mes de la última cuota, 'YYYY-MM'. */
+  endPeriod: string | null;
 }

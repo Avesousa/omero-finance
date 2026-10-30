@@ -42,4 +42,13 @@ export const apiSource: DataSource = {
   markStatementPaid: async () => {
     throw new NotImplementedError("markStatementPaid");
   },
+  getDebts: async () => {
+    throw new NotImplementedError("getDebts");
+  },
+  markLoanPaid: async () => {
+    throw new NotImplementedError("markLoanPaid");
+  },
+  addLoan: async () => {
+    throw new NotImplementedError("addLoan");
+  },
 };

@@ -5,11 +5,12 @@ export const sizes = {
   header: 56,
   headerAvatar: 44,
   bubbleAvatar: 56,
-  tabBar: 84,
-  fab: 60,
-  /** Cuánto sube el botón central sobre la barra de pestañas. */
-  fabLift: 26,
-  fabBorder: 4,
+  /** Alto de la píldora flotante de navegación. */
+  tabBarHeight: 64,
+  /** Botón circular Cargar (igual de alto que la píldora). */
+  fab: 64,
+  /** Cápsula de fondo de la pestaña activa. */
+  tabItemHeight: 52,
   button: 52,
   icon: 24,
   iconSmall: 20,

@@ -26,6 +26,7 @@ import {
   type CardsOverview,
   type StatementStatus,
 } from "../../data";
+import { useSectionTitle } from "../../navigation";
 import { formatPeriod } from "../../i18n/format";
 import type { MascotMoment, Mood } from "../../mascots";
 
@@ -37,6 +38,7 @@ const ORDER: StatementStatus[] = ["overdue", "dueSoon", "upcoming", "estimated",
 /** Tarjetas: lo que se paga este mes, cada resumen con su estado, las cuotas del mes y lo comprometido. */
 export function CardsScreen() {
   const { t } = useTranslation("cards");
+  const sectionTitle = useSectionTitle("cards");
   const { t: tc } = useTranslation("common");
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function CardsScreen() {
     }
   }, [qc, refetch]);
 
-  const header = <ScreenHeader title={t("title")} />;
+  const header = <ScreenHeader title={sectionTitle} />;
   const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} /> : null;
 
   if (isPending) {

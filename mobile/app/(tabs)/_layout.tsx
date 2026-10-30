@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { TabBar } from "../../src/components/organisms";
 import { useTheme } from "../../src/design-system";
+import { sections } from "../../src/navigation";
 
 export default function TabsLayout() {
   const { colors } = useTheme();
@@ -9,11 +10,9 @@ export default function TabsLayout() {
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
     >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="tarjetas" />
-      <Tabs.Screen name="agregar" />
-      <Tabs.Screen name="patrimonio" />
-      <Tabs.Screen name="mas" />
+      {sections.map((s) => (
+        <Tabs.Screen key={s.key} name={s.route} />
+      ))}
     </Tabs>
   );
 }

@@ -61,6 +61,30 @@
       "wealthDown": {
         "tranqui": "Este mes bajó un poco. Pasa: miramos juntos qué se puede ajustar.",
         "atrevido": "Mes en baja. Sin culpa: lo miramos y lo damos vuelta."
+      },
+      "debts": {
+        "tranqui": "Este mes hay deudas por {{amount}}. Las pagamos con plan, paso a paso.",
+        "atrevido": "Este mes hay {{amount}} en deudas. Nada de mirar para otro lado."
+      },
+      "debtsDueSoon": {
+        "tranqui": "{{name}} vence pronto. Lo dejamos listo con tiempo.",
+        "tranqui_one": "{{name}} vence en {{count}} día. Lo tenemos a mano.",
+        "tranqui_other": "{{name}} vence en {{count}} días. Lo vemos con calma.",
+        "atrevido": "{{name}} vence pronto. Ni se te ocurra olvidarlo.",
+        "atrevido_one": "{{name}} vence en {{count}} día. Ojo, que no perdona.",
+        "atrevido_other": "{{name}} vence en {{count}} días. Atento, eh."
+      },
+      "debtsAllPaid": {
+        "tranqui": "Deudas del mes pagadas. Un paso más cerca de la libertad.",
+        "atrevido": "Deudas del mes en cero. Esto sí es sacarse un peso de encima."
+      },
+      "owedPending": {
+        "tranqui": "{{name}} te debe {{amount}}. Lo charlamos cuando quieras.",
+        "atrevido": "{{name}} te debe {{amount}}. Cobralo, que no es regalo."
+      },
+      "owedAllCollected": {
+        "tranqui": "Cobraste todo lo del mes. Qué alivio.",
+        "atrevido": "Cobraste todo lo del mes. Ni un peso colgado."
       }
     }
   },
@@ -112,7 +136,9 @@
           "tranqui": "Ya tenés casa, y con puerta. Se siente, ¿no?",
           "atrevido": "Casa propia, con puerta. Me saco la gorra."
         }
-      }
+      },
+      "short": "Nido",
+      "title": "Tu nido"
     }
   },
   "pincho": {
@@ -163,7 +189,9 @@
           "tranqui": "Tu propio Delta. A flotar tranquilo.",
           "atrevido": "Delta propio. Yo floto, vos mandás."
         }
-      }
+      },
+      "short": "Laguna",
+      "title": "Tu laguna"
     }
   },
   "mati": {
@@ -214,7 +242,9 @@
           "tranqui": "La mateada del mes: todo en su lugar.",
           "atrevido": "Mateada completa. Esto sí es plata bien cebada."
         }
-      }
+      },
+      "short": "Ronda",
+      "title": "Tu ronda"
     }
   },
   "zorro": {
@@ -265,7 +295,9 @@
           "tranqui": "Llegamos: el tesoro es tuyo.",
           "atrevido": "Cofre abierto. Te lo ganaste, pícaro."
         }
-      }
+      },
+      "short": "Tesoro",
+      "title": "Tu tesoro"
     }
   }
 }

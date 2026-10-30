@@ -23,6 +23,11 @@ export interface ThemeColors {
   dangerTint: string;
   /** Ícono/etiqueta de la pestaña activa. */
   tabActive: string;
+  /** Cápsula de fondo de la pestaña activa. */
+  tabActiveBg: string;
+  /** Botón circular Cargar y su ícono. */
+  fab: string;
+  onFab: string;
   overlay: string;
   /** Anillo de 2px alrededor del círculo de cada mascota. */
   backdropRing: string;
@@ -44,8 +49,10 @@ export interface ThemeColors {
 export interface ThemeEffects {
   /** `boxShadow` del héroe (solo Atrevido tiene brillo). */
   hero: string | undefined;
-  /** `boxShadow` del botón central de la barra. */
+  /** `boxShadow` del botón Cargar (brillo en Atrevido). */
   fab: string | undefined;
+  /** `boxShadow` de elementos flotantes (píldora de navegación). */
+  floating: string;
 }
 
 export interface ThemeDefinition {
@@ -63,7 +70,7 @@ const a = palette.atrevido;
 const tranqui: ThemeDefinition = {
   statusBar: "dark",
   bold: false,
-  effects: { hero: undefined, fab: undefined },
+  effects: { hero: undefined, fab: undefined, floating: `0 6px 20px ${t.shadow}` },
   colors: {
     bg: t.bg,
     surface: t.surface,
@@ -82,6 +89,9 @@ const tranqui: ThemeDefinition = {
     dangerInk: t.dangerInk,
     dangerTint: t.dangerTint,
     tabActive: t.primary,
+    tabActiveBg: t.tabActiveBg,
+    fab: t.primary,
+    onFab: palette.white,
     overlay: t.overlay,
     backdropRing: t.border,
     heroTrack: t.heroTrack,
@@ -97,7 +107,7 @@ const tranqui: ThemeDefinition = {
 const atrevido: ThemeDefinition = {
   statusBar: "light",
   bold: true,
-  effects: { hero: `0 0 28px ${a.glowHero}`, fab: `0 0 18px ${a.glowFab}` },
+  effects: { hero: `0 0 28px ${a.glowHero}`, fab: `0 0 18px ${a.glowFab}`, floating: `0 6px 20px ${a.shadow}` },
   colors: {
     bg: a.bg,
     surface: a.surface,
@@ -116,6 +126,9 @@ const atrevido: ThemeDefinition = {
     dangerInk: a.dangerInk,
     dangerTint: a.dangerTint,
     tabActive: a.accent,
+    tabActiveBg: a.tabActiveBg,
+    fab: a.accent,
+    onFab: a.onAccent,
     overlay: a.overlay,
     backdropRing: a.accent,
     heroTrack: a.heroTrack,

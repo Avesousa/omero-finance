@@ -39,13 +39,14 @@ Para instalar paquetes usá siempre `npx expo install <paquete>` (resuelve la ve
 mobile/
   app/                        Rutas de expo-router. Son finas: solo importan pantallas de src/features.
     _layout.tsx               Shell raíz: fuentes, sesión, Stack con guard (mock: sin login; api: login).
-    (tabs)/_layout.tsx        Tabs con la TabBar propia.
+    (tabs)/_layout.tsx        Tabs con la TabBar propia (secciones de `src/navigation`).
     (tabs)/index.tsx          Inicio.
-    (tabs)/tarjetas.tsx       Tarjetas (placeholder).
-    (tabs)/agregar.tsx        Ruta del botón central (dummy: abre el modal /cargar).
-    (tabs)/patrimonio.tsx     Patrimonio (placeholder).
+    (tabs)/tarjetas.tsx       Tarjetas.
+    (tabs)/deudas.tsx         Deudas.
+    (tabs)/patrimonio.tsx     Patrimonio.
     (tabs)/mas.tsx            Más.
-    cargar.tsx                Modal Cargar (placeholder).
+    cargar.tsx                Modal Cargar (hoja de opciones).
+    deudas/nueva.tsx          Modal Nueva deuda o préstamo.
     notificaciones.tsx        Notificaciones.
     login.tsx                 Login (solo modo api).
   src/
@@ -117,7 +118,7 @@ Como las fuentes son un archivo por peso, no se usa `fontWeight`: se usa `fontFa
 
 - `space`: claves 1, 2, 3, 4, 5, 6, 8 (base 4px). Ejemplo: `space[5]` es el margen lateral de toda pantalla; `space[4]` es el padding de tarjeta.
 - `radius`: `input` 16, `button` 18, `card` 24, `hero` 28, `pill` 999. Todo es redondeado.
-- `sizes`: `touch` 44 (mínimo de cualquier objetivo táctil), `tabBar` 84, `fab` 60, `fabLift` 26, `button` 52, `icon` 24, `iconSmall` 20, `hairline` 1, `ring` 2, entre otros.
+- `sizes`: `touch` 44 (mínimo de cualquier objetivo táctil), `tabBarHeight` 64, `fab` 64, `tabItemHeight` 52, `button` 52, `icon` 24, `iconSmall` 20, `hairline` 1, `ring` 2, entre otros.
 - No hay sombras, salvo el brillo de `effects` en Atrevido (`glow()` de `elevation.ts`).
 
 **Uso de `useTheme()`**
@@ -212,7 +213,7 @@ Todo texto visible sale de i18n. Sin strings hardcodeadas.
 
 **Namespaces y archivos**
 
-Los namespaces son `common`, `tabs`, `home`, `notifications`, `more` y `mascots` (`src/i18n/resources.ts`). Cada uno es un JSON por idioma en `src/i18n/locales/<idioma>/<namespace>.json`. El namespace por defecto es `common`.
+Los namespaces son `common`, `tabs`, `home`, `notifications`, `more`, `mascots`, `cards`, `wealth` y `debts` (`src/i18n/resources.ts`). Cada uno es un JSON por idioma en `src/i18n/locales/<idioma>/<namespace>.json`. El namespace por defecto es `common`.
 
 - `common`: acciones, estados, login, textos de "Próximamente", `app.name`.
 - `tabs`: nombres de pestañas.
@@ -306,18 +307,25 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 
 ## 7. Navegación
 
-- **Tabs** (`app/(tabs)/_layout.tsx`, con `TabBar` propia en `components/organisms/TabBar.tsx`), en este orden: **Inicio**, **Tarjetas**, **Cargar** (botón central elevado), **Patrimonio** y **Más**.
-- **Cargar** no cambia de pestaña: el botón central hace `router.push("/cargar")` y abre el modal. La ruta `agregar` es solo la que ocupa la posición en la barra.
+- **Secciones** (`src/navigation/sections.ts`): fuente única, en orden de la barra: **Inicio** (`index`), **Tarjetas** (`tarjetas`), **Deudas** (`deudas`), **Patrimonio** (`patrimonio`) y **Más** (`mas`). Cada una trae `key`, `route` e íconos (`icon` / `iconActive`). La barra y los títulos salen de ahí.
+- **TabBar** (`components/organisms/TabBar.tsx`): píldora flotante con las 5 secciones (la activa con cápsula `tabActiveBg` e ícono relleno) y, fuera de la píldora, el botón circular **Cargar** (`fab-cargar`). Medidas en `sizes.tabBarHeight` y `sizes.fab`. `ScreenTemplate` deja el aire inferior para que la barra no tape nada.
+- **Cargar** no es una pestaña: el botón hace `router.push("/cargar")` y abre el modal con las opciones (Gasto, Ingreso, Deuda o préstamo, Resumen de tarjeta). Hoy solo "Deuda o préstamo" está habilitada y hace `router.replace("/deudas/nueva")`.
+- **Deudas** (`app/(tabs)/deudas.tsx` → `DebtsScreen`): Debo / Me deben, tarjetas, préstamos y terminados. "Agregar" abre `app/deudas/nueva.tsx` (`NewDebtScreen`, modal) con `?direction=OWE|OWED`.
 - **Inicio** tiene la campana en el header (`AppHeader`). Va a `/notificaciones` y muestra el badge de `useNotificationBadge()`.
-- **Notificaciones** (`app/notificaciones.tsx` → `NotificationsScreen`) tiene dos secciones separadas:
-  - **Por confirmar** (arriba): tarjetas de pagos de Apple Pay con botón Confirmar (`PendingConfirmCard`).
-  - **Avisos** (abajo): vencimientos, semanas cerradas, bajas de deuda (`NoticeRow`).
-- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
+- **Notificaciones** (`app/notificaciones.tsx` → `NotificationsScreen`) tiene dos secciones separadas: **Por confirmar** (arriba, `PendingConfirmCard`) y **Avisos** (abajo, `NoticeRow`).
+- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `deudas/nueva` (modal), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
 - **Más**: modo Tranqui/Atrevido, mascota, idioma y, en modo `api`, cuenta y cierre de sesión.
+
+### Lógica centralizada
+
+- **Dominio compartido con la web**: la lógica de préstamos y plata vive en `src/lib/plan/core.ts` (raíz del repo, pura). La app la usa solo a través de `src/domain/index.ts` (Metro la ve por `watchFolders`). No se re-exporta nada que devuelva texto en español: eso va por i18n. Si falta una función de core, agregala al re-export; no la copies.
+- **Selectores de datos** (`src/data/selectors.ts`): usan las funciones de `domain`; no duplican cálculos. La deuda de tarjetas es un único selector, `cardsDebt(overview, period)`, que usan Tarjetas, Deudas y Patrimonio.
+- **Mascota y modo por providers**: `MascotProvider` (`useMascot()`) y `ThemeProvider` (`useTheme().mode`). Ninguna pantalla recibe ni decide la mascota o el modo: `<Mascot/>`, `useMascotLine`, `MascotMessage` y `useSectionLabel` los leen solos.
+- **Nombres de sección**: `useSectionLabel(key)` (barra) y `useSectionTitle(key)` (título de pantalla) en `src/navigation`. Los dos resuelven el caso especial de Patrimonio en Atrevido (el lugar de la mascota). Las pantallas usan `useSectionTitle` en su `ScreenHeader`.
 
 ## 8. Pendiente
 
-- **Tarjetas, Patrimonio y Cargar** son placeholders (`features/placeholders/ComingSoonScreen.tsx`).
+- **Cargar**: solo "Deuda o préstamo" está habilitada; Gasto, Ingreso y Resumen de tarjeta muestran "Próximamente".
 - **Confirmar un pago** en `mock` ignora la categoría y el monto: el flujo de categoría llega con Cargar.
 - **Fuente `api`**: solo implementa pagos por confirmar. `getHome` tira error, así que en modo `api` Inicio muestra el estado de error.
 - **Selector de idioma** no implementado (ver sección 5).

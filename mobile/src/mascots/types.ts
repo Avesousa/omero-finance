@@ -21,7 +21,12 @@ export type MascotMoment =
   | "cardsAllPaid"
   | "wealth"
   | "wealthUp"
-  | "wealthDown";
+  | "wealthDown"
+  | "debts"
+  | "debtsDueSoon"
+  | "debtsAllPaid"
+  | "owedPending"
+  | "owedAllCollected";
 
 /** Props de cada dibujo. Dibuja elementos SVG en un viewBox 0 0 200 200 (los envuelve <Mascot/>). */
 export interface DrawingProps {

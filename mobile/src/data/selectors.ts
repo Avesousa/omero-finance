@@ -1,10 +1,30 @@
+import {
+  addMonths,
+  balanceAt,
+  frenchInstallment,
+  isLoanFinished,
+  loanBalanceItem,
+  loanDueDate,
+  loanState,
+  monthDiff,
+  monthlyRatePct,
+  proposeLoanPayment,
+  round2,
+  toArs,
+} from "../domain/index.ts";
+import type { LoanDTO } from "../domain";
 import type {
   AppNotice,
   CardPurchase,
   CardStatement,
+  CardsDebt,
   CardsOverview,
-  Currency,
+  DebtsOverview,
+  DebtsTotals,
   HomeSummary,
+  LoanPreview,
+  LoanRow,
+  NewLoanInput,
   NestChapter,
   PendingPayment,
   WealthGoal,
@@ -40,22 +60,12 @@ export function clampChapter(chapter: number, chapters = 3): number {
 
 // ───────────── Tarjetas y patrimonio ─────────────
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-/** Suma `n` meses (puede ser negativo) a un período 'YYYY-MM'. */
-export function addMonths(period: string, n: number): string {
-  const [y, m] = period.split("-").map(Number);
-  const index = y * 12 + (m - 1) + n;
-  const year = Math.floor(index / 12);
-  const month = (index % 12) + 1;
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
+// La aritmética de períodos y monedas es la de core (web): se re-exporta para no romper imports.
+export { addMonths, toArs };
 
 /** Meses de `a` a `b` (positivo si `b` es posterior). */
 export function monthsBetween(a: string, b: string): number {
-  const [ya, ma] = a.split("-").map(Number);
-  const [yb, mb] = b.split("-").map(Number);
-  return (yb - ya) * 12 + (mb - ma);
+  return monthDiff(a, b);
 }
 
 /** Cuota de la compra que cae en `period`, o null si está fuera de rango. */
@@ -67,10 +77,6 @@ export function installmentFor(
   const number = monthsBetween(p.firstPeriod, period) + 1;
   if (number < 1 || number > p.installments) return null;
   return { number, of: p.installments, amount: round2(p.total / p.installments) };
-}
-
-export function toArs(amount: number, currency: Currency, usdRate: number): number {
-  return currency === "USD" ? amount * usdRate : amount;
 }
 
 /** Resumen de una tarjeta en un mes + lo proyectado por cuotas (en ARS) para cuando no hay resumen. */
@@ -226,4 +232,213 @@ export function goalProgress(goal: WealthGoal): { ratio: number; missing: number
   const missing = Math.max(0, goal.target - goal.saved);
   const monthsLeft = goal.monthly != null && goal.monthly > 0 ? Math.ceil(missing / goal.monthly) : null;
   return { ratio, missing, monthsLeft };
+}
+
+// ───────────── Deudas y préstamos ─────────────
+
+/**
+ * Deuda de tarjetas en `period`: lo que falta pagar de los resúmenes más lo estimado por cuotas
+ * (mismo `toPay` que Tarjetas). Una sola cuenta para Tarjetas, Deudas y Patrimonio.
+ */
+export function cardsDebt(overview: CardsOverview, period: string): CardsDebt {
+  let count = 0;
+  let nextDue: string | null = null;
+  for (const card of overview.cards) {
+    const { statement, projectedArs } = cardMonth(overview, card.id, period);
+    const owes = statement ? !statement.isPaid && statement.totalArs > 0 : projectedArs > 0;
+    if (!owes) continue;
+    count += 1;
+    if (statement?.dueDate && (nextDue === null || statement.dueDate < nextDue)) nextDue = statement.dueDate;
+  }
+  return { count, debtArs: round2(cardsTotals(overview, period).toPay), nextDue };
+}
+
+/** Cuota del mes: la generada de ese período si existe; si no, la propuesta. Null si no corresponde. */
+function monthPaymentOf(loan: LoanDTO, period: string): { number: number | null; payment: LoanRow["monthPayment"] } {
+  const dueDate = loanDueDate(loan.dueDay, period);
+  const idx = loan.payments.findIndex((p) => p.period === period);
+  if (idx >= 0) {
+    const p = loan.payments[idx];
+    return {
+      number: loan.mode === "OPEN" ? null : idx + 1,
+      payment: { amount: p.amount, interest: p.interest, dueDate, isDone: p.isDone },
+    };
+  }
+  // Sin cuotas fijas, sin pago sugerido y sin historial: no hay "cuota del mes" que mostrar.
+  if (loan.mode === "OPEN" && loan.installmentAmount == null && loan.payments.length === 0) {
+    return { number: null, payment: null };
+  }
+  const proposal = proposeLoanPayment(loan, period);
+  if (!proposal) return { number: null, payment: null };
+  return {
+    number: proposal.number,
+    payment: { amount: proposal.amount, interest: proposal.interest, dueDate, isDone: false },
+  };
+}
+
+/** Un préstamo para mostrar en `period` (capital al cierre de ese mes, cuota del mes, avance, tasa). */
+export function loanRow(loan: LoanDTO, period: string, usdRate: number): LoanRow {
+  const state = loanState(loan, addMonths(period, 1));
+  const capital = state.capital;
+  const { number, payment } = monthPaymentOf(loan, period);
+
+  let paidRatio: number;
+  if (loan.mode === "FIXED") {
+    paidRatio = loan.installments ? state.paidCount / Math.max(1, loan.installments) : 0;
+  } else if (loan.mode === "SCHEDULE") {
+    paidRatio = loan.schedule.length > 0 ? state.paidCount / loan.schedule.length : 0;
+  } else {
+    paidRatio = loan.principal > 0 ? 1 - capital / loan.principal : 0;
+  }
+  paidRatio = Math.min(1, Math.max(0, paidRatio));
+
+  const installmentsTotal =
+    loan.mode === "FIXED" ? Math.max(1, loan.installments ?? 1) : loan.mode === "SCHEDULE" ? loan.schedule.length : null;
+
+  return {
+    id: loan.id,
+    direction: loan.direction,
+    mode: loan.mode,
+    name: loan.name,
+    counterpart: loan.counterpart,
+    currency: loan.currency,
+    capital,
+    capitalArs: round2(toArs(capital, loan.currency, usdRate)),
+    paidRatio,
+    installmentNumber: installmentsTotal === null ? null : number ?? Math.min(state.paidCount, installmentsTotal),
+    installmentsTotal,
+    monthPayment: payment,
+    rate: loan.interestRate && loan.interestRate > 0
+      ? { pct: loan.interestRate, annual: !!loan.interestAnnual, withTax: !!loan.interestTaxPct }
+      : null,
+    finished: loan.isClosed || isLoanFinished(loan),
+  };
+}
+
+/** Totales de la pantalla Deudas (en ARS). Los préstamos terminados no suman. */
+export function debtsTotals(overview: DebtsOverview): DebtsTotals {
+  let oweArs = overview.cards.debtArs;
+  let owedArs = 0;
+  let monthToPayArs = overview.cards.debtArs;
+  let monthToCollectArs = 0;
+  let paidThisMonthArs = 0;
+  for (const loan of overview.loans) {
+    const row = loanRow(loan, overview.period, overview.usdRate);
+    if (row.finished) continue;
+    const pay = row.monthPayment ? toArs(row.monthPayment.amount, row.currency, overview.usdRate) : 0;
+    if (row.direction === "OWE") {
+      oweArs += row.capitalArs;
+      if (row.monthPayment) {
+        if (row.monthPayment.isDone) paidThisMonthArs += pay;
+        else monthToPayArs += pay;
+      }
+    } else {
+      owedArs += row.capitalArs;
+      if (row.monthPayment && !row.monthPayment.isDone) monthToCollectArs += pay;
+    }
+  }
+  return {
+    oweArs: round2(oweArs),
+    owedArs: round2(owedArs),
+    monthToPayArs: round2(monthToPayArs),
+    monthToCollectArs: round2(monthToCollectArs),
+    paidThisMonthArs: round2(paidThisMonthArs),
+  };
+}
+
+const PREVIEW_MAX_MONTHS = 600;
+const EMPTY_PREVIEW: LoanPreview = { installment: null, totalToPay: null, totalInterest: null, endPeriod: null };
+
+/** Vista previa del formulario "Nueva deuda". Todo null si faltan datos. */
+export function previewLoan(input: NewLoanInput): LoanPreview {
+  const { principal, startPeriod } = input;
+  if (!(principal > 0) || !/^\d{4}-\d{2}$/.test(startPeriod)) return EMPTY_PREVIEW;
+  const ratePct = monthlyRatePct(
+    { interestRate: input.interestRate, interestFrequency: "MONTHLY", interestAnnual: input.interestAnnual, interestTaxPct: input.interestTaxPct },
+    startPeriod,
+  );
+
+  if (input.mode === "FIXED") {
+    const n = Math.floor(input.installments ?? 0);
+    if (n < 1) return EMPTY_PREVIEW;
+    const installment = frenchInstallment(principal, ratePct, n);
+    const totalToPay = round2(installment * n);
+    return {
+      installment,
+      totalToPay,
+      totalInterest: round2(Math.max(0, totalToPay - principal)),
+      endPeriod: addMonths(startPeriod, n - 1),
+    };
+  }
+
+  // OPEN: solo hay estimación si se sugiere un pago mensual.
+  const pay = input.installmentAmount ?? 0;
+  if (!(pay > 0)) return EMPTY_PREVIEW;
+  let balance = principal;
+  let total = 0;
+  for (let i = 0; i < PREVIEW_MAX_MONTHS; i++) {
+    balance += balance * ratePct / 100;
+    const paid = Math.min(pay, balance);
+    balance -= paid;
+    total += paid;
+    if (balance <= 0.5) {
+      return {
+        installment: pay,
+        totalToPay: round2(total),
+        totalInterest: round2(Math.max(0, total - principal)),
+        endPeriod: addMonths(startPeriod, i),
+      };
+    }
+  }
+  return { ...EMPTY_PREVIEW, installment: pay };
+}
+
+/**
+ * Ítems de patrimonio que salen de las deudas: un ítem por préstamo abierto (OWE = deuda,
+ * OWED = activo "Me deben") y uno por las tarjetas. `previous` = cierre del mes anterior.
+ */
+export function derivedWealthItems(
+  loans: LoanDTO[],
+  cards: CardsOverview,
+  period: string,
+  usdRate: number,
+  owedPrefix = "Me deben: ",
+): WealthItem[] {
+  const items: WealthItem[] = [];
+  for (const loan of loans) {
+    const row = loanRow(loan, period, usdRate);
+    if (row.finished && row.capital <= 0) continue;
+    const balance = loanBalanceItem(loan);
+    const amount = balanceAt(balance, period) ?? loan.principal;
+    const previous = balanceAt(balance, addMonths(period, -1));
+    const fixedLike = loan.mode !== "OPEN";
+    items.push({
+      id: `loan-${loan.id}`,
+      kind: loan.direction === "OWE" ? "debt" : "asset",
+      source: "loan",
+      name: loan.direction === "OWED" ? `${owedPrefix}${loan.name}` : loan.name,
+      currency: loan.currency,
+      amount,
+      previous,
+      loan: {
+        paidRatio: row.paidRatio,
+        installmentsLeft: fixedLike && row.installmentsTotal !== null
+          ? Math.max(0, row.installmentsTotal - Math.round(row.paidRatio * row.installmentsTotal))
+          : null,
+      },
+    });
+  }
+  const now = cardsDebt(cards, period).debtArs;
+  if (now > 0 || cards.statements.length > 0) {
+    items.push({
+      id: "cards",
+      kind: "debt",
+      source: "card",
+      name: "Tarjetas",
+      currency: "ARS",
+      amount: now,
+      previous: cardsDebt(cards, addMonths(period, -1)).debtArs,
+    });
+  }
+  return items;
 }

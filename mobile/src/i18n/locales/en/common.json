@@ -45,10 +45,34 @@
     "add": {
       "title": "",
       "body": ""
+    },
+    "debts": {
+      "title": "",
+      "body": ""
     }
   },
   "period": {
     "prev": "",
     "next": ""
+  },
+  "load": {
+    "title": "",
+    "subtitle": "",
+    "expense": {
+      "title": "",
+      "body": ""
+    },
+    "income": {
+      "title": "",
+      "body": ""
+    },
+    "debt": {
+      "title": "",
+      "body": ""
+    },
+    "statement": {
+      "title": "",
+      "body": ""
+    }
   }
 }

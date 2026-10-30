@@ -23,6 +23,8 @@ export const palette = {
     chartOutline: "#A0AEC0",
     chartBar: "#C5D1DE",
     overlay: "rgba(20,35,59,0.40)",
+    shadow: "rgba(20,35,59,0.18)",
+    tabActiveBg: "#F4F6F8",
   },
 
   atrevido: {
@@ -43,6 +45,8 @@ export const palette = {
     chartOutline: "#A9B4D0",
     chartBar: "#3A4680",
     overlay: "rgba(0,0,0,0.55)",
+    shadow: "rgba(0,0,0,0.55)",
+    tabActiveBg: "rgba(56,225,255,0.16)",
     glowHero: "rgba(47,91,255,0.55)",
     glowFab: "rgba(47,91,255,0.7)",
   },

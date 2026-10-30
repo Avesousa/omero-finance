@@ -4,7 +4,7 @@ import { HStack, IconButton, Spacer, Surface, Text } from "../../components/atom
 import { EmptyState } from "../../components/molecules";
 import { ScreenTemplate } from "../../components/templates";
 
-export type ComingSoonKind = "cards" | "wealth" | "add";
+export type ComingSoonKind = "cards" | "debts" | "wealth" | "add";
 
 interface ComingSoonScreenProps {
   kind: ComingSoonKind;

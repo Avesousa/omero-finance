@@ -37,8 +37,8 @@ export const typography = {
   secondaryStrong: { fontFamily: fontFamily.sans800, fontSize: 13, lineHeight: 18 },
   /** Rótulos: escribir el texto ya en mayúsculas. */
   label: { fontFamily: fontFamily.sans800, fontSize: 11, lineHeight: 14, letterSpacing: em(11, 0.08) },
-  tab: { fontFamily: fontFamily.sans600, fontSize: 11, lineHeight: 14 },
-  tabActive: { fontFamily: fontFamily.sans800, fontSize: 11, lineHeight: 14 },
+  tab: { fontFamily: fontFamily.sans600, fontSize: 10, lineHeight: 13, letterSpacing: -0.1 },
+  tabActive: { fontFamily: fontFamily.sans800, fontSize: 10, lineHeight: 13, letterSpacing: -0.1 },
   sticker: { fontFamily: fontFamily.display900, fontSize: 11, lineHeight: 14, letterSpacing: em(11, 0.04) },
 } as const satisfies Record<string, Style>;
 

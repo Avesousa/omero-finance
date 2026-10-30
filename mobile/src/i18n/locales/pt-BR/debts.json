@@ -1,0 +1,113 @@
+{
+  "hero": {
+    "oweLabel": "",
+    "owedLabel": "",
+    "oweCaption": "",
+    "owedCaption": ""
+  },
+  "toggle": {
+    "label": "",
+    "owe": "",
+    "owed": ""
+  },
+  "cards": {
+    "count_one": "",
+    "count_other": "",
+    "due": "",
+    "name": ""
+  },
+  "loan": {
+    "kind": {
+      "FIXED": "",
+      "OPEN": "",
+      "SCHEDULE": ""
+    },
+    "rate": {
+      "annual": "",
+      "monthly": "",
+      "annualTax": "",
+      "monthlyTax": ""
+    },
+    "capitalApprox": "",
+    "progress": {
+      "installment": "",
+      "paidOwe": "",
+      "paidOwed": ""
+    },
+    "month": {
+      "due": "",
+      "paid": "",
+      "pending": "",
+      "collected": "",
+      "title": ""
+    },
+    "markPaid": "",
+    "markPaidLabel": "",
+    "markCollected": "",
+    "markCollectedLabel": ""
+  },
+  "list": {
+    "finished": "",
+    "finishedToggle": "",
+    "addOwe": "",
+    "addOwed": "",
+    "noneOwe": "",
+    "noneOwed": ""
+  },
+  "state": {
+    "loading": "",
+    "errorTitle": "",
+    "errorBody": "",
+    "emptyTitle": "",
+    "emptyBody": ""
+  },
+  "form": {
+    "title": "",
+    "titleOwed": "",
+    "direction": "",
+    "kindLabel": "",
+    "name": "",
+    "namePlaceholder": "",
+    "counterpart": "",
+    "counterpartPlaceholder": "",
+    "currency": "",
+    "currencyARS": "",
+    "currencyUSD": "",
+    "amount": "",
+    "amountPlaceholder": "",
+    "installments": "",
+    "installmentsPlaceholder": "",
+    "rate": "",
+    "ratePlaceholder": "",
+    "rateAnnual": "",
+    "rateMonthly": "",
+    "rateBasis": "",
+    "tax": "",
+    "startPeriod": "",
+    "dueDay": "",
+    "dueDayPlaceholder": "",
+    "suggested": "",
+    "suggestedPlaceholder": "",
+    "save": "",
+    "saving": "",
+    "saveError": "",
+    "close": ""
+  },
+  "preview": {
+    "title": "",
+    "installment": "",
+    "suggested": "",
+    "total": "",
+    "end": "",
+    "emptyFixed": "",
+    "emptyOpen": ""
+  },
+  "errors": {
+    "name": "",
+    "amount": "",
+    "installments": "",
+    "rate": "",
+    "dueDay": "",
+    "suggested": ""
+  }
+}
