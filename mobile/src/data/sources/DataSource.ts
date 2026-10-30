@@ -1,11 +1,15 @@
-import type { LoanDTO } from "../../domain";
+import type { LoanDTO, VoiceOutcome } from "../../domain";
 import type {
   AppNotifications,
   CardsOverview,
   DebtsOverview,
+  ErrorReport,
   HomeSummary,
+  IncomeCategory,
+  NewIncomeInput,
   NewLoanInput,
   PendingPayment,
+  VoiceInput,
   WealthOverview,
 } from "../types";
 
@@ -29,6 +33,14 @@ export interface DataSource {
   markLoanPaid(loanId: string, period: string): Promise<void>;
   /** Agrega un préstamo y lo devuelve ya con id. */
   addLoan(input: NewLoanInput): Promise<LoanDTO>;
+  /** Interpreta lo dicho (audio o texto). No guarda nada. Lanza `AppError`. */
+  interpretVoice(input: VoiceInput): Promise<VoiceOutcome>;
+  /** Categorías de ingreso (no archivadas) del hogar. */
+  getIncomeCategories(): Promise<IncomeCategory[]>;
+  /** Agrega un ingreso. */
+  addIncome(input: NewIncomeInput): Promise<void>;
+  /** Registra un error para el admin. */
+  reportError(report: ErrorReport): Promise<void>;
 }
 
 export class NotImplementedError extends Error {

@@ -28,3 +28,6 @@ export { GoalsCard, type GoalsCardProps, type GoalRow } from "./GoalsCard";
 // — deudas —
 export { LoanCard, type LoanCardProps } from "./LoanCard";
 export { CardsDebtRow, type CardsDebtRowProps } from "./CardsDebtRow";
+
+// — voz —
+export { VoiceCapture, type VoiceCaptureProps, type VoicePhase } from "./VoiceCapture";

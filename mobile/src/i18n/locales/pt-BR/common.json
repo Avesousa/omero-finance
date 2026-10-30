@@ -74,5 +74,20 @@
       "title": "",
       "body": ""
     }
+  },
+  "voice": {
+    "title": "",
+    "micStart": "",
+    "micStop": "",
+    "micDisabled": "",
+    "recording": "",
+    "thinking": "",
+    "orWrite": "",
+    "textLabel": "",
+    "textPlaceholder": "",
+    "send": "",
+    "retry": "",
+    "manual": "",
+    "webHint": ""
   }
 }

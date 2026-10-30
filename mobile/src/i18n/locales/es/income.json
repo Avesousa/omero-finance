@@ -1,0 +1,37 @@
+{
+  "form": {
+    "title": "Nuevo ingreso",
+    "close": "Cerrar",
+    "heard": "Escuché: “{{text}}”",
+    "missing": "Completá lo que está marcado y revisalo antes de guardar.",
+    "name": "Nombre",
+    "namePlaceholder": "Ej.: Sueldo",
+    "amount": "Monto",
+    "amountPlaceholder": "0",
+    "currency": "Moneda",
+    "currencyARS": "Pesos",
+    "currencyUSD": "Dólares",
+    "category": "Categoría (opcional)",
+    "date": "Fecha",
+    "dateToday": "Hoy",
+    "dateYesterday": "Ayer",
+    "dateOther": "Otro día",
+    "dayOfMonth": "Día del mes",
+    "dayPlaceholder": "1 a {{max}}",
+    "fixed": "Es fijo (todos los meses)",
+    "note": "Nota (opcional)",
+    "notePlaceholder": "Ej.: Aguinaldo",
+    "save": "Guardar ingreso",
+    "saving": "Guardando…",
+    "saveError": "No pude guardar el ingreso. Probá de nuevo.",
+    "categoriesError": "No pude traer las categorías. Podés guardar sin elegir una."
+  },
+  "errors": {
+    "name": "Poné un nombre.",
+    "amount": "Poné un monto mayor a cero.",
+    "day": "Poné un día válido del mes."
+  },
+  "saved": {
+    "done": "Ingreso guardado"
+  }
+}

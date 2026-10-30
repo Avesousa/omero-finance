@@ -22,6 +22,7 @@ export type {
 } from "../../../src/lib/plan/core.ts";
 
 export {
+  addDays,
   addMonths,
   balanceAt,
   daysInPeriod,
@@ -66,3 +67,18 @@ export function todayIso(now: Date = new Date()): string {
     return baIso(now).slice(0, 10);
   }
 }
+
+// Carga por voz: contrato compartido con la API web (`src/lib/plan/voice.ts`, lógica pura).
+export type {
+  IncomeDraft,
+  VoiceApiError,
+  VoiceContext,
+  VoiceExtraction,
+  VoiceFrequency,
+  VoiceIntent,
+  VoiceOutcome,
+  VoicePendingIntent,
+  VoiceSupportedIntent,
+} from "../../../src/lib/plan/voice.ts";
+
+export { VOICE_SUPPORTED, resolveVoiceOutcome } from "../../../src/lib/plan/voice.ts";

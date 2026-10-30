@@ -1,4 +1,4 @@
-import type { Currency, LoanDirection, LoanDTO, LoanMode } from "../domain";
+import type { Currency, Frequency, LoanDirection, LoanDTO, LoanMode } from "../domain";
 
 export type { Currency, LoanDirection, LoanDTO, LoanMode } from "../domain";
 
@@ -247,4 +247,36 @@ export interface LoanPreview {
   totalInterest: number | null;
   /** Mes de la última cuota, 'YYYY-MM'. */
   endPeriod: string | null;
+}
+
+/** Categoría de ingreso del hogar (para el formulario de ingreso y para la voz). */
+export interface IncomeCategory {
+  id: string;
+  name: string;
+}
+
+/** Lo que carga el formulario de ingreso. Igual al body de `POST /api/plan/entries` con `kind: "INCOME"`. */
+export interface NewIncomeInput {
+  /** Mes al que pertenece, 'YYYY-MM'. */
+  period: string;
+  name: string;
+  amount: number;
+  currency: Currency;
+  categoryId: string | null;
+  /** 'YYYY-MM-DD' o null (= hoy). */
+  date: string | null;
+  note: string | null;
+  /** Si es fijo, `amount` es el monto por vez. */
+  fixed: { frequency: Frequency } | null;
+}
+
+/** Entrada de voz: el audio grabado (URI local) o texto escrito. */
+export type VoiceInput = { audioUri: string; mimeType: string } | { text: string };
+
+/** Error que la app le avisa al admin (`POST /api/plan/errors`). */
+export interface ErrorReport {
+  source: "voice" | "app";
+  code: string;
+  message: string;
+  context?: Record<string, unknown>;
 }

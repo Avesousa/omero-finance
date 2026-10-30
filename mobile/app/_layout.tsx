@@ -23,6 +23,7 @@ function Shell() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="cargar" options={{ presentation: "modal" }} />
           <Stack.Screen name="deudas/nueva" options={{ presentation: "modal" }} />
+          <Stack.Screen name="ingresos/nuevo" options={{ presentation: "modal" }} />
           <Stack.Screen name="notificaciones" />
         </Stack.Protected>
         <Stack.Protected guard={!allowed}>

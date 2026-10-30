@@ -14,6 +14,8 @@ export const sizes = {
   button: 52,
   icon: 24,
   iconSmall: 20,
+  /** Íconos protagonistas (micrófono de la voz). */
+  iconLarge: 34,
   badge: 18,
   hairline: 1,
   ring: 2,

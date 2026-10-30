@@ -309,7 +309,7 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 
 - **Secciones** (`src/navigation/sections.ts`): fuente única, en orden de la barra: **Inicio** (`index`), **Tarjetas** (`tarjetas`), **Deudas** (`deudas`), **Patrimonio** (`patrimonio`) y **Más** (`mas`). Cada una trae `key`, `route` e íconos (`icon` / `iconActive`). La barra y los títulos salen de ahí.
 - **TabBar** (`components/organisms/TabBar.tsx`): píldora flotante con las 5 secciones (la activa con cápsula `tabActiveBg` e ícono relleno) y, fuera de la píldora, el botón circular **Cargar** (`fab-cargar`). Medidas en `sizes.tabBarHeight` y `sizes.fab`. `ScreenTemplate` deja el aire inferior para que la barra no tape nada.
-- **Cargar** no es una pestaña: el botón hace `router.push("/cargar")` y abre el modal con las opciones (Gasto, Ingreso, Deuda o préstamo, Resumen de tarjeta). Hoy solo "Deuda o préstamo" está habilitada y hace `router.replace("/deudas/nueva")`.
+- **Cargar** no es una pestaña: el botón hace `router.push("/cargar")` y abre el modal con las opciones (Gasto, Ingreso, Deuda o préstamo, Resumen de tarjeta). Arriba está **"Contale a {{mascota}}"** (`VoiceCapture` + `useVoiceRecorder` con `expo-audio`): grabás o escribís, `useInterpretVoice` llama a `POST /api/plan/voice` (en `mock`, un intérprete local por palabras clave) y la mascota responde según el `VoiceOutcome` (contrato compartido en `src/lib/plan/voice.ts`): `draft` abre el formulario precargado, `notYet` pide que esperes, `chat` aclara que solo carga finanzas, `unclear` pide repetir; los errores reintentables se reintentan solos y los demás quedan reportados (`AppErrorReport`). Qué se carga por voz lo define `VOICE_SUPPORTED` (hoy solo ingreso). Opciones a mano habilitadas: Ingreso (`/ingresos/nuevo`) y Deuda o préstamo (`/deudas/nueva`).
 - **Deudas** (`app/(tabs)/deudas.tsx` → `DebtsScreen`): Debo / Me deben, tarjetas, préstamos y terminados. "Agregar" abre `app/deudas/nueva.tsx` (`NewDebtScreen`, modal) con `?direction=OWE|OWED`.
 - **Inicio** tiene la campana en el header (`AppHeader`). Va a `/notificaciones` y muestra el badge de `useNotificationBadge()`.
 - **Notificaciones** (`app/notificaciones.tsx` → `NotificationsScreen`) tiene dos secciones separadas: **Por confirmar** (arriba, `PendingConfirmCard`) y **Avisos** (abajo, `NoticeRow`).
@@ -325,7 +325,7 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 
 ## 8. Pendiente
 
-- **Cargar**: solo "Deuda o préstamo" está habilitada; Gasto, Ingreso y Resumen de tarjeta muestran "Próximamente".
+- **Cargar**: Gasto y Resumen de tarjeta muestran "Próximamente". Por voz solo se carga Ingreso (deuda por voz es lo próximo). En `mock`, con audio se usa un texto de ejemplo; escribí `error` o `error fatal` para probar los errores.
 - **Confirmar un pago** en `mock` ignora la categoría y el monto: el flujo de categoría llega con Cargar.
 - **Fuente `api`**: solo implementa pagos por confirmar. `getHome` tira error, así que en modo `api` Inicio muestra el estado de error.
 - **Selector de idioma** no implementado (ver sección 5).

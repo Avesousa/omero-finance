@@ -85,7 +85,57 @@
       "owedAllCollected": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
       }
+    },
+    "actions": {
+      "expense": "",
+      "debt": "",
+      "card_purchase": "",
+      "card_statement": ""
     }
   },
   "omero": {
@@ -117,6 +167,50 @@
         "atrevido": ""
       },
       "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
       }
@@ -172,6 +266,50 @@
       "comeback": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -225,6 +363,50 @@
       "comeback": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -276,6 +458,50 @@
         "atrevido": ""
       },
       "comeback": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceIdle": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceListening": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceThinking": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceUnclear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceChat": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceNotYet": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorRetry": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceErrorReported": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voicePermission": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftReady": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
       }

@@ -26,7 +26,18 @@ export type MascotMoment =
   | "debtsDueSoon"
   | "debtsAllPaid"
   | "owedPending"
-  | "owedAllCollected";
+  | "owedAllCollected"
+  | "voiceIdle"
+  | "voiceListening"
+  | "voiceThinking"
+  | "voiceUnclear"
+  | "voiceChat"
+  | "voiceNotYet"
+  | "voiceErrorRetry"
+  | "voiceErrorReported"
+  | "voicePermission"
+  | "voiceDraftReady"
+  | "incomeSaved";
 
 /** Props de cada dibujo. Dibuja elementos SVG en un viewBox 0 0 200 200 (los envuelve <Mascot/>). */
 export interface DrawingProps {

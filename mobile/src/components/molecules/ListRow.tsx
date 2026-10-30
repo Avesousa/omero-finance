@@ -23,7 +23,7 @@ export function ListRow({ title, subtitle, left, right, onPress, selected, testI
     <>
       {left}
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="bodyStrong" numberOfLines={1}>
+        <Text variant="bodyStrong" numberOfLines={2}>
           {title}
         </Text>
         {subtitle ? (

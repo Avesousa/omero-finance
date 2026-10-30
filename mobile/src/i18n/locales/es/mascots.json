@@ -85,7 +85,57 @@
       "owedAllCollected": {
         "tranqui": "Cobraste todo lo del mes. Qué alivio.",
         "atrevido": "Cobraste todo lo del mes. Ni un peso colgado."
+      },
+      "voiceIdle": {
+        "tranqui": "Contame qué cobraste y lo armo, sin apuro.",
+        "atrevido": "Dale, contame qué cobraste. Te escucho."
+      },
+      "voiceListening": {
+        "tranqui": "Te escucho. Hablá tranquilo.",
+        "atrevido": "Hablá nomás, que te escucho."
+      },
+      "voiceThinking": {
+        "tranqui": "Dejame pensarlo un momento…",
+        "atrevido": "Procesando. No me apures."
+      },
+      "voiceUnclear": {
+        "tranqui": "No te entendí bien. ¿Me lo repetís?",
+        "atrevido": "No cacho bien. ¿Me lo decís de nuevo?"
+      },
+      "voiceChat": {
+        "tranqui": "Me encanta charlar, pero solo estoy para cargar tus finanzas.",
+        "atrevido": "Charla linda, pero yo solo cargo tus finanzas. ¿Qué cobraste?"
+      },
+      "voiceNotYet": {
+        "tranqui": "Cargar {{action}} todavía no lo sé hacer. Esperame un poquito, ya llega.",
+        "atrevido": "Eso de cargar {{action}} todavía no. Bancame un toque, ya viene."
+      },
+      "voiceErrorRetry": {
+        "tranqui": "Algo falló al escucharte. ¿Probamos de nuevo?",
+        "atrevido": "Se cortó la señal. Probá otra vez, dale."
+      },
+      "voiceErrorReported": {
+        "tranqui": "Hubo un error. Ya le avisé al admin, gracias por esperar.",
+        "atrevido": "Se rompió algo. Ya le avisé al admin, así no pasa de nuevo."
+      },
+      "voicePermission": {
+        "tranqui": "Necesito el micrófono para escucharte. ¿Me lo das?",
+        "atrevido": "Sin micrófono no te escucho. Habilitalo y arrancamos."
+      },
+      "voiceDraftReady": {
+        "tranqui": "Armé el borrador. Revisalo y confirmalo cuando quieras.",
+        "atrevido": "Borrador listo. Revisalo y dale confirmar."
+      },
+      "incomeSaved": {
+        "tranqui": "Listo, guardé el ingreso de {{amount}}. Bien hecho.",
+        "atrevido": "Guardado: {{amount}} en tu bolsillo. Así se hace."
       }
+    },
+    "actions": {
+      "expense": "un gasto",
+      "debt": "una deuda o préstamo",
+      "card_purchase": "una compra con tarjeta",
+      "card_statement": "un resumen de tarjeta"
     }
   },
   "omero": {
@@ -119,6 +169,50 @@
       "comeback": {
         "tranqui": "Qué bueno verte. Arrancamos de nuevo cuando quieras.",
         "atrevido": "Volviste. Sin drama: cargamos lo que falta y listo."
+      },
+      "voiceIdle": {
+        "tranqui": "Traé un ladrillo: contame qué cobraste.",
+        "atrevido": "Dale, pasame barro: ¿qué cobraste?"
+      },
+      "voiceListening": {
+        "tranqui": "Te escucho. Ponemos cada ladrillo en su lugar.",
+        "atrevido": "Hablá, que tengo el barro listo."
+      },
+      "voiceThinking": {
+        "tranqui": "Acomodo los ladrillos un momento…",
+        "atrevido": "Amasando el barro. Esperá un poquito."
+      },
+      "voiceUnclear": {
+        "tranqui": "Este ladrillo no lo ubico. ¿Me lo repetís?",
+        "atrevido": "Ese barro no me cierra. Decímelo de nuevo."
+      },
+      "voiceChat": {
+        "tranqui": "Yo solo levanto tu nido: estoy para cargar tus finanzas.",
+        "atrevido": "Yo acá solo pongo ladrillos: cargo tus finanzas. ¿Qué cobraste?"
+      },
+      "voiceNotYet": {
+        "tranqui": "Para cargar {{action}} me falta un ladrillo. Esperame, ya llega.",
+        "atrevido": "Cargar {{action}} todavía no lo construyo. Bancame, ya viene."
+      },
+      "voiceErrorRetry": {
+        "tranqui": "Se cayó un ladrillo. ¿Probamos de nuevo?",
+        "atrevido": "Se me vino abajo el muro. Otra vez, dale."
+      },
+      "voiceErrorReported": {
+        "tranqui": "Se me cayó la pared. Ya le avisé al admin, gracias.",
+        "atrevido": "Se me vino un muro abajo. Ya le avisé al admin."
+      },
+      "voicePermission": {
+        "tranqui": "Para escucharte necesito el micrófono. ¿Me lo habilitás?",
+        "atrevido": "Sin micrófono no pongo ni un ladrillo. Habilitalo."
+      },
+      "voiceDraftReady": {
+        "tranqui": "El plano está listo. Revisalo y confirmalo cuando quieras.",
+        "atrevido": "Plano armado. Revisalo y confirmá, dale."
+      },
+      "incomeSaved": {
+        "tranqui": "Un ladrillo más: guardé {{amount}}. De a poco se arma.",
+        "atrevido": "Ingreso de {{amount}} puesto. Qué buena pared."
       }
     },
     "nest": {
@@ -172,6 +266,50 @@
       "comeback": {
         "tranqui": "Qué bueno verte. La laguna te esperaba.",
         "atrevido": "Volviste. Sin drama: la laguna se llena igual, cargá lo que falta."
+      },
+      "voiceIdle": {
+        "tranqui": "Contame qué entró, sin apuro. Flotamos.",
+        "atrevido": "Largá lo que cobraste. Yo floto tranqui."
+      },
+      "voiceListening": {
+        "tranqui": "Te escucho. Todo llega flotando.",
+        "atrevido": "Te escucho. Soltá la data, que acá no se hunde nada."
+      },
+      "voiceThinking": {
+        "tranqui": "Dejo que el agua se aquiete un momento…",
+        "atrevido": "Un segundo, que el agua está revuelta."
+      },
+      "voiceUnclear": {
+        "tranqui": "No llegó bien. ¿Me lo contás de nuevo?",
+        "atrevido": "Eso me flotó sin nombre. Repetilo."
+      },
+      "voiceChat": {
+        "tranqui": "Qué lindo charlar, pero solo estoy para cargar tus finanzas.",
+        "atrevido": "Yo solo floto con tus finanzas, nada más. ¿Qué cobraste?"
+      },
+      "voiceNotYet": {
+        "tranqui": "Cargar {{action}} todavía no sé. Esperame tranqui, ya llega.",
+        "atrevido": "Cargar {{action}} todavía no flota por acá. Bancame un toque."
+      },
+      "voiceErrorRetry": {
+        "tranqui": "Se movió el agua y no llegó. ¿Probamos otra vez?",
+        "atrevido": "Se me hundió el mensaje. Probá de nuevo."
+      },
+      "voiceErrorReported": {
+        "tranqui": "Hubo un problema. Ya le avisé al admin, con calma.",
+        "atrevido": "Se nos cruzó un camalote. Ya le avisé al admin."
+      },
+      "voicePermission": {
+        "tranqui": "Necesito el micrófono para escucharte. ¿Me lo das?",
+        "atrevido": "Sin micrófono no escucho ni una gota. Habilitalo."
+      },
+      "voiceDraftReady": {
+        "tranqui": "Armé el borrador. Revisalo cuando quieras, sin apuro.",
+        "atrevido": "Borrador a flote. Revisalo y confirmá."
+      },
+      "incomeSaved": {
+        "tranqui": "Guardé {{amount}} en la laguna. Todo llega flotando.",
+        "atrevido": "Entraron {{amount}} a la laguna. Eso sí es caudal."
       }
     },
     "nest": {
@@ -225,6 +363,50 @@
       "comeback": {
         "tranqui": "Qué bueno verte. ¿Arrancamos con un mate?",
         "atrevido": "Este mate está lavado. Cebá un gasto y arrancamos de nuevo."
+      },
+      "voiceIdle": {
+        "tranqui": "¿Un mate y me contás qué cobraste?",
+        "atrevido": "Cebá la data: ¿qué cobraste?"
+      },
+      "voiceListening": {
+        "tranqui": "Te escucho, tomate tu tiempo con el mate.",
+        "atrevido": "Largá, que estoy cebando la atención."
+      },
+      "voiceThinking": {
+        "tranqui": "Dejo reposar la yerba un momento…",
+        "atrevido": "Un segundo, que la yerba todavía no está lista."
+      },
+      "voiceUnclear": {
+        "tranqui": "No te entendí del todo. ¿Me lo repetís?",
+        "atrevido": "Eso no lo cebé bien. Decímelo otra vez."
+      },
+      "voiceChat": {
+        "tranqui": "En esta ronda solo cargo tus finanzas. ¿Qué cobraste?",
+        "atrevido": "Yo solo cebo finanzas, eh. ¿Qué cobraste?"
+      },
+      "voiceNotYet": {
+        "tranqui": "Cargar {{action}} todavía no lo cebo. Esperame un mate, ya llega.",
+        "atrevido": "Cargar {{action}} todavía no entra en la ronda. Bancame."
+      },
+      "voiceErrorRetry": {
+        "tranqui": "Se cortó la bombilla. ¿Probamos de nuevo?",
+        "atrevido": "Se tapó la bombilla. Otra vez, dale."
+      },
+      "voiceErrorReported": {
+        "tranqui": "Se nos cayó el termo. Ya le avisé al admin, gracias.",
+        "atrevido": "Se rompió el termo. Ya le avisé al admin, así no pasa más."
+      },
+      "voicePermission": {
+        "tranqui": "Para escucharte necesito el micrófono. ¿Me lo habilitás?",
+        "atrevido": "Sin micrófono no hay ronda. Habilitalo y arrancamos."
+      },
+      "voiceDraftReady": {
+        "tranqui": "El borrador está listo. Revisalo con el mate al lado.",
+        "atrevido": "Borrador cebado. Revisalo y confirmá, dale."
+      },
+      "incomeSaved": {
+        "tranqui": "Listo, sumé {{amount}} a la ronda. Un mate más tranquilos.",
+        "atrevido": "Entraron {{amount}}. Cebador del mes, sin discusión."
       }
     },
     "nest": {
@@ -278,6 +460,50 @@
       "comeback": {
         "tranqui": "Qué bueno verte. Retomamos la ruta cuando quieras.",
         "atrevido": "Volviste. Sin drama: el mapa sigue acá, cargá lo que falta."
+      },
+      "voiceIdle": {
+        "tranqui": "Contame qué cobraste y lo ubico en el mapa.",
+        "atrevido": "¿Qué cobraste? Dale, que tengo una jugada."
+      },
+      "voiceListening": {
+        "tranqui": "Te escucho. Cada dato es una pista.",
+        "atrevido": "Hablá, que ya te estoy leyendo la jugada."
+      },
+      "voiceThinking": {
+        "tranqui": "Ubico la pista en el mapa un momento…",
+        "atrevido": "Pensando la jugada. Un segundo, pícaro."
+      },
+      "voiceUnclear": {
+        "tranqui": "Esa pista no la ubico. ¿Me la repetís?",
+        "atrevido": "No cacho esa jugada. Decímelo de nuevo."
+      },
+      "voiceChat": {
+        "tranqui": "Mi mapa es solo de tus finanzas. ¿Qué querés cargar?",
+        "atrevido": "Yo solo juego con tus finanzas. ¿Qué cobraste?"
+      },
+      "voiceNotYet": {
+        "tranqui": "Cargar {{action}} todavía no está en mi mapa. Esperame, ya llega.",
+        "atrevido": "Cargar {{action}} es mi próxima jugada. Bancame un toque."
+      },
+      "voiceErrorRetry": {
+        "tranqui": "Se perdió la señal en la ruta. ¿Probamos de nuevo?",
+        "atrevido": "Me comieron la pista. Probá otra vez."
+      },
+      "voiceErrorReported": {
+        "tranqui": "Se rompió el mapa un rato. Ya le avisé al admin.",
+        "atrevido": "Trampa en el camino. Ya le avisé al admin, tranqui."
+      },
+      "voicePermission": {
+        "tranqui": "Necesito el micrófono para seguir la pista. ¿Me lo das?",
+        "atrevido": "Sin micrófono no sigo tu jugada. Habilitalo."
+      },
+      "voiceDraftReady": {
+        "tranqui": "Armé el borrador en el mapa. Revisalo y confirmalo.",
+        "atrevido": "Jugada armada. Revisala y confirmá, pícaro."
+      },
+      "incomeSaved": {
+        "tranqui": "Guardé {{amount}} en el mapa. Otra pieza encontrada.",
+        "atrevido": "{{amount}} al tesoro. Jugada perfecta."
       }
     },
     "nest": {

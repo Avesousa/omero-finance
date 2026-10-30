@@ -1,5 +1,7 @@
 import type { DataSource } from "./DataSource";
-import { proposeLoanPayment, type LoanDTO } from "../../domain/index.ts";
+import { proposeLoanPayment, toArs, type LoanDTO } from "../../domain/index.ts";
+import { AppError } from "../errors.ts";
+import { MOCK_AUDIO_TEXT, mockOutcome } from "./mockVoice.ts";
 import { cardsDebt, derivedWealthItems, equityRatio, nestStage, previewLoan, wealthTotals } from "../selectors.ts";
 import type {
   AppNotifications,
@@ -7,9 +9,13 @@ import type {
   CardPurchase,
   CardsOverview,
   DebtsOverview,
+  ErrorReport,
   HomeSummary,
+  IncomeCategory,
+  NewIncomeInput,
   NewLoanInput,
   PendingPayment,
+  VoiceInput,
   WealthGoal,
   WealthItem,
   WealthOverview,
@@ -52,6 +58,16 @@ const notices: AppNotifications["notices"] = [
 
 const CURRENT_PERIOD = "2026-11";
 const USD_RATE = 1450;
+
+const incomeCategories: IncomeCategory[] = [
+  { id: "ic-sueldo", name: "Sueldo" },
+  { id: "ic-freelance", name: "Freelance" },
+  { id: "ic-alquileres", name: "Alquileres" },
+  { id: "ic-otros", name: "Otros ingresos" },
+];
+
+/** Errores que el mock "le avisó al admin" (para probar en desarrollo). */
+export const mockErrorReports: ErrorReport[] = [];
 
 const cards: Card[] = [
   { id: "c-visa", name: "Visa Galicia", entity: "Galicia", brand: "VISA", owner: "Avelino" },
@@ -201,6 +217,33 @@ function historyAt(): WealthOverview["history"] {
 }
 
 export const mockSource: DataSource = {
+  interpretVoice: async (input: VoiceInput) => {
+    await wait(undefined);
+    const text = "text" in input ? input.text : MOCK_AUDIO_TEXT;
+    const probe = text.trim().toLowerCase();
+    if (probe === "error fatal") {
+      mockErrorReports.push({ source: "voice", code: "internal", message: "Error fatal simulado" });
+      throw new AppError("Error fatal simulado", { code: "internal", retryable: false, reported: true });
+    }
+    if (probe === "error") {
+      throw new AppError("Error simulado", { code: "provider_unavailable", retryable: true });
+    }
+    return mockOutcome(text, { today: home.today, incomeCategories: incomeCategories.map((c) => ({ ...c })) });
+  },
+  getIncomeCategories: async () => wait(incomeCategories.map((c) => ({ ...c }))),
+  addIncome: async (input: NewIncomeInput) => {
+    // El mock tiene un solo mes (noviembre 2026) y el formulario usa la fecha real del teléfono:
+    // cualquier ingreso suma a Inicio para poder ver el efecto. En pesos (los dólares se convierten).
+    const ars = toArs(input.amount, input.currency, USD_RATE);
+    home.income += ars;
+    home.available += ars;
+    home.free += ars;
+    await wait(undefined);
+  },
+  reportError: async (report: ErrorReport) => {
+    mockErrorReports.push(report);
+    await wait(undefined);
+  },
   getHome: async () => wait({ ...home, pendingConfirmCount: pending.length, story: storyFromWealth() }),
   getPendingPayments: async () => wait([...pending]),
   getNotifications: async () => wait({ pending: [...pending], notices: [...notices] }),

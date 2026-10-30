@@ -74,5 +74,20 @@
       "title": "Resumen de tarjeta",
       "body": "El cierre del mes de una tarjeta"
     }
+  },
+  "voice": {
+    "title": "Contale a {{name}}",
+    "micStart": "Tocá para hablar",
+    "micStop": "Tocá para terminar",
+    "micDisabled": "Esperá un momento",
+    "recording": "Grabando {{time}}",
+    "thinking": "Pensando…",
+    "orWrite": "O escribilo",
+    "textLabel": "Escribí lo que querés cargar",
+    "textPlaceholder": "Ej.: me pagaron el sueldo, un millón doscientos",
+    "send": "Enviar",
+    "retry": "Reintentar",
+    "manual": "O cargalo a mano",
+    "webHint": "Acá no puedo grabar: escribilo y listo."
   }
 }

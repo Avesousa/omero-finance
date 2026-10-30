@@ -1,13 +1,17 @@
 import { useCallback } from "react";
 import { AppState, Platform } from "react-native";
 import { focusManager, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { VoiceOutcome } from "../domain";
 import { dataSource, DATA_SOURCE } from "./sources";
 import { notificationBadgeCount } from "./selectors";
-import type { NewLoanInput } from "./types";
+import { AppError, reportAppError, toAppError } from "./errors";
+import type { NewIncomeInput, NewLoanInput, VoiceInput } from "./types";
 
 export { DATA_SOURCE } from "./sources";
 export * from "./types";
 export * from "./selectors";
+export { AppError, reportAppError, toAppError } from "./errors";
+export type { AppErrorCode } from "./errors";
 
 export const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: true } },
@@ -25,6 +29,7 @@ export const queryKeys = {
   cards: (period?: string) => ["cards", period ?? "current"] as const,
   wealth: (period?: string) => ["wealth", period ?? "current"] as const,
   debts: (period?: string) => ["debts", period ?? "current"] as const,
+  incomeCategories: ["income-categories"] as const,
 };
 
 /** Resumen del mes para Inicio. */
@@ -127,6 +132,47 @@ export function useAddLoan() {
   return useMutation({
     mutationFn: (input: NewLoanInput) => dataSource.addLoan(input),
     onSuccess: refresh,
+  });
+}
+
+/** Categorías de ingreso del hogar (chips del formulario de ingreso). */
+export function useIncomeCategories() {
+  return useQuery({ queryKey: queryKeys.incomeCategories, queryFn: () => dataSource.getIncomeCategories() });
+}
+
+/** Mutación: agregar un ingreso (`NewIncomeInput`). Refresca Inicio y Patrimonio. */
+export function useAddIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: NewIncomeInput) => dataSource.addIncome(input),
+    onSuccess: () =>
+      Promise.all([qc.invalidateQueries({ queryKey: ["home"] }), qc.invalidateQueries({ queryKey: ["wealth"] })]),
+  });
+}
+
+/**
+ * Mutación: interpreta lo dicho (audio o texto) → `VoiceOutcome`. No guarda nada.
+ * Reintenta sola hasta 2 veces (800 ms, 1,6 s) si el error es `retryable`; los errores llegan como `AppError`.
+ * Si termina fallando y el servidor no lo registró (`reported` false), lo reporta al admin
+ * (salvo `bad_audio`, que es del usuario: la pantalla lo trata como "no entendí").
+ * Para "Reintentar": `mutate(mismoInput)`.
+ */
+export function useInterpretVoice() {
+  return useMutation<VoiceOutcome, AppError, VoiceInput>({
+    mutationFn: async (input) => {
+      try {
+        return await dataSource.interpretVoice(input);
+      } catch (e) {
+        throw toAppError(e);
+      }
+    },
+    retry: (failureCount, error) => error.retryable && failureCount < 2,
+    retryDelay: (attempt) => 800 * 2 ** attempt,
+    onError: (error) => {
+      if (!error.reported && error.code !== "bad_audio") {
+        void reportAppError(error, { feature: "voice-income" }, "voice");
+      }
+    },
   });
 }
 

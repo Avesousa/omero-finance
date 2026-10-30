@@ -37,7 +37,8 @@
       "expo-secure-store",
       "expo-status-bar",
       "expo-localization",
-      "expo-font"
+      "expo-font",
+      ["expo-audio", { "microphonePermission": "Omero usa el micrófono para que le cuentes tus ingresos hablando." }]
     ]
   }
 }
