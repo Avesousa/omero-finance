@@ -29,5 +29,8 @@ export { GoalsCard, type GoalsCardProps, type GoalRow } from "./GoalsCard";
 export { LoanCard, type LoanCardProps } from "./LoanCard";
 export { CardsDebtRow, type CardsDebtRowProps } from "./CardsDebtRow";
 
-// — voz —
-export { VoiceCapture, type VoiceCaptureProps, type VoicePhase } from "./VoiceCapture";
+// — chat de Cargar —
+export { ChatThread, type ChatThreadProps, type ChatThreadItem } from "./ChatThread";
+export { DraftCard, type DraftCardProps } from "./DraftCard";
+export { ChatComposer, type ChatComposerProps } from "./ChatComposer";
+export { ChatErrorActions, type ChatErrorActionsProps } from "./ChatErrorActions";

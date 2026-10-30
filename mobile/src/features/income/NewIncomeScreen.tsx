@@ -9,6 +9,7 @@ import { ScreenTemplate } from "../../components/templates";
 import { useAddIncome, useIncomeCategories, type NewIncomeInput } from "../../data";
 import { useTheme } from "../../design-system";
 import { formatMoney } from "../../i18n/format";
+import { conversation } from "../load/conversation";
 import {
   addDays,
   currentPeriod,
@@ -53,10 +54,13 @@ function parseDraft(raw: string | undefined): IncomeDraft | null {
 export function NewIncomeScreen() {
   const { t } = useTranslation("income");
   const { colors } = useTheme();
-  const params = useLocalSearchParams<{ draft?: string; transcript?: string }>();
+  const params = useLocalSearchParams<{ draft?: string; transcript?: string; draftId?: string }>();
   const draft = useMemo(() => parseDraft(params.draft), [params.draft]);
   const transcript = params.transcript?.trim() || "";
   const fromVoice = draft != null;
+  /** Viene del chat de Cargar: lo que pase se cuenta ahí (la mascota), no con festejo propio. */
+  const draftId = params.draftId || null;
+  const saved = useRef(false);
 
   const categories = useIncomeCategories();
   const add = useAddIncome();
@@ -79,6 +83,15 @@ export function NewIncomeScreen() {
   const [note, setNote] = useState(draft?.note ?? "");
   const [submitted, setSubmitted] = useState(false);
   const [savedAmount, setSavedAmount] = useState<string | null>(null);
+
+  // Cualquier forma de cerrar sin guardar (✕, gesto, atrás) le avisa al chat: al desmontarse el
+  // formulario, si no se guardó, la tarjeta queda "descartada" con la opción de retomarla.
+  useEffect(() => {
+    if (!draftId) return;
+    return () => {
+      if (!saved.current) conversation.dispatch({ type: "draftDismissed", draftId });
+    };
+  }, [draftId]);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
@@ -114,6 +127,12 @@ export function NewIncomeScreen() {
     };
     add.mutate(input, {
       onSuccess: () => {
+        if (draftId) {
+          saved.current = true;
+          conversation.dispatch({ type: "draftSaved", draftId, amount: formatMoney(amountValue, currency) });
+          router.back();
+          return;
+        }
         setSavedAmount(formatMoney(amountValue, currency));
         timer.current = setTimeout(() => router.dismissTo("/"), CELEBRATE_MS);
       },
@@ -136,7 +155,7 @@ export function NewIncomeScreen() {
             {t("form.title")}
           </Text>
           <Spacer />
-          <IconButton icon="close" accessibilityLabel={t("form.close")} onPress={() => router.back()} />
+          <IconButton testID="new-income-close" icon="close" accessibilityLabel={t("form.close")} onPress={() => router.back()} />
         </HStack>
 
         {fromVoice ? (

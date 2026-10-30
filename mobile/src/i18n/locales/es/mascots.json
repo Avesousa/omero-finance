@@ -129,6 +129,14 @@
       "incomeSaved": {
         "tranqui": "Listo, guardé el ingreso de {{amount}}. Bien hecho.",
         "atrevido": "Guardado: {{amount}} en tu bolsillo. Así se hace."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, acá estoy. Contame qué cobraste o elegí una opción de abajo.",
+        "atrevido": "Dale, ¿qué cobraste? Escribime o elegí una opción de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador en el chat por si querés retomarlo.",
+        "atrevido": "Borrador guardado en el chat. Lo retomás cuando quieras."
       }
     },
     "actions": {
@@ -213,6 +221,14 @@
       "incomeSaved": {
         "tranqui": "Un ladrillo más: guardé {{amount}}. De a poco se arma.",
         "atrevido": "Ingreso de {{amount}} puesto. Qué buena pared."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, acá estoy. Contame qué cobraste o elegí una opción.",
+        "atrevido": "Dale, traé el barro: ¿qué cobraste? Escribime o elegí de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el plano en el chat por si querés retomarlo después.",
+        "atrevido": "Plano guardado en el chat. Cuando quieras, lo retomamos, dale."
       }
     },
     "nest": {
@@ -310,6 +326,14 @@
       "incomeSaved": {
         "tranqui": "Guardé {{amount}} en la laguna. Todo llega flotando.",
         "atrevido": "Entraron {{amount}} a la laguna. Eso sí es caudal."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, acá estoy flotando. Contame qué cobraste o elegí una opción.",
+        "atrevido": "Llegué nadando. ¿Qué cobraste? Decime o tocá una opción."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador a flote en el chat. Cuando quieras, seguimos.",
+        "atrevido": "Borrador a salvo en el chat. Lo retomás cuando quieras."
       }
     },
     "nest": {
@@ -407,6 +431,14 @@
       "incomeSaved": {
         "tranqui": "Listo, sumé {{amount}} a la ronda. Un mate más tranquilos.",
         "atrevido": "Entraron {{amount}}. Cebador del mes, sin discusión."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, mate listo. ¿Me contás qué cobraste o elegís una opción?",
+        "atrevido": "Cebé el mate, ¿qué cobraste? Contame o elegí algo de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador en el chat. Lo retomamos con un mate, cuando quieras.",
+        "atrevido": "Borrador guardado en el chat. Lo cebamos de nuevo cuando quieras."
       }
     },
     "nest": {
@@ -504,6 +536,14 @@
       "incomeSaved": {
         "tranqui": "Guardé {{amount}} en el mapa. Otra pieza encontrada.",
         "atrevido": "{{amount}} al tesoro. Jugada perfecta."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, te estaba esperando. Contame qué cobraste o elegí una opción.",
+        "atrevido": "¿Qué cobraste, pícaro? Tengo el mapa listo. Decime o elegí de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador en el mapa del chat. Lo retomamos cuando quieras.",
+        "atrevido": "Lo guardé en el mapa del chat. Jugada pendiente, pícaro."
       }
     },
     "nest": {

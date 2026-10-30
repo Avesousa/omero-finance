@@ -59,7 +59,7 @@ mobile/
     (tabs)/deudas.tsx         Deudas.
     (tabs)/patrimonio.tsx     Patrimonio.
     (tabs)/mas.tsx            Más.
-    cargar.tsx                Modal Cargar (hoja de opciones).
+    cargar.tsx                Modal Cargar: chat con la mascota (src/features/load).
     deudas/nueva.tsx          Modal Nueva deuda o préstamo.
     notificaciones.tsx        Notificaciones.
     login.tsx                 Login (solo modo api).

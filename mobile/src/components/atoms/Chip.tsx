@@ -8,13 +8,15 @@ export interface ChipProps {
   active?: boolean;
   onPress?: () => void;
   disabled?: boolean;
+  testID?: string;
 }
 
 /** Píldora para filtrar o elegir una opción corta (44px de alto). */
-export function Chip({ label, active = false, onPress, disabled }: ChipProps) {
+export function Chip({ label, active = false, onPress, disabled, testID }: ChipProps) {
   const { colors, radius, space, sizes } = useTheme();
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active, disabled: !!disabled }}

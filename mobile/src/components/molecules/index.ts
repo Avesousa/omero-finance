@@ -12,3 +12,9 @@ export { PeriodSwitcher, type PeriodSwitcherProps } from "./PeriodSwitcher";
 export { MiniBarChart, type MiniBarChartProps, type MiniBarDatum } from "./MiniBarChart";
 export { DeltaBadge, type DeltaBadgeProps } from "./DeltaBadge";
 export { FormField, type FormFieldProps } from "./FormField";
+
+// — chat —
+export { ChatBubble, type ChatBubbleProps } from "./ChatBubble";
+export { AudioBubble, formatClock, type AudioBubbleProps } from "./AudioBubble";
+export { TypingBubble, type TypingBubbleProps } from "./TypingBubble";
+export { QuickReplies, type QuickRepliesProps, type QuickReply } from "./QuickReplies";
