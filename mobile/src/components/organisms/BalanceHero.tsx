@@ -201,7 +201,8 @@ export function BalanceHero({
             paddingHorizontal: space[4],
             borderRadius: radius.pill,
             backgroundColor: holding ? colors.accent : colors.heroChip,
-            transform: !reduceMotion && pressed ? [{ scale: 0.98 }] : undefined,
+            // Siempre un arreglo: con `undefined` esta versión de RN rompe (`forEach of null`) al presionar o al empezar un scroll sobre la cápsula.
+            transform: [{ scale: !reduceMotion && pressed ? 0.98 : 1 }],
           })}
         >
           <Text variant="secondarySemi" tone={holding ? "onAccent" : "heroInk"} numberOfLines={1} style={{ flexShrink: 1 }}>
