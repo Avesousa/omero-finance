@@ -65,8 +65,8 @@ export interface EntryFormProps {
   /** Pide fecha (Hoy / Ayer / otro día). Default true. */
   showDate?: boolean;
   showNote?: boolean;
-  /** `optional`: interruptor "Es fijo". `always`: siempre fijo (pantalla de gastos fijos). Default `optional`. */
-  fixedMode?: "optional" | "always";
+  /** `optional`: interruptor "Es fijo". `always`: siempre fijo (pantalla de gastos fijos). `never`: sin interruptor, es fijo solo si `initial.fixed` viene (editar un movimiento existente). Default `optional`. */
+  fixedMode?: "optional" | "always" | "never";
   /** Marca desde el principio lo que falta (borrador que vino de la voz). */
   highlightMissing?: boolean;
   /** Texto del botón (ya traducido). */

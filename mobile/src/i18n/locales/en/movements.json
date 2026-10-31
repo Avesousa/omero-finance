@@ -1,0 +1,73 @@
+{
+  "title": "",
+  "back": "",
+  "close": "",
+  "filter": {
+    "label": "",
+    "all": "",
+    "income": "",
+    "expense": ""
+  },
+  "search": {
+    "label": "",
+    "placeholder": "",
+    "clear": ""
+  },
+  "day": {
+    "today": "",
+    "yesterday": "",
+    "undated": "",
+    "upcoming": ""
+  },
+  "row": {
+    "uncategorized": "",
+    "fixed": "",
+    "installment": "",
+    "paid": "",
+    "pending": "",
+    "collected": "",
+    "toCollect": "",
+    "income": "",
+    "expense": "",
+    "edit": "",
+    "installmentHint": "",
+    "proposed": "",
+    "due": ""
+  },
+  "totals": {
+    "all": "",
+    "income": "",
+    "expense": "",
+    "count_one": "",
+    "count_other": ""
+  },
+  "state": {
+    "loading": "",
+    "errorTitle": "",
+    "errorBody": "",
+    "emptyTitle": "",
+    "emptyBody": "",
+    "emptyAction": "",
+    "noResultsTitle": "",
+    "noResultsBody": ""
+  },
+  "edit": {
+    "title": "",
+    "save": "",
+    "error": "",
+    "notFoundTitle": "",
+    "notFoundBody": "",
+    "installmentTitle": "",
+    "installmentBody": "",
+    "goToDebts": "",
+    "delete": "",
+    "deleteTitle": "",
+    "deleteBody": "",
+    "deleteConfirm": "",
+    "deleteMonth": "",
+    "deleteRule": "",
+    "deleteRuleBody": "",
+    "cancel": "",
+    "deleteError": ""
+  }
+}

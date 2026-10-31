@@ -44,6 +44,25 @@ export interface ThemeColors {
   chartHighlight: string;
   /** Serie de colores para barras/leyendas (5 posiciones; la última es "Otros"). */
   chart: readonly [string, string, string, string, string];
+  /** Paleta categórica de 8 colores (AllocationBar y leyendas por categoría); se indexa con `categoryColorIndex`. */
+  chartCategorical: readonly [string, string, string, string, string, string, string, string];
+  /** "Sin asignar" en barras apiladas (gris, nunca un color de categoría). */
+  chartUnassigned: string;
+  /** "Otras" en barras apiladas: gris medio, distinto de `chartUnassigned`. */
+  chartOther: string;
+  /** Texto principal sobre el degradé del héroe de Inicio. */
+  heroInk: string;
+  /** Texto secundario sobre el degradé del héroe (contraste AA). */
+  heroInkMuted: string;
+  /** Cápsula translúcida sobre el degradé del héroe. */
+  heroChip: string;
+  /** Fondo suave del círculo de la flecha de ingresos. */
+  positiveTint: string;
+}
+
+export interface ThemeGradients {
+  /** Degradé vertical del héroe de Inicio: de color a `bg` (el último color es `bg`, así se funde sin corte). */
+  hero: { colors: readonly [string, string, string]; locations: readonly [number, number, number] };
 }
 
 export interface ThemeEffects {
@@ -57,6 +76,7 @@ export interface ThemeEffects {
 
 export interface ThemeDefinition {
   colors: ThemeColors;
+  gradients: ThemeGradients;
   effects: ThemeEffects;
   /** Texto de la barra de estado: oscuro sobre fondos claros. */
   statusBar: "dark" | "light";
@@ -67,10 +87,13 @@ export interface ThemeDefinition {
 const t = palette.tranqui;
 const a = palette.atrevido;
 
+const HERO_LOCATIONS = [0, 0.55, 1] as const;
+
 const tranqui: ThemeDefinition = {
   statusBar: "dark",
   bold: false,
   effects: { hero: undefined, fab: undefined, floating: `0 6px 20px ${t.shadow}` },
+  gradients: { hero: { colors: t.heroGradient, locations: HERO_LOCATIONS } },
   colors: {
     bg: t.bg,
     surface: t.surface,
@@ -101,12 +124,20 @@ const tranqui: ThemeDefinition = {
     chartBar: t.chartBar,
     chartHighlight: t.primary,
     chart: [t.primary, t.accent, t.positive, t.warning, t.border],
+    chartCategorical: t.categorical,
+    chartUnassigned: t.unassigned,
+    chartOther: t.other,
+    heroInk: t.heroInk,
+    heroInkMuted: t.heroInkMuted,
+    heroChip: t.heroChip,
+    positiveTint: t.positiveTint,
   },
 };
 
 const atrevido: ThemeDefinition = {
   statusBar: "light",
   bold: true,
+  gradients: { hero: { colors: a.heroGradient, locations: HERO_LOCATIONS } },
   effects: { hero: `0 0 28px ${a.glowHero}`, fab: `0 0 18px ${a.glowFab}`, floating: `0 6px 20px ${a.shadow}` },
   colors: {
     bg: a.bg,
@@ -138,6 +169,13 @@ const atrevido: ThemeDefinition = {
     chartBar: a.chartBar,
     chartHighlight: a.accent,
     chart: [a.primary, a.accent, a.positive, a.warning, a.border],
+    chartCategorical: a.categorical,
+    chartUnassigned: a.unassigned,
+    chartOther: a.other,
+    heroInk: a.heroInk,
+    heroInkMuted: a.heroInkMuted,
+    heroChip: a.heroChip,
+    positiveTint: a.positiveTint,
   },
 };
 

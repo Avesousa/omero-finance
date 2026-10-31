@@ -18,7 +18,9 @@
     "retry": "",
     "logout": "",
     "login": "",
-    "seeAll": ""
+    "seeAll": "",
+    "done": "",
+    "undo": ""
   },
   "status": {
     "loading": "",

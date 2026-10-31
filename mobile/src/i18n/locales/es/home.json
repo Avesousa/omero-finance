@@ -1,15 +1,26 @@
 {
-  "hero": {
-    "label": "HOY PODÉS GASTAR",
-    "perDay_one": "por día · queda {{count}} día",
-    "perDay_other": "por día · quedan {{count}} días",
-    "toggleLabel": "Elegir qué monto ver",
-    "available": "Disponible",
-    "free": "Libre",
-    "sticker": "A FUEGO",
-    "availableHint": "disponible este mes · lo que queda después de lo ya pagado",
-    "summaryFree": "Libre",
-    "summaryAvailable": "Disponible"
+  "balance": {
+    "title": "Tu balance",
+    "hide": "Ocultar montos",
+    "show": "Mostrar montos",
+    "hiddenAmount": "Monto oculto",
+    "hint": "Mantené presionado para ver el mes",
+    "holdingHint": "Soltá y se desvanece",
+    "dailyA11y": "Hoy podés gastar {{perDay}} por día. Libre del mes {{free}}.",
+    "dailyA11yHidden": "Hoy podés gastar: monto oculto.",
+    "a11yHint": "Mantené presionado para ver el libre del mes",
+    "dailyLabel": "Hoy podés gastar",
+    "monthFreeLabel": "Libre del mes"
+  },
+  "shortcuts": {
+    "label": "Accesos rápidos"
+  },
+  "cards": {
+    "income": "Ingresos",
+    "expenses": "Gastos",
+    "incomeA11y": "Ingresos del mes: {{amount}}",
+    "expensesA11y": "Gastos del mes: {{amount}}",
+    "open": "Ver movimientos"
   },
   "income": "Ingresos",
   "pendingToPay": "Pendiente de pago",

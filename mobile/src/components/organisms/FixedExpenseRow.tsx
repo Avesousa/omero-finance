@@ -2,7 +2,8 @@ import { Pressable, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../design-system";
 import { formatMoney } from "../../i18n/format";
-import { Icon, Text } from "../atoms";
+import { Icon, Text, type IconName } from "../atoms";
+import { AmountCapsule, CategoryBadge } from "../molecules";
 
 export interface FixedExpenseRowProps {
   name: string;
@@ -17,6 +18,9 @@ export interface FixedExpenseRowProps {
   /** Día del mes en que vence (mensual). */
   dueDay: number | null;
   isDone: boolean;
+  /** Ícono y color de su categoría (el mismo color que su tramo en la barra). */
+  icon: IconName;
+  colorIndex: number;
   /** Solo lectura (mes proyectado): sin edición ni check. */
   readOnly?: boolean;
   /** Tocar la fila: editar. */
@@ -39,6 +43,8 @@ export function FixedExpenseRow({
   weekday,
   dueDay,
   isDone,
+  icon,
+  colorIndex,
   readOnly = false,
   onPress,
   onToggle,
@@ -69,24 +75,18 @@ export function FixedExpenseRow({
         accessibilityState={{ disabled: readOnly }}
         disabled={readOnly || !onPress}
         onPress={onPress}
-        style={({ pressed }) => ({ flex: 1, minHeight: sizes.touch, paddingVertical: space[3], flexDirection: "row", alignItems: "center", gap: space[3], opacity: pressed ? 0.85 : 1 })}
+        style={({ pressed }) => ({ flex: 1, minHeight: sizes.touch, paddingVertical: space[3], flexDirection: "row", alignItems: "center", gap: space[2], opacity: pressed ? 0.85 : 1 })}
       >
+        <CategoryBadge icon={icon} colorIndex={colorIndex} />
         <View style={{ flex: 1, gap: space[1] }}>
           <Text variant="bodyStrong" numberOfLines={2}>
             {name}
           </Text>
           <Text variant="secondary" tone="inkMuted">
-            {schedule}
+            {perTime ? `${schedule} · ${perTime}` : schedule}
           </Text>
         </View>
-        <View style={{ alignItems: "flex-end", gap: space[1] }}>
-          <Text variant="numberSmall">{formatMoney(amount, currency)}</Text>
-          {perTime ? (
-            <Text variant="secondary" tone="inkMuted">
-              {perTime}
-            </Text>
-          ) : null}
-        </View>
+        <AmountCapsule value={amount} staticText={formatMoney(amount, currency)} accessibilityLabel={formatMoney(amount, currency)} />
       </Pressable>
       <Pressable
         testID={toggleTestID}

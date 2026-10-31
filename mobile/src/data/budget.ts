@@ -188,3 +188,52 @@ export function assistantTargets(plan: MonthPlan): { steps: AssistantTarget[]; e
   }
   return { steps, extras };
 }
+
+/**
+ * Orden estable de los ids de categorías de gasto para asignarles color (`categoryColorIndex(id, orden)`):
+ * el ahorro primero y el resto en el orden del plan. No depende de montos ni de topes, así que una categoría
+ * conserva su color al editar y es la MISMA en Presupuesto y en Gastos fijos. Lo "sin categoría" no entra
+ * (`categoryColorIndex` le deriva un color estable por hash).
+ */
+export function categoryColorOrder(plan: Pick<MonthPlan, "categories">): string[] {
+  const expense = plan.categories.filter((c) => c.kind === "EXPENSE" && !c.isArchived);
+  const savings = expense.filter((c) => isSavingsName(c.name));
+  return [...savings, ...expense.filter((c) => !isSavingsName(c.name))].map((c) => c.id);
+}
+
+export interface AllocationItem {
+  /** `categoryId`, "uncategorized" u `OTHER_ALLOCATION_KEY` (el tramo "Otras"). */
+  key: string;
+  categoryId: string | null;
+  name: string;
+  /** Lo que ocupa en el mes: el mayor entre el tope y lo cargado (así suma lo mismo que el Libre). */
+  value: number;
+  group: BudgetGroup | "other";
+}
+
+export const OTHER_ALLOCATION_KEY = "__other";
+/** Cuántas categorías se muestran sueltas en la barra; si hay más de `MAX_ALLOCATION_ITEMS + 1`, el resto se junta en "Otras". */
+export const MAX_ALLOCATION_ITEMS = 5;
+
+/**
+ * Cómo se reparte el mes para la barra de Presupuesto: las 5 categorías de mayor monto (en el orden de siempre, ahorro
+ * primero; conservan su color) y un tramo "Otras" con la suma del resto (si hay más de 6), y `remainder` = lo que queda
+ * sin asignar (0 si te pasaste). `name` de "Otras" va vacío: la pantalla lo traduce. `income` = disponible,
+ * `free` = por asignar (negativo si asignaste de más).
+ */
+export function budgetAllocation(view: BudgetView): { income: number; free: number; items: AllocationItem[]; remainder: number } {
+  const lines = [...(view.savings ? [view.savings] : []), ...view.committed, ...view.variable];
+  const all: AllocationItem[] = lines
+    .map((l) => ({ key: l.categoryId ?? "uncategorized", categoryId: l.categoryId, name: l.name, value: Math.max(l.budget, l.actual), group: l.group }))
+    .filter((i) => i.value > 0);
+  let items = all;
+  if (all.length > MAX_ALLOCATION_ITEMS + 1) {
+    const top = new Set([...all].sort((a, b) => b.value - a.value).slice(0, MAX_ALLOCATION_ITEMS).map((i) => i.key));
+    const rest = all.filter((i) => !top.has(i.key));
+    items = [
+      ...all.filter((i) => top.has(i.key)),
+      { key: OTHER_ALLOCATION_KEY, categoryId: null, name: "", value: rest.reduce((s, i) => s + i.value, 0), group: "other" },
+    ];
+  }
+  return { income: view.income, free: view.free, items, remainder: Math.max(0, Math.round(view.free)) };
+}

@@ -18,10 +18,11 @@
     "notice": ""
   },
   "hero": {
-    "label": "",
     "over": "",
-    "income": "",
-    "assigned": ""
+    "available": "",
+    "toAssign": "",
+    "unassignedLegend": "",
+    "other": ""
   },
   "actions": {
     "assist": "",
@@ -125,5 +126,19 @@
       "errorBody": ""
     },
     "enter": ""
+  },
+  "manage": {
+    "open": "",
+    "close": ""
+  },
+  "row": {
+    "amountLabel": "",
+    "amountHint": "",
+    "committedAmount": "",
+    "remove": "",
+    "removed": "",
+    "paidOf": "",
+    "noCap": "",
+    "of": ""
   }
 }

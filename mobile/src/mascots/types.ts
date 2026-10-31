@@ -60,7 +60,8 @@ export type MascotMoment =
   | "fixedStopped"
   | "budgetAssistDone"
   | "budgetNear"
-  | "budgetOverCategory";
+  | "budgetOverCategory"
+  | "budgetSaveError";
 
 /** Props de cada dibujo. Dibuja elementos SVG en un viewBox 0 0 200 200 (los envuelve <Mascot/>). */
 export interface DrawingProps {

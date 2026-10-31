@@ -55,10 +55,13 @@ mobile/
     _layout.tsx               Shell raíz: fuentes, sesión, Stack con guard (mock: sin login; api: login).
     (tabs)/_layout.tsx        Tabs con la TabBar propia (secciones de `src/navigation`).
     (tabs)/index.tsx          Inicio.
-    (tabs)/tarjetas.tsx       Tarjetas.
-    (tabs)/deudas.tsx         Deudas.
-    (tabs)/patrimonio.tsx     Patrimonio.
-    (tabs)/mas.tsx            Más.
+    (tabs)/presupuesto.tsx    Presupuesto del mes (pestaña).
+    (tabs)/patrimonio.tsx     Patrimonio (acepta `?focus=assets`).
+    (tabs)/menu.tsx           Menú: accesos y preferencias.
+    tarjetas.tsx              Tarjetas (pantalla de Stack, con volver).
+    deudas/index.tsx          Deudas (pantalla de Stack, con volver).
+    movimientos/index.tsx     Movimientos del mes (Stack, con volver; params `kind` y `period`).
+    movimientos/editar.tsx    Modal Editar movimiento (params `entryId` y `period`).
     cargar.tsx                Modal Cargar: chat con la mascota (src/features/load).
     deudas/nueva.tsx          Modal Nueva deuda o préstamo.
     ingresos/nuevo.tsx        Modal Nuevo ingreso (NewEntryScreen kind="INCOME").
@@ -66,7 +69,6 @@ mobile/
     gastos-fijos/index.tsx    Gastos fijos del mes (pantalla de Stack, con volver).
     gastos-fijos/nuevo.tsx    Modal Nuevo gasto fijo (EntryForm en modo crear).
     gastos-fijos/editar.tsx   Modal Editar gasto fijo (EntryForm precargado; params `entryId` y `period`).
-    presupuesto/index.tsx     Presupuesto del mes (pantalla de Stack, con volver).
     presupuesto/editar.tsx    Modal Editar tope de una categoría.
     presupuesto/armar.tsx     Modal Asistente de presupuesto (chat con la mascota).
     notificaciones.tsx        Notificaciones.
@@ -81,7 +83,7 @@ mobile/
     mascots/                  Mascotas: dibujos SVG, registro, provider y hooks de frases.
     i18n/                     i18next, locales por idioma y namespace, formateadores.
     data/                     DataSource (mock y api), hooks de React Query, selectores puros y tests.
-    features/                 Pantallas que conectan datos y organisms: home, budget, fixed, cards, wealth, debts, load, entry, notifications, more.
+    features/                 Pantallas que conectan datos y organisms: home, budget, fixed, cards, wealth, debts, load, entry, notifications, menu, movements.
     providers/                AppProviders: i18n, React Query, sesión, tema y mascota.
   lib/                        Heredado: cliente HTTP (api.ts), sesión, storage (AsyncStorage) y tipos del backend.
   assets/                     Íconos y splash.
@@ -93,7 +95,7 @@ Reglas de imports (de más bajo a más alto):
 |---|---|---|
 | `design-system` | nada del proyecto (solo `lib/storage` para persistir el modo) | componentes, datos, pantallas |
 | `atoms` | `design-system` | otras capas de componentes, datos |
-| `molecules` | `atoms`, `design-system`, `mascots` | `organisms`, `data`, `features` |
+| `molecules` | `atoms`, `design-system`, `mascots` (y utilidades puras de `domain`, como `formatMoneyInput`) | `organisms`, `data`, `features` |
 | `organisms` | `atoms`, `molecules`, `design-system`, `mascots`, `i18n` | `data`, `features` |
 | `templates` | `design-system` | datos, `features` |
 | `features` | todo lo anterior y `data` | `app/` |
@@ -128,6 +130,7 @@ Roles de color (`ThemeColors`), que es lo único que usan los componentes:
 - Estados: `positive` / `positiveInk`, `warning` / `onWarning`, `danger` / `dangerInk` / `dangerTint`.
 - Otros: `overlay`, `backdropRing`, `heroTrack`, `heroToggle` / `onHeroToggle`, `chartOutline`.
 - Gráficos: `chart` es una tupla de 5 colores; el último es "Otros".
+- Inicio y barras por categoría: `heroInk` / `heroInkMuted` / `heroChip` (texto y cápsula sobre el degradé del héroe), `positiveTint`, `chartCategorical` (8 colores; se indexan con `categoryColorIndex(id, orderedIds)`) y `chartUnassigned` (gris de "Sin asignar"). El degradé del héroe es `useTheme().gradients.hero` (termina en `bg`, así se funde con el fondo).
 
 **Tipografía** (`typography.<estilo>`, se usa como `variant` en `<Text>`):
 
@@ -175,7 +178,7 @@ El `<Text>` de atoms ya toma `variant` (estilo tipográfico) y `tone` (rol de co
 5. Si cambia el nombre de la app, está en `src/i18n/locales/es/common.json` (`app.name`). Íconos y splash en `assets/`.
 6. Verificá: `npx tsc --noEmit` y que no quede hex fuera de `palette.ts`:
    `grep -rnE "#[0-9A-Fa-f]{3,8}|rgba\(" src app | grep -v palette.ts` (tiene que dar vacío).
-7. Probá los dos modos desde Más > Modo.
+7. Probá los dos modos desde Menú > Modo.
 
 **Cómo agregar un modo nuevo** (por ejemplo, `nocturno`)
 
@@ -184,7 +187,7 @@ El `<Text>` de atoms ya toma `variant` (estilo tipográfico) y `tone` (rol de co
 3. Las mascotas: `MascotDefinition.backdrop` es `Record<Mode, string>`, así que TypeScript te pide el fondo del modo nuevo en cada mascota (`mascots/registry.ts`).
 4. Las frases de las mascotas usan `<momento>.<modo>` (`mascots.json`). Agregá la clave del modo nuevo en las cinco frases de cada mascota y en `common`, en los tres idiomas.
 5. Los accesorios de las mascotas dependen de `bold` (`mascots/parts/mood.ts` deriva `bold` de `mode === "atrevido"`). Si el modo nuevo tiene que mostrar accesorios, ajustá esa función y los `Drawing`.
-6. La opción aparece sola en Más > Modo porque usa `THEME_MODES`, pero hace falta la clave `more:mode.nocturno` en los tres idiomas.
+6. La opción aparece sola en Menú > Modo porque usa `THEME_MODES`, pero hace falta la clave `more:mode.nocturno` en los tres idiomas.
 7. Corré `npx tsc --noEmit` y revisá las pantallas en el modo nuevo.
 
 ## 4. Mascotas
@@ -226,7 +229,7 @@ Cuatro mascotas: `omero` (hornero, default), `pincho` (carpincho), `mati` (mate)
    - `yaguarete.story.oneLiner`, `yaguarete.story.chapter1`, `chapter2`, `chapter3`
    - `yaguarete.lines.{dailyRemainder,allGood,debtDown,comeback}.{tranqui,atrevido}`
    - `yaguarete.lines.pendingConfirm.{tranqui,atrevido}_one` y `_other`
-5. TypeScript te marca lo que falte: `MASCOTS` es un `Record<MascotId, ...>`. La lista de Más (`listMascots()`) la toma sola; revisá que las cinco opciones entren en la fila del selector.
+5. TypeScript te marca lo que falte: `MASCOTS` es un `Record<MascotId, ...>`. La lista del Menú (`listMascots()`) la toma sola; revisá que las cinco opciones entren en la fila del selector.
 6. Probala en los dos modos y con los cuatro moods.
 
 ## 5. Textos (i18n)
@@ -235,13 +238,14 @@ Todo texto visible sale de i18n. Sin strings hardcodeadas.
 
 **Namespaces y archivos**
 
-Los namespaces son `common`, `tabs`, `home`, `notifications`, `more`, `mascots`, `cards`, `wealth`, `debts`, `entry`, `load`, `budget` y `fixed` (`src/i18n/resources.ts`). Cada uno es un JSON por idioma en `src/i18n/locales/<idioma>/<namespace>.json`. El namespace por defecto es `common`.
+Los namespaces son `common`, `tabs`, `home`, `notifications`, `more`, `mascots`, `cards`, `wealth`, `debts`, `entry`, `load`, `budget`, `fixed` y `movements` (`src/i18n/resources.ts`). Cada uno es un JSON por idioma en `src/i18n/locales/<idioma>/<namespace>.json`. El namespace por defecto es `common`.
 
 - `common`: acciones, estados, login, textos de "Próximamente", `app.name`.
-- `tabs`: nombres de pestañas.
+- `tabs`: nombres de pestañas (`home`, `budget`, `wealth`, `menu`), títulos de Tarjetas y Deudas y las etiquetas de los accesos rápidos (`shortcuts.*`).
 - `home`: héroe, gastos por categoría, fijos, alertas, historia.
 - `notifications`: "Por confirmar", "Avisos", fechas relativas.
-- `more`: modo, mascota, idioma, cuenta.
+- `more`: Menú (título, accesos), modo, mascota, idioma, cuenta.
+- `movements`: Movimientos (filtros, buscador, días, filas, edición y borrado).
 - `mascots`: nombres, historias y frases de las mascotas.
 - `budget`: Presupuesto (resumen de Inicio, pantalla, editar tope y asistente).
 - `fixed`: Gastos fijos (pantalla, filas, formularios de alta y edición, días de la semana). Los campos de frecuencia y vencimiento del formulario están en `entry`.
@@ -277,7 +281,7 @@ t("hero.perDay", { count: 27 });  // "por día · quedan 27 días"
 1. Completá los valores vacíos de `src/i18n/locales/pt-BR/*.json` (o `en/*.json`) con las mismas claves que `es`. Mientras estén vacíos, `returnEmptyString: false` hace que se muestre el español en silencio: revisá visualmente.
 2. En `src/i18n/index.ts`, agregá el idioma a `SUPPORTED_ENABLED`, por ejemplo `["es", "pt-BR"]`.
 3. `INTL_LOCALE` (en `index.ts`) y el mapa `INTL` (en `format.ts`) ya tienen `pt-BR` y `en`. Si agregás un idioma nuevo, actualizá los dos.
-4. En Más, el idioma habilitado muestra el check; los que no están habilitados muestran "Próximamente". Ojo: hoy las filas de idioma no tienen `onPress`, o sea que no hay selector. El idioma se elige solo al arrancar, según el idioma del dispositivo (`pickLanguage`). Para un selector real, conectá `onPress` a `setLanguage(lng)`.
+4. En el Menú, el idioma habilitado muestra el check; los que no están habilitados muestran "Próximamente". Ojo: hoy las filas de idioma no tienen `onPress`, o sea que no hay selector. El idioma se elige solo al arrancar, según el idioma del dispositivo (`pickLanguage`). Para un selector real, conectá `onPress` a `setLanguage(lng)`.
 
 **Cómo agregar un texto**
 
@@ -315,7 +319,7 @@ Los tipos (`src/data/types.ts`): `HomeSummary`, `SpendingCategory`, `FixedProgre
 - Inicio se deriva del plan con `homeFromPlan(plan, extras)` (`src/data/plan.ts`): ingresos, disponible, libre, pendiente, "fijos pagados x de y". Lo que no sale del plan (saludo, pendientes de Apple Pay, historia del nido) entra por `extras`. En `mock`, cargar un ingreso o gasto agrega el movimiento al plan y todo se recalcula; en `api`, `getHome` se arma desde `getPlan`.
 - Presupuesto se deriva con `budgetView(plan)` (`src/data/budget.ts`): `summary`, `free`, `income`, `assigned`, `savings` (la categoría "Ahorro e inversión", siempre primero), `committed` (lo que sale solo: fijos, cuotas y tarjetas), `variable`, `withoutBudget`, `canCopyPrevious`, `previousPeriod`, `counts` y `variableTotals`. Más selectores puros: `suggestedBudget`, `assistantTargets`, `withBudgetItems` / `projectedFree`, `previousBudgetItems` y `budgetNotices` (avisos "cerca del tope" / "te pasaste" en Notificaciones).
 - Gastos fijos se derivan con `fixedExpensesView(plan)` (`src/data/fixed.ts`, sobre `projectedPlan`): `projected`, `total`, `paid`, `pending`, `count`, `paidCount`, `nextDue` y `groups` por categoría (`categoryId`, `name` — "" si no tiene —, `total`, `items: FixedItem[]`). Solo gastos con regla y sin préstamo, ordenados por vencimiento. Los ids proyectados (`proj-…`, mes que no empezó) no se pueden editar: la pantalla es de solo lectura.
-- Hooks: `usePlan(period)`, `useBudget(period)` (misma query que el plan), `useSaveBudget()` (`{ period, items }`) y `useCopyPreviousBudget()` (`{ period }`). Al guardar invalidan plan, Inicio y avisos.
+- Hooks: `usePlan(period)`, `useBudget(period)` (misma query que el plan), `useSaveBudget()` (`{ period, items }`) y `useCopyPreviousBudget()` (`{ period }`) y `useSaveBudgetLine()` (`{ period, categoryId, amount }`, optimista, para editar un tope en línea). Al guardar invalidan plan, Inicio y avisos.
 - Hooks de gastos fijos: `useFixedExpenses(period)` (misma query del plan), `useUpdateEntry()` (`{ id, patch }`; `patch.amount` es el **total del mes**: para un fijo no mensual se manda `monthlyAmount(monto por vez, frecuencia, período, díaSemana)` de `src/domain`), `useDeleteEntry()` (`{ id, scope }`) y `useToggleEntryDone()` (`{ id, isDone }`). Invalidan plan, Inicio, avisos y patrimonio.
 - El parser de montos dichos o escritos ("300 mil", "1,5 palos") es `parseSpokenAmount` (`src/domain/amountText.ts`); lo usan la voz en `mock` y el asistente.
 
@@ -332,9 +336,11 @@ Los tipos (`src/data/types.ts`): `HomeSummary`, `SpendingCategory`, `FixedProgre
 - `useNotificationBadge()`: número del globo de la campana (pendientes + avisos sin leer). Devuelve 0 mientras carga.
 - `useConfirmPayment()`: mutación `mutate({ id, amount? })`. Al confirmar invalida `["home"]`, pendientes y notificaciones.
 - `useCategories(kind)`: categorías del hogar de un tipo (`"INCOME"` o `"EXPENSE"`).
-- `useAddEntry()`: mutación para guardar un ingreso o un gasto (`NewEntryInput` con `kind`). Invalida Inicio y Patrimonio. En `mock`, un gasto resta del disponible y del libre y suma al tramo de "En qué se va el mes" que corresponda.
+- `useAddEntry()`: mutación para guardar un ingreso o un gasto (`NewEntryInput` con `kind`). Invalida Inicio y Patrimonio. En `mock`, un gasto resta del disponible y del libre.
 
 El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la app (`AppState`).
+
+**Definiciones de Inicio** (`homeDefinitions` en `src/data/plan.ts`, con tests): `balance` = lo que tenés hoy (`availableArs`), `perDay` = gasto diario (`dailyAllowance(libre, días)`), `freeMonth` = libre del mes (se ve al mantener presionado), `monthIncome` y `monthExpenses` (= lo ya pagado, `paidArs`). `HomeSummary` trae `balance`, `monthIncome` y `monthExpenses`. El ojito de Inicio es una preferencia central: `usePrivacy()` (`src/providers/PrivacyProvider.tsx`).
 
 **Selectores puros** (`src/data/selectors.ts`): `dailyAllowance(free, daysLeft)` (libre dividido por días, redondeado hacia abajo, nunca negativo), `fixedProgressRatio`, `spendingTotal`, `notificationBadgeCount`, `clampChapter`. Los tests están en `src/data/__tests__/selectors.test.ts`.
 
@@ -349,24 +355,27 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 
 ## 7. Navegación
 
-- **Secciones** (`src/navigation/sections.ts`): fuente única, en orden de la barra: **Inicio** (`index`), **Tarjetas** (`tarjetas`), **Deudas** (`deudas`), **Patrimonio** (`patrimonio`) y **Más** (`mas`). Cada una trae `key`, `route` e íconos (`icon` / `iconActive`). La barra y los títulos salen de ahí.
-- **TabBar** (`components/organisms/TabBar.tsx`): píldora flotante con las 5 secciones (la activa con cápsula `tabActiveBg` e ícono relleno) y, fuera de la píldora, el botón circular **Cargar** (`fab-cargar`). Medidas en `sizes.tabBarHeight` y `sizes.fab`. `ScreenTemplate` deja el aire inferior para que la barra no tape nada.
+- **Secciones** (`src/navigation/sections.ts`): fuente única, en orden de la barra: **Inicio** (`index`), **Presupuesto** (`presupuesto`), **Patrimonio** (`patrimonio`) y **Menú** (`menu`). Cada una trae `key`, `route` e íconos (`icon` / `iconActive`). La barra y los títulos salen de ahí. Tarjetas y Deudas ya no son pestañas: son pantallas de Stack con volver (`/tarjetas`, `/deudas`); sus títulos salen de `useSectionTitle("cards" | "debts")`.
+- **Accesos rápidos** (`src/navigation/shortcuts.ts`): UNA config central `{ key, icon, labelKey, route, inHome, available }` para Movimientos, Tarjetas, Deudas, Gastos fijos, Cuentas y Notificaciones. La usan el Menú y Inicio (`homeShortcuts()` = los de `inHome` y `available`). `labelKey` es una clave de `tabs` (`shortcuts.<key>`). **Cuentas** lleva a `/patrimonio?focus=assets`: Patrimonio baja a "Lo que tenés" y la resalta 2,5 s. Para sumar un acceso: una entrada acá + su etiqueta en `tabs.json` (tres idiomas).
+- **TabBar** (`components/organisms/TabBar.tsx`): píldora flotante con las 4 secciones (la activa con cápsula `tabActiveBg` e ícono relleno) y, fuera de la píldora, el botón circular **Cargar** (`fab-cargar`). Medidas en `sizes.tabBarHeight` y `sizes.fab`. `ScreenTemplate` deja el aire inferior para que la barra no tape nada.
 - **Cargar** no es una pestaña: el botón hace `router.push("/cargar")` y abre `LoadChatScreen`, un chat con la mascota elegida. Respuestas rápidas del primer mensaje, en este orden: **Gasto, Ingreso, Deuda o préstamo** y Resumen (todavía "pronto"). Podés escribir o grabar un audio (`useVoiceRecorder` con `expo-audio`; el audio queda en el hilo como burbuja con onda y play). `useLoadChat` manda eso a `useInterpretVoice` (`POST /api/plan/voice`; en `mock`, un intérprete local por palabras clave) y la mascota responde según el `VoiceOutcome` (contrato compartido en `src/lib/plan/voice.ts`): `notYet` pide que esperes, `chat` aclara que solo carga finanzas, `unclear` pide repetir; los errores reintentables se reintentan solos y los demás quedan reportados (`AppErrorReport`). Qué se carga por voz lo define `VOICE_SUPPORTED` (hoy ingreso y gasto).
   - **Tarjeta del borrador** (`DraftCard`): cuando la mascota arma algo (`draft`) **no se abre ningún formulario solo**. Muestra tipo (Ingreso/Gasto), nombre, monto, categoría, fecha (Hoy, Ayer, 5/11) y "Fijo", con dos botones: **Confirmar** (`draft-confirm`, guarda directo con `useAddEntry`; sin nombre usa el de la categoría) y **Editar** (`draft-edit`, abre el formulario). Si falta algo obligatorio (`isDraftComplete`: monto > 0 y nombre o categoría) no hay Confirmar: aparece "Falta el monto" y **Completar** (abre el formulario). Estados: guardando (spinner en Confirmar), guardado ✓, y si falla vuelve a pendiente con un aviso y la mascota pide reintentar.
   - **Formularios arriba del chat**: Gasto, Ingreso y Deuda (y Editar) se abren con `router.push` encima de `/cargar` con `chatRef=1`; el chat sigue montado con su hilo. Al guardar, `router.back()` vuelve al chat y la mascota lo cuenta (`incomeSaved`, `expenseSaved`, `debtSaved`); cerrar sin guardar también vuelve y la tarjeta queda pendiente. Abiertos desde otro lado (p. ej. "Agregar" en Deudas), los formularios se comportan como siempre.
   - **Formulario único de movimiento**: `features/entry/EntryForm.tsx` es el formulario reutilizable (no guarda: valida y devuelve `EntryFormValues` en `onSubmit`). Lo usan `NewEntryScreen` (rutas `/ingresos/nuevo` y `/gastos/nuevo`, con la integración del chat: `chatRef`, `draftId`, `conversation`) y las pantallas de gastos fijos. Props que cambian el formulario: `testIDPrefix` (`new-entry` o `fixed-form`), `mode` (`create` / `edit`), `fixedMode` (`optional`: interruptor "Es fijo"; `always`), `showDate`, `showNote`, `highlightMissing`. Con "fijo" agrega frecuencia (Mensual / Quincenal / Semanal), día de vencimiento (mensual) o día de la semana (semanal) y, en edición, "Aplicar también a los próximos meses" (la frecuencia y los días solo se editan si está activado). Para fijos el monto del formulario es **por vez**. Textos en `entry`. `NewEntryScreen` muestra "Escuché: …" solo si el borrador vino de un audio (`source: "audio"`).
   - El hilo vive en memoria (`features/load/conversation`: reducer puro con tests, store y `useLoadChat`) y se reinicia al cerrar Cargar. testIDs: `draft-card`, `draft-confirm`, `draft-edit`, `new-entry`, `new-entry-save`, `new-entry-amount`, `new-entry-name`, `new-entry-close`, `new-entry-heard`, `new-entry-category-<id>`.
-- **Presupuesto** (`app/presupuesto/index.tsx` → `BudgetScreen`): se abre desde el resumen de Inicio. Orden: título con volver, selector de mes, héroe **SIN ASIGNAR** (el Libre; si es negativo el monto sigue blanco sobre el azul y "Asignaste de más" va en una píldora danger-tint, porque el rojo no contrasta sobre el héroe), mensaje de la mascota (`budgetUnassigned` / `budgetBalanced` / `budgetOver`), acciones **Armar con {mascota}** (solo si el mes todavía no tiene presupuesto armado, o sea `assigned` en 0) y **Copiar de {mes}** (solo si hay presupuesto anterior y este mes no tiene), y secciones: **Ahorro primero** (tope, apartado, barra y metas del nido chiquitas), **Sale solo** (fijos, cuotas y tarjetas: cada línea es tocable; las categorías de fijos abren `/gastos-fijos?category=<id>`, "Deudas y préstamos" la pestaña Deudas y "Tarjetas de crédito" la pestaña Tarjetas), **Gastos del mes** (`BudgetRowCard` por categoría; tono ok/cerca/pasado y píldora con palabra) y **Agregar tope** (chips de categorías sin tope). Al final reusa "En qué se va el mes". testIDs: `budget`, `budget-hero`, `budget-hero-amount`, `budget-copy`, `budget-assist`, `budget-row-<categoryId>`, `budget-committed-<categoryId>`, `budget-add-<categoryId>`.
-  - **Resumen en Inicio** (`BudgetSummaryCard`, testID `budget-summary`): "Presupuesto de noviembre", barra de gastado vs presupuestado (solo variables), "Gastaste $ X de $ Y" y chip de aviso. Sin presupuesto: "Todavía no armaste…" y el botón **Armarlo**. Reemplaza a "En qué se va el mes", que quedó dentro de Presupuesto.
+- **Presupuesto** (`app/(tabs)/presupuesto.tsx` → `BudgetScreen`, pestaña): estilo "armar presupuesto". Orden: título (sin volver), selector de mes, `AllocationSummary` (**Disponible** = ingresos a la izquierda, **Por asignar** = el Libre a la derecha; si es negativo va en dangerInk con la píldora "Asignaste de más"; debajo la `AllocationBar` con un tramo por categoría con tope o gasto, ahorro primero, más "Sin asignar" en gris), mensaje de la mascota (`budgetUnassigned` / `budgetBalanced` / `budgetOver`; `budgetSaveError` si falló un guardado), acciones **Armar con {mascota}** y **Copiar de {mes}** (solo con el mes sin presupuesto), link **Gestionar categorías** (muestra las categorías sin tope; tocar una abre el modal Editar tope) y las secciones **Ahorro primero**, **Sale solo** y **Gastos del mes**, con `BudgetLineRow`: ícono en cuadrado con el color de su tramo (`CategoryBadge`), nombre, "gastado $ x de $ y" con barra fina, **cápsula con el tope editable en línea** (`AmountCapsule`) y **✕** para quitarlo. La edición usa teclado numérico, formato es-AR mientras escribís y guarda al confirmar (Listo) o al salir del campo; lo tipeado vive en la cápsula, así que no se pierde si la lista se redibuja. Es optimista (`useSaveBudgetLine`: el Libre y la barra se recalculan al instante); si falla, vuelve el valor anterior y la mascota avisa. Quitar un tope muestra un aviso con **Deshacer** (5 s, sin `Alert`). Las líneas de "Sale solo" muestran lo que sale solo (no editable) y siguen llevando a Gastos fijos / Deudas / Tarjetas. En un mes que no empezó todo es de solo lectura. Los colores salen de `categoryColorOrder(plan)` (`useCategoryColorOrder`): una categoría tiene el MISMO color en Presupuesto y en Gastos fijos. El reparto de la barra es el selector puro `budgetAllocation(view)`. testIDs: `budget`, `budget-hero`, `budget-hero-amount` (Por asignar), `budget-available-amount`, `budget-allocation`, `budget-copy`, `budget-assist`, `budget-manage`, `budget-row-<categoryId>`, `budget-amount-<categoryId>`, `budget-remove-<categoryId>`, `budget-committed-<categoryId>`, `budget-add-<categoryId>`, `undo-toast`.
+  - **Resumen en Inicio** (`BudgetSummaryCard`, testID `budget-summary`): "Presupuesto de noviembre", barra de gastado vs presupuestado (solo variables), "Gastaste $ X de $ Y" y chip de aviso. Sin presupuesto: "Todavía no armaste…" y el botón **Armarlo**. Reemplaza a "En qué se va el mes" (su lugar ahora lo ocupa la barra por categoría de Presupuesto).
   - **Editar tope** (`app/presupuesto/editar.tsx` → `EditBudgetScreen`, modal, params `period` y `categoryId`): monto con formato es-AR, sugerencias en chips ("Igual que octubre $ x", "Lo gastado $ y"), **Quitar tope** (monto 0) y **Guardar**. testIDs: `budget-edit`, `budget-edit-amount`, `budget-edit-save`, `budget-edit-remove`.
   - **Asistente** (`app/presupuesto/armar.tsx` → `BudgetAssistantScreen`, modal, param `period`): chat con la mascota, solo texto. Reusa `ChatThread`, `ChatTextBubble`, `QuickReplies` y `ChatComposer` (con `voice={false}`). El reducer es puro (`features/budget/assistant/reducer.ts`, con tests): intro, ahorro, cada variable con tope el mes anterior, con tope este mes o con gasto, "¿agregamos otra categoría?" (chips con las categorías sin tope y "No, listo") y resumen. En cada paso la mascota propone el tope del mes anterior (si no hay, lo gastado) y las respuestas son **Igual ($ x)**, **Cambiar** y **Saltar**; "Cambiar" (o escribir un monto directo) acepta "300 mil", "1,5 palos", "$ 450.000". El resumen es una tarjeta con las líneas y el Sin asignar que quedaría (`projectedFree`), con **Confirmar** (guarda todo con `useSaveBudget`; la mascota cierra con `budgetAssistDone`) y **Editar a mano** (cierra y queda la pantalla). Si falla el guardado vuelve al resumen con aviso. testIDs: `budget-assistant`, `assist-confirm`.
-- **Gastos fijos** (`app/gastos-fijos/index.tsx` → `FixedExpensesScreen`, pantalla de Stack con volver; se abre desde la tarjeta de Inicio y desde "Sale solo" de Presupuesto; params opcionales `period` y `category`, que sube y resalta esa categoría): título, selector de mes, héroe **GASTOS FIJOS DEL MES** con el total y "Pagaste $ x · falta $ y", mensaje de la mascota (`fixedAllPaid`; `fixedNextDue` si algo vence en 5 días o menos; si no `fixedPending`), aviso si el mes no empezó (solo lectura: sin check ni edición ni agregar), y un grupo por categoría (título con su total) con `FixedExpenseRow`: nombre, "vence el 10" / "todos los lunes" / "cada 15 días", monto (y "$ x por vez" si no es mensual) y un check grande para marcar pagado (`useToggleEntryDone`). Tocar la fila edita. Al pie, **Agregar gasto fijo**. testIDs: `fixed`, `fixed-hero-amount`, `fixed-row-<entryId|recurringId>`, `fixed-toggle-<id>`, `fixed-add`.
+- **Gastos fijos** (`app/gastos-fijos/index.tsx` → `FixedExpensesScreen`, pantalla de Stack con volver; se abre desde la tarjeta de Inicio y desde "Sale solo" de Presupuesto; params opcionales `period` y `category`, que sube y resalta esa categoría): título, selector de mes, héroe **GASTOS FIJOS DEL MES** con el total y "Pagaste $ x · falta $ y", una `AllocationBar` por categoría (mismos colores que Presupuesto), mensaje de la mascota (`fixedAllPaid`; `fixedNextDue` si algo vence en 5 días o menos; si no `fixedPending`), aviso si el mes no empezó (solo lectura: sin check ni edición ni agregar), y un grupo por categoría (título con su total) con `FixedExpenseRow`: ícono en cuadrado con el color de la categoría, nombre, "vence el 10" / "todos los lunes" / "cada 15 días" (y "· $ x por vez" si no es mensual), monto en una cápsula y un check grande para marcar pagado (`useToggleEntryDone`). Tocar la fila edita. Al pie, **Agregar gasto fijo**. testIDs: `fixed`, `fixed-hero-amount`, `fixed-row-<entryId|recurringId>`, `fixed-toggle-<id>`, `fixed-add`.
   - **Nuevo** (`app/gastos-fijos/nuevo.tsx` → `NewFixedScreen`, modal) y **Editar** (`app/gastos-fijos/editar.tsx` → `EditFixedScreen`, modal, params `entryId` y `period`): ambos usan `EntryForm` con `fixedMode="always"`, sin fecha ni nota. Editar permite cambiar nombre, monto por vez, moneda y **categoría** (chips de gasto) y trae el interruptor **Aplicar también a los próximos meses** (activo por defecto → `applyToRule: true`). Al pie: **Quitar solo de este mes** (`deleteEntry` `month`) y **Dejar de repetirlo** (`rule`, con confirmación en la misma pantalla, sin `Alert`). Al guardar o dejar de repetir, la mascota lo cuenta (`fixedSaved`, `fixedStopped`) un momento y se vuelve. testIDs: `fixed-form`, `fixed-form-save`, `fixed-form-amount`, `fixed-form-name`, `fixed-form-category-<id>`, `fixed-form-apply`, `fixed-form-remove-month`, `fixed-form-stop`, `fixed-form-stop-confirm`.
-- **Deudas** (`app/(tabs)/deudas.tsx` → `DebtsScreen`): Debo / Me deben, tarjetas, préstamos y terminados. "Agregar" abre `app/deudas/nueva.tsx` (`NewDebtScreen`, modal) con `?direction=OWE|OWED`.
+- **Deudas** (`app/deudas/index.tsx` → `DebtsScreen`, pantalla de Stack con volver): Debo / Me deben, tarjetas, préstamos y terminados. "Agregar" abre `app/deudas/nueva.tsx` (`NewDebtScreen`, modal) con `?direction=OWE|OWED`.
 - **Inicio**: la tarjeta **Gastos fijos** (`FixedProgressCard`, testID `fixed-card`, "3 de 7 pagados") es tocable entera (chevron) y abre `/gastos-fijos`. El header tiene la campana en el header (`AppHeader`). Va a `/notificaciones` y muestra el badge de `useNotificationBadge()`.
 - **Notificaciones** (`app/notificaciones.tsx` → `NotificationsScreen`) tiene dos secciones separadas: **Por confirmar** (arriba, `PendingConfirmCard`) y **Avisos** (abajo, `NoticeRow`).
-- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `deudas/nueva`, `ingresos/nuevo` y `gastos/nuevo` (modales), `presupuesto/index`, `presupuesto/editar` y `presupuesto/armar` (modales salvo el primero), `gastos-fijos/index`, `gastos-fijos/nuevo` y `gastos-fijos/editar` (modales salvo el primero), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
-- **Más**: modo Tranqui/Atrevido, mascota, idioma y, en modo `api`, cuenta y cierre de sesión.
+- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `deudas/nueva`, `ingresos/nuevo` y `gastos/nuevo` (modales), `tarjetas`, `deudas/index` y `movimientos/index` (pantallas con volver), `movimientos/editar` (modal), `presupuesto/editar` y `presupuesto/armar` (modales), `gastos-fijos/index`, `gastos-fijos/nuevo` y `gastos-fijos/editar` (modales salvo el primero), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
+- **Menú** (`app/(tabs)/menu.tsx` → `MenuScreen`): grilla de accesos redondos (`ShortcutTile`, testIDs `menu-shortcut-<key>`) desde `shortcuts.ts`; debajo, modo Tranqui/Atrevido, mascota, idioma y, en modo `api`, cuenta y cierre de sesión.
+- **Movimientos** (`app/movimientos/index.tsx` → `MovementsScreen`; `?kind=income|expense` fija el filtro inicial, `?period=YYYY-MM` el mes): título con volver, selector de mes, `SegmentedToggle` Todos / Ingresos / Gastos, buscador (nombre, categoría y nota, sin tildes), totales del filtro y la lista agrupada por día ("Hoy", "Ayer", "mar 3/11"), después **Próximos** (fecha futura y sin pagar, el que vence antes primero; la fila dice "vence el 08/11") y al final "Sin fecha" con `MovementRow` (ícono redondo por tipo, "categoría · fijo/cuota · pagado/pendiente", monto; ingresos con `+`). Las propuestas de un mes que no empezó se ven atenuadas y no se abren. Sin movimientos: `EmptyState` con la mascota y **Cargar**. El selector puro es `movementsView(plan, { kind, query })` (`src/data/movements.ts`, con tests; hook `useMovements(period, filter)`): totales en ARS que, como Inicio, no cuentan lo que me deben y todavía no cobré. testIDs: `movements`, `movements-filter`, `movements-search`, `movements-totals`, `movements-day-<fecha|undated>`, `movement-<id>`.
+  - **Editar** (`app/movimientos/editar.tsx` → `EditMovementScreen`, modal, params `entryId` y `period`): `EntryForm` en modo edición (`fixedMode="never"`: nombre, monto, moneda, categoría, fecha, nota; en un fijo, sin fecha y con "Aplicar también a los próximos meses"). **Borrar movimiento** pide confirmación en pantalla (en un fijo: solo este mes o dejar de repetirlo). Las cuotas de préstamos son de solo lectura con **Ver en Deudas**. testIDs: `movement-form`, `movement-form-save`, `movement-delete`, `movement-delete-confirm`, `movement-delete-month`, `movement-delete-rule`, `movement-go-debts`. `EntryPatch` ahora acepta `date`.
 
 ### Lógica centralizada
 

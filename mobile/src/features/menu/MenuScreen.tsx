@@ -1,18 +1,21 @@
 import { Pressable, View } from "react-native";
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Button, Icon, Pill, Surface, Text, VStack } from "../../components/atoms";
-import { ListRow, MascotAvatar, SectionHeader, SegmentedToggle } from "../../components/molecules";
+import { ListRow, MascotAvatar, SectionHeader, SegmentedToggle, ShortcutTile } from "../../components/molecules";
 import { ScreenTemplate } from "../../components/templates";
 import { REQUIRES_LOGIN } from "../../data";
+import { shortcuts } from "../../navigation";
 import { THEME_MODES, useTheme } from "../../design-system";
 import { SUPPORTED_ENABLED, SUPPORTED_LANGUAGES, currentLanguage } from "../../i18n";
 import { listMascots, useMascot, useMascotStory } from "../../mascots";
 import { useSession } from "../../../lib/session";
 
-/** Más: modo (Tranqui/Atrevido), mascota, idioma y —en modo api— cuenta y cierre de sesión. */
-export function MoreScreen() {
+/** Menú: accesos (de `navigation/shortcuts.ts`, los mismos de Inicio) y preferencias: modo, mascota, idioma y —en modo api— cuenta y cierre de sesión. */
+export function MenuScreen() {
   const { t } = useTranslation("more");
   const { t: tc } = useTranslation("common");
+  const { t: tn } = useTranslation("tabs");
   const { mode, setMode, space } = useTheme();
   const { mascotId, setMascotId } = useMascot();
   const story = useMascotStory();
@@ -24,6 +27,23 @@ export function MoreScreen() {
       <Text variant="screenTitle" accessibilityRole="header">
         {t("title")}
       </Text>
+
+      <VStack gap={3} testID="menu-shortcuts">
+        <SectionHeader title={t("shortcuts.title")} />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: space[4] }}>
+          {shortcuts.map((s) => (
+            <View key={s.key} style={{ width: "33.333%", alignItems: "center", paddingHorizontal: space[1] }}>
+              <ShortcutTile
+                testID={`menu-shortcut-${s.key}`}
+                icon={s.icon}
+                label={tn(s.labelKey)}
+                disabled={!s.available}
+                onPress={() => router.push(s.route)}
+              />
+            </View>
+          ))}
+        </View>
+      </VStack>
 
       <VStack gap={2}>
         <SectionHeader title={t("mode.title")} />

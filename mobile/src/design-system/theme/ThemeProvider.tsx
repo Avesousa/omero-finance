@@ -3,7 +3,7 @@ import { prefGet, prefSet } from "../../../lib/storage";
 import { radius } from "../tokens/radius";
 import { sizes } from "../tokens/sizes";
 import { spacing } from "../tokens/spacing";
-import { themes, THEME_MODES, type ThemeColors, type ThemeEffects, type ThemeMode } from "../tokens/themes";
+import { themes, THEME_MODES, type ThemeColors, type ThemeEffects, type ThemeGradients, type ThemeMode } from "../tokens/themes";
 import { typography } from "../tokens/typography";
 
 export const THEME_STORAGE_KEY = "omero_theme_mode";
@@ -15,6 +15,7 @@ export interface Theme {
   bold: boolean;
   colors: ThemeColors;
   effects: ThemeEffects;
+  gradients: ThemeGradients;
   type: typeof typography;
   space: typeof spacing;
   radius: typeof radius;
@@ -69,6 +70,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       bold: def.bold,
       colors: def.colors,
       effects: def.effects,
+      gradients: def.gradients,
       statusBar: def.statusBar,
       type: typography,
       space: spacing,

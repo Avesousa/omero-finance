@@ -1,15 +1,26 @@
 {
-  "hero": {
-    "label": "",
-    "perDay_one": "",
-    "perDay_other": "",
-    "toggleLabel": "",
-    "available": "",
-    "free": "",
-    "sticker": "",
-    "availableHint": "",
-    "summaryFree": "",
-    "summaryAvailable": ""
+  "balance": {
+    "title": "",
+    "hide": "",
+    "show": "",
+    "hiddenAmount": "",
+    "hint": "",
+    "holdingHint": "",
+    "dailyA11y": "",
+    "dailyA11yHidden": "",
+    "a11yHint": "",
+    "dailyLabel": "",
+    "monthFreeLabel": ""
+  },
+  "shortcuts": {
+    "label": ""
+  },
+  "cards": {
+    "income": "",
+    "expenses": "",
+    "incomeA11y": "",
+    "expensesA11y": "",
+    "open": ""
   },
   "income": "",
   "pendingToPay": "",

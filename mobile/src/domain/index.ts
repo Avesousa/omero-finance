@@ -52,6 +52,7 @@ export {
   frenchInstallment,
   isLoanFinished,
   isValidPeriod,
+  isReceivable,
   loanBalanceItem,
   loanDueDate,
   loanKind,

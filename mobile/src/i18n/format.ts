@@ -152,6 +152,18 @@ export function formatDate(input: string | Date, style: DateStyle = "short"): st
   }
 }
 
+/** Día con su día de la semana: "mar 3/11". Acepta 'YYYY-MM-DD' o Date. */
+export function formatWeekdayDate(input: string | Date): string {
+  const date = parseLocal(input);
+  const dm = `${date.getDate()}/${date.getMonth() + 1}`;
+  try {
+    const weekday = new Intl.DateTimeFormat(activeLocale(), { weekday: "short" }).format(date).replace(/\./g, "").replace(nbsp, " ").trim();
+    return `${weekday} ${dm}`;
+  } catch {
+    return dm;
+  }
+}
+
 /** Primera letra en mayúscula ("noviembre 2026" → "Noviembre 2026"). */
 export function capitalize(text: string): string {
   return text.charAt(0).toLocaleUpperCase(activeLocale()) + text.slice(1);

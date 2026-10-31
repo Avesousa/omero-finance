@@ -1,7 +1,7 @@
 import { Text as RNText, type TextProps as RNTextProps } from "react-native";
 import { useTheme, type ThemeColors, type TypeVariant } from "../../design-system";
 
-export type TextTone = "ink" | "inkMuted" | "primary" | "onPrimary" | "onAccent" | "onWarning" | "positiveInk" | "dangerInk";
+export type TextTone = "ink" | "inkMuted" | "primary" | "onPrimary" | "onAccent" | "onWarning" | "positiveInk" | "dangerInk" | "heroInk" | "heroInkMuted";
 
 export interface TextProps extends RNTextProps {
   /** Estilo tipográfico del DS (default `body`). */

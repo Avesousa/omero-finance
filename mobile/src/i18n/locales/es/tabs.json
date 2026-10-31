@@ -5,7 +5,16 @@
   "debts": "Deudas",
   "add": "Cargar",
   "wealth": "Patrimonio",
-  "more": "Más",
   "badge_one": "{{count}} pendiente",
-  "badge_other": "{{count}} pendientes"
+  "badge_other": "{{count}} pendientes",
+  "budget": "Presupuesto",
+  "menu": "Menú",
+  "shortcuts": {
+    "movements": "Movimientos",
+    "cards": "Tarjetas",
+    "debts": "Deudas",
+    "fixed": "Gastos fijos",
+    "accounts": "Cuentas",
+    "notifications": "Avisos"
+  }
 }

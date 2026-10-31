@@ -48,7 +48,7 @@ export function DebtsScreen() {
     }
   }, [qc, refetch]);
 
-  const header = <ScreenHeader title={sectionTitle} />;
+  const header = <ScreenHeader title={sectionTitle} onBack={() => router.back()} backLabel={tc("actions.back")} />;
   const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} /> : null;
 
   if (isPending) {
@@ -217,7 +217,7 @@ function DebtsBody({
           count={data.cards.count}
           amount={data.cards.debtArs}
           nextDue={data.cards.nextDue}
-          onPress={() => router.navigate("/tarjetas")}
+          onPress={() => router.push("/tarjetas")}
         />
       ) : null}
       {open.map(loanCard)}

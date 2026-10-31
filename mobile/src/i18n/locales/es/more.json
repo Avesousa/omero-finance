@@ -1,5 +1,9 @@
 {
-  "title": "Más",
+  "title": "Menú",
+  "shortcuts": {
+    "title": "Accesos",
+    "soon": "Pronto"
+  },
   "mode": {
     "title": "Modo",
     "tranqui": "Tranqui",

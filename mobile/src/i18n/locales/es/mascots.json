@@ -227,6 +227,10 @@
       "fixedStopped": {
         "tranqui": "Dejamos de contar {{name}}. Cuando haga falta, lo volvemos a cargar.",
         "atrevido": "{{name}} fuera del mes. Menos compromisos, más libertad."
+      },
+      "budgetSaveError": {
+        "tranqui": "No pude guardar ese cambio. Dejé el monto anterior; probá de nuevo.",
+        "atrevido": "Uy, no se guardó. Dejé el monto de antes: probalo otra vez."
       }
     },
     "actions": {

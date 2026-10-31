@@ -6,7 +6,8 @@ import {
   type EntryDTO,
   type MonthPlan,
 } from "../domain/index.ts";
-import type { HomeExtras, HomeSummary } from "./types";
+import { dailyAllowance } from "./selectors.ts";
+import type { HomeDefinitions, HomeExtras, HomeSummary } from "./types";
 
 /** Cuántas categorías se muestran sueltas en "En qué se va el mes"; el resto se junta en "Otros". */
 const SPENDING_SLICES = 5;
@@ -55,6 +56,23 @@ export function projectedPlan(plan: MonthPlan): MonthPlan {
 }
 
 /**
+ * Definiciones de Inicio (única fuente; ninguna pantalla las recalcula):
+ * - `balance` = lo que tenés hoy (`summary.availableArs`).
+ * - `perDay` = gasto diario = libre ÷ días que quedan (`dailyAllowance`).
+ * - `freeMonth` = libre del mes (`summary.freeArs`).
+ * - `monthIncome` = ingresos del mes; `monthExpenses` = lo que ya salió (`summary.paidArs`).
+ */
+export function homeDefinitions(h: Pick<HomeSummary, "balance" | "free" | "daysLeft" | "monthIncome" | "monthExpenses">): HomeDefinitions {
+  return {
+    balance: h.balance,
+    perDay: dailyAllowance(h.free, h.daysLeft),
+    freeMonth: h.free,
+    monthIncome: h.monthIncome,
+    monthExpenses: h.monthExpenses,
+  };
+}
+
+/**
  * Inicio derivado del plan del mes (`buildSummary`, la misma cuenta que la web). Lo que no sale del plan
  * (saludo, pagos de Apple Pay, historia del nido) llega en `extras`.
  * - `fixed` cuenta los gastos fijos del mes (con `recurringId`): pagados x de y y sus montos.
@@ -86,6 +104,9 @@ export function homeFromPlan(source: MonthPlan, extras: HomeExtras): HomeSummary
     today: plan.today,
     daysLeft: allowance?.daysLeft ?? 0,
     income: s.incomeArs,
+    balance: s.availableArs,
+    monthIncome: s.incomeArs,
+    monthExpenses: s.paidArs,
     available: s.availableArs,
     free: s.freeArs,
     pendingToPay: s.pendingArs,

@@ -3,11 +3,14 @@ import { useTheme } from "../design-system";
 import { useMascot } from "../mascots";
 import type { SectionKey } from "./sections";
 
+/** Además de las pestañas, `cards` y `debts` (pantallas de Stack) tienen título propio en `tabs.json`. */
+export type TitleKey = SectionKey | "cards" | "debts";
+
 /**
  * Nombre corto de una sección (barra de navegación). Todo sale de `tabs.json`, salvo Patrimonio
  * en Atrevido: nombre corto del lugar de la mascota (`mascots:<id>.nest.short`).
  */
-export function useSectionLabel(key: SectionKey): string {
+export function useSectionLabel(key: TitleKey): string {
   const { mode } = useTheme();
   const { mascotId } = useMascot();
   const { t } = useTranslation(["tabs", "mascots"]);
@@ -17,7 +20,7 @@ export function useSectionLabel(key: SectionKey): string {
 }
 
 /** Título de pantalla de una sección. Atrevido + Patrimonio: `mascots:<id>.nest.title`; el resto = label. */
-export function useSectionTitle(key: SectionKey): string {
+export function useSectionTitle(key: TitleKey): string {
   const { mode } = useTheme();
   const { mascotId } = useMascot();
   const { t } = useTranslation("mascots");

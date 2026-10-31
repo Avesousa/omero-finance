@@ -5,7 +5,16 @@
   "debts": "",
   "add": "",
   "wealth": "",
-  "more": "",
   "badge_one": "",
-  "badge_other": ""
+  "badge_other": "",
+  "budget": "",
+  "menu": "",
+  "shortcuts": {
+    "movements": "",
+    "cards": "",
+    "debts": "",
+    "fixed": "",
+    "accounts": "",
+    "notifications": ""
+  }
 }

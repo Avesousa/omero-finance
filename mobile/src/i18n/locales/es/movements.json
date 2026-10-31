@@ -1,0 +1,73 @@
+{
+  "title": "Movimientos",
+  "back": "Volver",
+  "close": "Cerrar",
+  "filter": {
+    "label": "Tipo de movimiento",
+    "all": "Todos",
+    "income": "Ingresos",
+    "expense": "Gastos"
+  },
+  "search": {
+    "label": "Buscar movimientos",
+    "placeholder": "Buscar por nombre o categoría",
+    "clear": "Borrar búsqueda"
+  },
+  "day": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "undated": "Sin fecha",
+    "upcoming": "Próximos"
+  },
+  "row": {
+    "uncategorized": "Sin categoría",
+    "fixed": "fijo",
+    "installment": "cuota",
+    "paid": "pagado",
+    "pending": "pendiente",
+    "collected": "cobrado",
+    "toCollect": "por cobrar",
+    "income": "Ingreso",
+    "expense": "Gasto",
+    "edit": "Editar {{name}}",
+    "installmentHint": "Es una cuota: se gestiona en Deudas",
+    "proposed": "todavía no cargado",
+    "due": "vence el {{date}}"
+  },
+  "totals": {
+    "all": "Ingresos {{income}} · Gastos {{expenses}}",
+    "income": "Ingresos {{income}}",
+    "expense": "Gastos {{expenses}}",
+    "count_one": "{{count}} movimiento",
+    "count_other": "{{count}} movimientos"
+  },
+  "state": {
+    "loading": "Cargando movimientos",
+    "errorTitle": "No pude cargar los movimientos",
+    "errorBody": "Revisá tu conexión y probá de nuevo.",
+    "emptyTitle": "Todavía no hay movimientos",
+    "emptyBody": "Cuando cargues un ingreso o un gasto, lo vas a ver acá.",
+    "emptyAction": "Cargar",
+    "noResultsTitle": "No encontré nada",
+    "noResultsBody": "Probá con otra búsqueda o cambiá el filtro."
+  },
+  "edit": {
+    "title": "Editar movimiento",
+    "save": "Guardar",
+    "error": "No pude guardar. Probá de nuevo.",
+    "notFoundTitle": "No encontré este movimiento",
+    "notFoundBody": "Puede que ya se haya borrado.",
+    "installmentTitle": "Es una cuota de un préstamo",
+    "installmentBody": "Las cuotas se ven y se pagan desde Deudas.",
+    "goToDebts": "Ver en Deudas",
+    "delete": "Borrar movimiento",
+    "deleteTitle": "¿Borrar {{name}}?",
+    "deleteBody": "Se quita de este mes y no se puede deshacer.",
+    "deleteConfirm": "Sí, borrar",
+    "deleteMonth": "Solo de este mes",
+    "deleteRule": "Borrar y dejar de repetirlo",
+    "deleteRuleBody": "Es un movimiento fijo: podés borrarlo solo de este mes o dejar de repetirlo en los próximos.",
+    "cancel": "Cancelar",
+    "deleteError": "No pude borrarlo. Probá de nuevo."
+  }
+}

@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, type ScrollViewInstance } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSectionTitle } from "../../navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,6 +22,10 @@ import { equityRatio, goalProgress, itemShare, nestStage, toArs, useWealth, weal
 import type { Currency, WealthItem } from "../../data/types";
 import { formatMoney } from "../../i18n/format";
 import { useMascotNest } from "../../mascots";
+import { useTheme } from "../../design-system";
+
+/** Cuánto queda resaltada la sección a la que se llegó con `?focus=assets`. */
+const FOCUS_MS = 2500;
 
 function iconFor(item: WealthItem): IconName {
   if (item.source === "loan") return "business-outline";
@@ -37,6 +43,21 @@ export function WealthScreen() {
   const nestName = useMascotNest().name;
   const [currency, setCurrency] = useState<Currency>("ARS");
   const [refreshing, setRefreshing] = useState(false);
+
+  // `?focus=assets` (acceso Cuentas): baja hasta "Lo que tenés" y la resalta un momento.
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
+  const { colors, radius, sizes } = useTheme();
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const [assetsY, setAssetsY] = useState<number | null>(null);
+  const [highlight, setHighlight] = useState(false);
+  const loaded = !isPending && !isError;
+  useEffect(() => {
+    if (focus !== "assets" || !loaded || assetsY == null) return;
+    scrollRef.current?.scrollTo({ y: Math.max(assetsY - sizes.touch, 0), animated: true });
+    setHighlight(true);
+    const timer = setTimeout(() => setHighlight(false), FOCUS_MS);
+    return () => clearTimeout(timer);
+  }, [focus, loaded, assetsY, sizes.touch]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -147,21 +168,31 @@ export function WealthScreen() {
   const params = moment === "wealthUp" ? { amount: formatMoney(rounded, currency) } : undefined;
 
   return (
-    <ScreenTemplate header={header} testID="wealth" refreshing={refreshing} onRefresh={onRefresh}>
+    <ScreenTemplate header={header} testID="wealth" scrollRef={scrollRef} refreshing={refreshing} onRefresh={onRefresh}>
       <WealthHero net={view.net} assets={view.assets} debts={view.debts} currency={currency} delta={delta} />
       <MascotMessage moment={moment} params={params} />
       <NestCard chapter={view.stage.chapter} progress={view.stage.progress} equity={view.stage.equity} />
       {view.goals.length > 0 ? <GoalsCard goals={view.goals} /> : null}
       <WealthTrendCard history={view.history} currency={currency} />
-      <WealthGroupCard
-        testID="wealth-assets"
-        title={t("assets.title")}
-        kind="asset"
-        total={view.assets}
-        currency={currency}
-        rows={view.assetRows}
-        emptyText={t("state.emptyGroup")}
-      />
+      <View
+        testID="wealth-assets-focus"
+        onLayout={(e) => setAssetsY(e.nativeEvent.layout.y)}
+        style={{
+          borderRadius: radius.card,
+          borderWidth: sizes.ring,
+          borderColor: highlight ? colors.tabActive : "transparent",
+        }}
+      >
+        <WealthGroupCard
+          testID="wealth-assets"
+          title={t("assets.title")}
+          kind="asset"
+          total={view.assets}
+          currency={currency}
+          rows={view.assetRows}
+          emptyText={t("state.emptyGroup")}
+        />
+      </View>
       <WealthGroupCard
         testID="wealth-debts"
         title={t("debts.title")}

@@ -1,12 +1,13 @@
 import { useCallback } from "react";
 import { AppState, Platform } from "react-native";
 import { focusManager, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { VoiceOutcome } from "../domain";
+import type { MonthPlan, VoiceOutcome } from "../domain";
 import { dataSource, DATA_SOURCE } from "./sources";
 import { notificationBadgeCount } from "./selectors";
 import { AppError, reportAppError, toAppError } from "./errors";
-import { budgetView, previousBudgetItems } from "./budget";
+import { budgetView, categoryColorOrder, previousBudgetItems, withBudgetItems } from "./budget";
 import { fixedExpensesView } from "./fixed";
+import { movementsView, type MovementsFilter } from "./movements";
 import type { BudgetItem, EntryKind, EntryPatch, NewEntryInput, NewLoanInput, VoiceInput } from "./types";
 
 export { DATA_SOURCE, VOICE_SOURCE, REQUIRES_LOGIN } from "./sources";
@@ -15,6 +16,7 @@ export * from "./selectors";
 export * from "./budget";
 export * from "./plan";
 export * from "./fixed";
+export * from "./movements";
 export { AppError, reportAppError, toAppError } from "./errors";
 export type { AppErrorCode } from "./errors";
 
@@ -72,6 +74,39 @@ export function useSaveBudget() {
   return useMutation({
     mutationFn: ({ period, items }: { period: string; items: BudgetItem[] }) => dataSource.saveBudget(period, items),
     onSuccess: refresh,
+  });
+}
+
+/** Orden de categorías para sus colores (`categoryColorOrder`): igual en Presupuesto y Gastos fijos. Comparte la query del plan. */
+export function useCategoryColorOrder(period?: string): string[] {
+  const { data } = useQuery({ queryKey: queryKeys.plan(period), queryFn: () => dataSource.getPlan(period), select: categoryColorOrder });
+  return data ?? [];
+}
+
+/**
+ * Mutación para editar el tope de UNA categoría en línea (`{ period, categoryId, amount }`; 0 lo quita). Es optimista:
+ * aplica el cambio al plan en cache al instante (el Libre y la barra se recalculan solos) y, si falla, devuelve el
+ * valor anterior. Refresca contra el servidor cuando termina la última edición en curso.
+ */
+export function useSaveBudgetLine() {
+  const qc = useQueryClient();
+  const refresh = useRefreshBudget();
+  return useMutation({
+    mutationKey: ["budget-line"],
+    mutationFn: ({ period, categoryId, amount }: { period: string; categoryId: string; amount: number }) =>
+      dataSource.saveBudget(period, [{ categoryId, amount }]),
+    onMutate: async ({ period, categoryId, amount }) => {
+      void qc.cancelQueries({ queryKey: ["plan"] });
+      const previous = qc.getQueriesData<MonthPlan>({ queryKey: ["plan"] });
+      for (const [key, plan] of previous) {
+        if (plan && plan.period === period) qc.setQueryData<MonthPlan>(key, withBudgetItems(plan, [{ categoryId, amount }]));
+      }
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      for (const [key, plan] of context?.previous ?? []) qc.setQueryData(key, plan);
+    },
+    onSettled: () => (qc.isMutating({ mutationKey: ["budget-line"] }) <= 1 ? refresh() : undefined),
   });
 }
 
@@ -222,6 +257,13 @@ export function useAddEntry() {
 /** Gastos fijos del mes listos para mostrar (`fixedExpensesView`). Comparte la query del plan: un solo pedido. */
 export function useFixedExpenses(period?: string) {
   return useQuery({ queryKey: queryKeys.plan(period), queryFn: () => dataSource.getPlan(period), select: fixedExpensesView });
+}
+
+/** Movimientos del mes filtrados (`movementsView`). Comparte la query del plan: un solo pedido. */
+export function useMovements(period?: string, filter: MovementsFilter = {}) {
+  const { kind, query } = filter;
+  const select = useCallback((plan: MonthPlan) => movementsView(plan, { kind, query }), [kind, query]);
+  return useQuery({ queryKey: queryKeys.plan(period), queryFn: () => dataSource.getPlan(period), select });
 }
 
 /** Mutación: editar un movimiento (`{ id, patch }`). Refresca plan, Inicio, avisos y patrimonio. */
