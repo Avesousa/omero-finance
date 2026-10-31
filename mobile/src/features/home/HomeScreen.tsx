@@ -41,7 +41,13 @@ export function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetch(), budget.refetch(), qc.invalidateQueries({ queryKey: ["notifications"] })]);
+      // Mínimo de 700 ms: con datos locales responde al instante y el indicador no llegaría a verse.
+      await Promise.all([
+        refetch(),
+        budget.refetch(),
+        qc.invalidateQueries({ queryKey: ["notifications"] }),
+        new Promise((r) => setTimeout(r, 700)),
+      ]);
     } finally {
       setRefreshing(false);
     }

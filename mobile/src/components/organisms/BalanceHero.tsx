@@ -34,6 +34,8 @@ export interface BalanceHeroProps {
 
 /** Tiempo de presión para pasar de "Hoy podés gastar" a "Libre del mes". */
 const HOLD_MS = 300;
+/** Alto de la extensión del degradé hacia arriba (cubre el rebote al arrastrar). */
+const OVERSCROLL = 1200;
 /** Un toque simple muestra el libre del mes este rato y vuelve solo. */
 const PEEK_MS = 2500;
 
@@ -110,6 +112,11 @@ export function BalanceHero({
         colors={gradients.hero.colors as unknown as [string, string, ...string[]]}
         locations={gradients.hero.locations as unknown as [number, number, ...number[]]}
         style={StyleSheet.absoluteFill}
+      />
+      {/* Al arrastrar para actualizar, el scroll "rebota" y deja un hueco arriba: lo cubrimos con el primer color del degradé para que el fondo se mueva con todo. */}
+      <View
+        pointerEvents="none"
+        style={{ position: "absolute", top: -OVERSCROLL, left: 0, right: 0, height: OVERSCROLL, backgroundColor: gradients.hero.colors[0] }}
       />
 
       <View style={{ height: sizes.header, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
