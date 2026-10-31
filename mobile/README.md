@@ -41,7 +41,7 @@ Para probar la interpretación sin la app: `npm run voice:try -- "cobré 45 mil 
 Tests y tipos:
 
 ```bash
-npm test            # node:test sobre src/data/__tests__/*.test.ts
+npm test            # node:test sobre src/data, features/load (conversación) y features/budget (asistente)
 npx tsc --noEmit   # tiene que salir sin errores
 ```
 
@@ -63,6 +63,9 @@ mobile/
     deudas/nueva.tsx          Modal Nueva deuda o préstamo.
     ingresos/nuevo.tsx        Modal Nuevo ingreso (NewEntryScreen kind="INCOME").
     gastos/nuevo.tsx          Modal Nuevo gasto (NewEntryScreen kind="EXPENSE").
+    presupuesto/index.tsx     Presupuesto del mes (pantalla de Stack, con volver).
+    presupuesto/editar.tsx    Modal Editar tope de una categoría.
+    presupuesto/armar.tsx     Modal Asistente de presupuesto (chat con la mascota).
     notificaciones.tsx        Notificaciones.
     login.tsx                 Login (solo modo api).
   src/
@@ -75,7 +78,7 @@ mobile/
     mascots/                  Mascotas: dibujos SVG, registro, provider y hooks de frases.
     i18n/                     i18next, locales por idioma y namespace, formateadores.
     data/                     DataSource (mock y api), hooks de React Query, selectores puros y tests.
-    features/                 Pantallas que conectan datos y organisms: home, notifications, more, placeholders.
+    features/                 Pantallas que conectan datos y organisms: home, budget, cards, wealth, debts, load, entry, notifications, more.
     providers/                AppProviders: i18n, React Query, sesión, tema y mascota.
   lib/                        Heredado: cliente HTTP (api.ts), sesión, storage (AsyncStorage) y tipos del backend.
   assets/                     Íconos y splash.
@@ -229,7 +232,7 @@ Todo texto visible sale de i18n. Sin strings hardcodeadas.
 
 **Namespaces y archivos**
 
-Los namespaces son `common`, `tabs`, `home`, `notifications`, `more`, `mascots`, `cards`, `wealth` y `debts` (`src/i18n/resources.ts`). Cada uno es un JSON por idioma en `src/i18n/locales/<idioma>/<namespace>.json`. El namespace por defecto es `common`.
+Los namespaces son `common`, `tabs`, `home`, `notifications`, `more`, `mascots`, `cards`, `wealth`, `debts`, `entry`, `load` y `budget` (`src/i18n/resources.ts`). Cada uno es un JSON por idioma en `src/i18n/locales/<idioma>/<namespace>.json`. El namespace por defecto es `common`.
 
 - `common`: acciones, estados, login, textos de "Próximamente", `app.name`.
 - `tabs`: nombres de pestañas.
@@ -237,6 +240,7 @@ Los namespaces son `common`, `tabs`, `home`, `notifications`, `more`, `mascots`,
 - `notifications`: "Por confirmar", "Avisos", fechas relativas.
 - `more`: modo, mascota, idioma, cuenta.
 - `mascots`: nombres, historias y frases de las mascotas.
+- `budget`: Presupuesto (resumen de Inicio, pantalla, editar tope y asistente).
 
 Uso:
 
@@ -287,6 +291,8 @@ Las pantallas nunca usan el mock directo: usan hooks de `src/data`.
 ```ts
 interface DataSource {
   getHome(period?: string): Promise<HomeSummary>;   // period 'YYYY-MM'; default el actual
+  getPlan(period?: string): Promise<MonthPlan>;      // todo lo del mes (= GET /api/plan/data)
+  saveBudget(period: string, items: BudgetItem[]): Promise<void>;  // = PUT /api/plan/budget; monto 0 quita la línea
   getPendingPayments(): Promise<PendingPayment[]>;
   getNotifications(): Promise<AppNotifications>;     // { pending, notices }
   confirmPayment(id: string, amount?: number): Promise<void>;
@@ -298,10 +304,17 @@ interface DataSource {
 
 Los tipos (`src/data/types.ts`): `HomeSummary`, `SpendingCategory`, `FixedProgress`, `PendingPayment`, `AppNotice`, `AppNotifications`.
 
+**Datos del mes: una sola fuente, la de la web.** Todo lo del mes sale de `MonthPlan` (`src/domain/monthPlan.ts`): el subconjunto de `PlanData` (web, `src/lib/plan/server.ts`) que usa la app, o sea la respuesta de `GET /api/plan/data` (período, categorías, fijos, movimientos, topes del mes y del anterior, tarjetas, resúmenes, compras y préstamos). Las cuentas las hace `buildSummary` (`src/lib/plan/core.ts`, re-exportada en `src/domain`) con el método de la web: tope por categoría de gasto y por mes, y el **Libre** descuenta de cada categoría lo que falta gastar del tope o lo que falta pagar de lo ya cargado. La app no recalcula nada aparte:
+
+- Inicio se deriva del plan con `homeFromPlan(plan, extras)` (`src/data/plan.ts`): ingresos, disponible, libre, pendiente, "fijos pagados x de y". Lo que no sale del plan (saludo, pendientes de Apple Pay, historia del nido) entra por `extras`. En `mock`, cargar un ingreso o gasto agrega el movimiento al plan y todo se recalcula; en `api`, `getHome` se arma desde `getPlan`.
+- Presupuesto se deriva con `budgetView(plan)` (`src/data/budget.ts`): `summary`, `free`, `income`, `assigned`, `savings` (la categoría "Ahorro e inversión", siempre primero), `committed` (lo que sale solo: fijos, cuotas y tarjetas), `variable`, `withoutBudget`, `canCopyPrevious`, `previousPeriod`, `counts` y `variableTotals`. Más selectores puros: `suggestedBudget`, `assistantTargets`, `withBudgetItems` / `projectedFree`, `previousBudgetItems` y `budgetNotices` (avisos "cerca del tope" / "te pasaste" en Notificaciones).
+- Hooks: `usePlan(period)`, `useBudget(period)` (misma query que el plan), `useSaveBudget()` (`{ period, items }`) y `useCopyPreviousBudget()` (`{ period }`). Al guardar invalidan plan, Inicio y avisos.
+- El parser de montos dichos o escritos ("300 mil", "1,5 palos") es `parseSpokenAmount` (`src/domain/amountText.ts`); lo usan la voz en `mock` y el asistente.
+
 **Elección de fuente** (`src/data/sources/index.ts`): `DATA_SOURCE` es `"api"` si `EXPO_PUBLIC_DATA_SOURCE === "api"`; si no, `"mock"`.
 
 - `mock.ts`: datos del diseño (noviembre 2026, quedan 27 días, ingresos 3.500.000, etc.). Tiene 300 ms de latencia y el estado vive en memoria: confirmar un pago lo saca de la lista. `confirmPayment` ignora `amount`.
-- `api.ts`: `getPendingPayments` y `getNotifications` llaman a `GET /api/plan/inbox` (cliente de `lib/api.ts`). `getNotifications` devuelve `notices: []`. `getHome` y `confirmPayment` tiran `NotImplementedError` hasta que se implementen.
+- `api.ts`: `getPendingPayments` y `getNotifications` llaman a `GET /api/plan/inbox` (cliente de `lib/api.ts`). `getNotifications` devuelve `notices: []`. `getPlan`, `saveBudget` y `getHome` (derivado del plan) usan `GET /api/plan/data` y `PUT /api/plan/budget`; `confirmPayment` y el resto tiran `NotImplementedError` hasta que se implementen.
 
 **Hooks** (`src/data/index.ts`, React Query):
 
@@ -335,10 +348,14 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
   - **Formularios arriba del chat**: Gasto, Ingreso y Deuda (y Editar) se abren con `router.push` encima de `/cargar` con `chatRef=1`; el chat sigue montado con su hilo. Al guardar, `router.back()` vuelve al chat y la mascota lo cuenta (`incomeSaved`, `expenseSaved`, `debtSaved`); cerrar sin guardar también vuelve y la tarjeta queda pendiente. Abiertos desde otro lado (p. ej. "Agregar" en Deudas), los formularios se comportan como siempre.
   - **Formulario único de movimiento** (`features/entry/NewEntryScreen.tsx`, textos en el namespace `entry` con variantes por tipo): rutas `/ingresos/nuevo` y `/gastos/nuevo`. Muestra "Escuché: …" solo si el borrador vino de un audio (`source: "audio"`).
   - El hilo vive en memoria (`features/load/conversation`: reducer puro con tests, store y `useLoadChat`) y se reinicia al cerrar Cargar. testIDs: `draft-card`, `draft-confirm`, `draft-edit`, `new-entry`, `new-entry-save`, `new-entry-amount`, `new-entry-name`, `new-entry-close`, `new-entry-heard`.
+- **Presupuesto** (`app/presupuesto/index.tsx` → `BudgetScreen`): se abre desde el resumen de Inicio. Orden: título con volver, selector de mes, héroe **SIN ASIGNAR** (el Libre; si es negativo el monto sigue blanco sobre el azul y "Asignaste de más" va en una píldora danger-tint, porque el rojo no contrasta sobre el héroe), mensaje de la mascota (`budgetUnassigned` / `budgetBalanced` / `budgetOver`), acciones **Armar con {mascota}** y **Copiar de {mes}** (solo si hay presupuesto anterior y este mes no tiene), y secciones: **Ahorro primero** (tope, apartado, barra y metas del nido chiquitas), **Sale solo** (fijos, cuotas y tarjetas: sin edición, tocar explica de dónde sale), **Gastos del mes** (`BudgetRowCard` por categoría; tono ok/cerca/pasado y píldora con palabra) y **Agregar tope** (chips de categorías sin tope). Al final reusa "En qué se va el mes". testIDs: `budget`, `budget-hero`, `budget-hero-amount`, `budget-copy`, `budget-assist`, `budget-row-<categoryId>`, `budget-add-<categoryId>`.
+  - **Resumen en Inicio** (`BudgetSummaryCard`, testID `budget-summary`): "Presupuesto de noviembre", barra de gastado vs presupuestado (solo variables), "Gastaste $ X de $ Y" y chip de aviso. Sin presupuesto: "Todavía no armaste…" y el botón **Armarlo**. Reemplaza a "En qué se va el mes", que quedó dentro de Presupuesto.
+  - **Editar tope** (`app/presupuesto/editar.tsx` → `EditBudgetScreen`, modal, params `period` y `categoryId`): monto con formato es-AR, sugerencias en chips ("Igual que octubre $ x", "Lo gastado $ y"), **Quitar tope** (monto 0) y **Guardar**. testIDs: `budget-edit`, `budget-edit-amount`, `budget-edit-save`, `budget-edit-remove`.
+  - **Asistente** (`app/presupuesto/armar.tsx` → `BudgetAssistantScreen`, modal, param `period`): chat con la mascota, solo texto. Reusa `ChatThread`, `ChatTextBubble`, `QuickReplies` y `ChatComposer` (con `voice={false}`). El reducer es puro (`features/budget/assistant/reducer.ts`, con tests): intro, ahorro, cada variable con tope el mes anterior, con tope este mes o con gasto, "¿agregamos otra categoría?" (chips con las categorías sin tope y "No, listo") y resumen. En cada paso la mascota propone el tope del mes anterior (si no hay, lo gastado) y las respuestas son **Igual ($ x)**, **Cambiar** y **Saltar**; "Cambiar" (o escribir un monto directo) acepta "300 mil", "1,5 palos", "$ 450.000". El resumen es una tarjeta con las líneas y el Sin asignar que quedaría (`projectedFree`), con **Confirmar** (guarda todo con `useSaveBudget`; la mascota cierra con `budgetAssistDone`) y **Editar a mano** (cierra y queda la pantalla). Si falla el guardado vuelve al resumen con aviso. testIDs: `budget-assistant`, `assist-confirm`.
 - **Deudas** (`app/(tabs)/deudas.tsx` → `DebtsScreen`): Debo / Me deben, tarjetas, préstamos y terminados. "Agregar" abre `app/deudas/nueva.tsx` (`NewDebtScreen`, modal) con `?direction=OWE|OWED`.
 - **Inicio** tiene la campana en el header (`AppHeader`). Va a `/notificaciones` y muestra el badge de `useNotificationBadge()`.
 - **Notificaciones** (`app/notificaciones.tsx` → `NotificationsScreen`) tiene dos secciones separadas: **Por confirmar** (arriba, `PendingConfirmCard`) y **Avisos** (abajo, `NoticeRow`).
-- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `deudas/nueva`, `ingresos/nuevo` y `gastos/nuevo` (modales), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
+- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `deudas/nueva`, `ingresos/nuevo` y `gastos/nuevo` (modales), `presupuesto/index`, `presupuesto/editar` y `presupuesto/armar` (modales salvo el primero), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
 - **Más**: modo Tranqui/Atrevido, mascota, idioma y, en modo `api`, cuenta y cierre de sesión.
 
 ### Lógica centralizada
@@ -352,6 +369,7 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 
 - **Cargar**: Resumen de tarjeta muestra "pronto". Por voz se cargan Ingreso y Gasto (deuda por voz es lo próximo). En `mock`, con audio se usa un texto de ejemplo; escribí `error` o `error fatal` para probar los errores.
 - **Confirmar un pago** en `mock` ignora la categoría y el monto: el flujo de categoría llega con Cargar.
-- **Fuente `api`**: solo implementa pagos por confirmar. `getHome` tira error, así que en modo `api` Inicio muestra el estado de error.
+- **Presupuesto**: el asistente es solo texto (sin micrófono); lo comprometido no se edita desde la app.
+- **Fuente `api`**: implementa pagos por confirmar, `getPlan`, `saveBudget` y `getHome` (derivado del plan); tarjetas, patrimonio y deudas siguen sin implementar.
 - **Selector de idioma** no implementado (ver sección 5).
 - **Dispositivo físico**: la app todavía no fue probada en un teléfono real, solo en Expo Go.

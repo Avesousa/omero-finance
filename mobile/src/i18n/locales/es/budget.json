@@ -1,0 +1,131 @@
+{
+  "title": "Presupuesto",
+  "back": "Volver",
+  "summary": {
+    "title": "Presupuesto de {{month}}",
+    "spent": "Gastaste {{spent}} de {{budget}}",
+    "near_one": "{{count}} cerca del tope",
+    "near_other": "{{count}} cerca del tope",
+    "over_one": "{{count}} te pasaste",
+    "over_other": "{{count}} te pasaste",
+    "empty": "Todavía no armaste el presupuesto de {{month}}",
+    "emptyCta": "Armarlo",
+    "open": "Ver el presupuesto de {{month}}",
+    "progress": "Gastado del presupuesto de gastos: {{percent}}",
+    "spentNoCap": "Gastaste {{spent}} · todavía sin topes de gasto"
+  },
+  "projected": {
+    "notice": "{{month}} todavía no empezó: los ingresos y fijos son los que se repiten cada mes."
+  },
+  "hero": {
+    "label": "SIN ASIGNAR",
+    "over": "Asignaste de más",
+    "income": "Ingresos {{amount}}",
+    "assigned": "Asignado {{amount}}"
+  },
+  "actions": {
+    "assist": "Armar con {{name}}",
+    "copy": "Copiar de {{month}}",
+    "copying": "Copiando…",
+    "copyError": "No pudimos copiar el presupuesto. Probá de nuevo."
+  },
+  "savings": {
+    "title": "Ahorro primero",
+    "hint": "Lo primero que se aparta del mes.",
+    "of": "{{actual}} apartados de {{budget}}",
+    "empty": "Todavía no definiste cuánto apartar este mes.",
+    "define": "Definir ahorro",
+    "edit": "Cambiar el tope de ahorro",
+    "goals": "Metas del nido",
+    "goalOf": "{{saved}} de {{target}}",
+    "goalProgress": "{{name}}: {{percent}}"
+  },
+  "committed": {
+    "title": "Sale solo",
+    "hint": "Fijos, cuotas y tarjetas: el monto se arma solo cada mes.",
+    "paid": "{{paid}} de {{total}} pagados",
+    "withCap": "Tope {{amount}}",
+    "explainFixed": "Sale de tus gastos fijos y de las cuotas de préstamos cargados en el mes. Para cambiarlo, editá el gasto fijo o la deuda.",
+    "explainCards": "Sale de los resúmenes de tus tarjetas y de las cuotas del mes. Para cambiarlo, andá a Tarjetas.",
+    "toggle": "Ver de dónde sale {{name}}"
+  },
+  "variable": {
+    "title": "Gastos del mes",
+    "of": "{{spent}} de {{budget}}",
+    "noCap": "{{spent}} gastados · sin tope",
+    "empty": "Todavía no hay topes para los gastos del mes.",
+    "edit": "Editar el tope de {{name}}",
+    "progress": "{{name}}: {{percent}} del tope"
+  },
+  "status": {
+    "ok": "Va bien",
+    "near": "Cerca del tope",
+    "over": "Te pasaste",
+    "unbudgeted": "Sin tope",
+    "unused": "Sin gastos"
+  },
+  "add": {
+    "title": "Agregar tope",
+    "hint": "Categorías que todavía no tienen tope este mes.",
+    "chip": "Agregar tope a {{name}}"
+  },
+  "state": {
+    "loading": "Cargando el presupuesto",
+    "errorTitle": "No pudimos cargar el presupuesto",
+    "errorBody": "Revisá tu conexión y volvé a intentar."
+  },
+  "edit": {
+    "title": "Tope de {{name}}",
+    "subtitle": "Para {{month}}",
+    "amount": "Tope del mes",
+    "amountPlaceholder": "0",
+    "suggestions": "Sugerencias",
+    "samePrevious": "Igual que {{month}} {{amount}}",
+    "spent": "Lo gastado {{amount}}",
+    "remove": "Quitar tope",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "close": "Cerrar",
+    "error": "No pudimos guardar el tope. Probá de nuevo.",
+    "invalid": "Poné un monto mayor a cero.",
+    "notFound": "No encontramos esa categoría."
+  },
+  "assistant": {
+    "title": "Armar el presupuesto",
+    "with": "Con {{name}}",
+    "close": "Cerrar",
+    "placeholder": "Escribí el monto, ej. 300 mil",
+    "inputLabel": "Monto para {{name}}",
+    "replies": "Respuestas rápidas",
+    "same": "Igual ({{amount}})",
+    "spent": "Lo gastado ({{amount}})",
+    "change": "Cambiar",
+    "skip": "Saltar",
+    "done": "No, listo",
+    "said": {
+      "same": "Igual ({{amount}})",
+      "change": "Cambiar",
+      "skip": "Saltar",
+      "done": "No, listo",
+      "pick": "{{name}}",
+      "confirm": "Confirmar"
+    },
+    "summary": {
+      "title": "Tu presupuesto",
+      "empty": "No pusiste ningún tope todavía.",
+      "unassigned": "Sin asignar",
+      "over": "Asignaste de más",
+      "confirm": "Confirmar",
+      "manual": "Editar a mano",
+      "saving": "Guardando…",
+      "saved": "Presupuesto guardado",
+      "error": "No pudimos guardar. Probá de nuevo."
+    },
+    "state": {
+      "loading": "Preparando el asistente",
+      "errorTitle": "No pudimos preparar el asistente",
+      "errorBody": "Revisá tu conexión y volvé a intentar."
+    },
+    "enter": "Poner monto"
+  }
+}

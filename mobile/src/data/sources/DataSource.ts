@@ -1,6 +1,7 @@
-import type { LoanDTO, VoiceOutcome } from "../../domain";
+import type { LoanDTO, MonthPlan, VoiceOutcome } from "../../domain";
 import type {
   AppNotifications,
+  BudgetItem,
   CardsOverview,
   DebtsOverview,
   ErrorReport,
@@ -18,6 +19,10 @@ import type {
 export interface DataSource {
   /** Resumen del mes (`period` 'YYYY-MM'; por defecto el actual). */
   getHome(period?: string): Promise<HomeSummary>;
+  /** Todo lo del mes (lo mismo que `GET /api/plan/data`): de acá salen Inicio y el presupuesto. */
+  getPlan(period?: string): Promise<MonthPlan>;
+  /** Guarda topes del presupuesto del mes (`PUT /api/plan/budget`); monto 0 quita la línea. */
+  saveBudget(period: string, items: BudgetItem[]): Promise<void>;
   getPendingPayments(): Promise<PendingPayment[]>;
   getNotifications(): Promise<AppNotifications>;
   /** Confirma un pago por confirmar (opcionalmente completando el monto). */

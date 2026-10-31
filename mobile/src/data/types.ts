@@ -1,6 +1,6 @@
-import type { Currency, Frequency, LoanDirection, LoanDTO, LoanMode } from "../domain";
+import type { BudgetRow, Currency, Frequency, LoanDirection, LoanDTO, LoanMode, Summary } from "../domain";
 
-export type { Currency, LoanDirection, LoanDTO, LoanMode } from "../domain";
+export type { Currency, LoanDirection, LoanDTO, LoanMode, MonthPlan } from "../domain";
 
 /** Un tramo del gráfico "En qué se va el mes". Usar `labelKey` (i18n) o, si viene del servidor, `name`. */
 export interface SpendingCategory {
@@ -52,7 +52,7 @@ export interface PendingPayment {
   occurredAt: string;
 }
 
-export type NoticeKind = "due" | "weekClosed" | "debtDown";
+export type NoticeKind = "due" | "weekClosed" | "debtDown" | "budgetNear" | "budgetOverCategory";
 
 /**
  * Aviso informativo. El texto sale de i18n: `notifications:notices.<kind>` con `params`
@@ -286,4 +286,74 @@ export interface ErrorReport {
   code: string;
   message: string;
   context?: Record<string, unknown>;
+}
+
+// ───────────── Presupuesto del mes ─────────────
+
+/** Una línea del presupuesto: `categoryId` + tope. Monto 0 quita la línea (igual a `PUT /api/plan/budget`). */
+export interface BudgetItem {
+  categoryId: string;
+  amount: number;
+}
+
+/** Entrada de Inicio que no sale del plan: saludo, pendientes de Apple Pay e historia del nido. */
+export interface HomeExtras {
+  greetingName: string;
+  pendingConfirmCount: number;
+  story: HomeSummary["story"];
+}
+
+/** Dónde se muestra la línea: ahorro primero, lo que sale solo, o los gastos con tope del mes. */
+export type BudgetGroup = "savings" | "committed" | "variable";
+
+export interface BudgetLine extends BudgetRow {
+  group: BudgetGroup;
+  /** gastado / tope (0 si no hay tope). Puede pasar de 1: la barra se recorta en la pantalla. */
+  ratio: number;
+  /** Comprometido: cuántos fijos / cuotas / tarjetas ya se pagaron de cuántos hay. Null en el resto. */
+  fixed: { paid: number; total: number } | null;
+}
+
+export interface BudgetView {
+  /** El mes todavía no empezó: ingresos y fijos son los que se repiten cada mes (`projectedPlan`). */
+  projected: boolean;
+  summary: Summary;
+  /** Libre del mes (lo que el presupuesto todavía no tiene destino). Negativo = asignaste de más. */
+  free: number;
+  income: number;
+  /** Suma de todos los topes del mes. */
+  assigned: number;
+  /** Línea de "Ahorro e inversión" (aunque no tenga tope todavía). Null solo si el hogar no tiene esa categoría. */
+  savings: BudgetLine | null;
+  committed: BudgetLine[];
+  variable: BudgetLine[];
+  /** Categorías de gasto editables sin tope ni línea (para "Agregar tope"). */
+  withoutBudget: { categoryId: string; name: string }[];
+  /** Hay presupuesto anterior y este mes todavía no tiene ninguno. */
+  canCopyPrevious: boolean;
+  previousPeriod: string | null;
+  /** Variables y comprometidas (no el ahorro) cerca del tope o pasadas. */
+  counts: { near: number; over: number };
+  /** Gastos del mes con tope vs gastado (solo variables), para la barra del resumen de Inicio. */
+  variableTotals: { budget: number; actual: number };
+}
+
+/** Para el asistente: qué se puso el mes anterior y cuánto se lleva gastado en la categoría. */
+export interface SuggestedBudget {
+  previous: number | null;
+  spentNow: number;
+}
+
+/** Una categoría que recorre el asistente de presupuesto, con lo que se sabe de ella. */
+export interface AssistantTarget {
+  categoryId: string;
+  name: string;
+  /** `savings` = "Ahorro e inversión" (siempre primero). */
+  kind: "savings" | "category";
+  /** Tope del mes anterior (null si no había). */
+  previous: number | null;
+  /** Lo gastado en el mes hasta ahora. */
+  spentNow: number;
+  /** Tope actual del mes (0 si no tiene). */
+  current: number;
 }

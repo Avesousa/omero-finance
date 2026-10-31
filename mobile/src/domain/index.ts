@@ -18,13 +18,35 @@ export type {
   LoanDTO,
   LoanMode,
   LoanPaymentDTO,
+  LoanProposalRow,
   LoanState,
+  ProposalRow,
+  // Resumen del mes y presupuesto (misma lógica que la web).
+  BudgetDTO,
+  BudgetRow,
+  BudgetStatus,
+  CardDTO,
+  CategoryDTO,
+  EntryDTO,
+  PurchaseDTO,
+  RecurringDTO,
+  ReservedRow,
+  StatementDTO,
+  Summary,
+  SummaryInput,
 } from "../../../src/lib/plan/core.ts";
+
+export type { MonthPlan } from "./monthPlan.ts";
+export { normalizeText, parseSpokenAmount } from "./amountText.ts";
 
 export {
   addDays,
   addMonths,
   balanceAt,
+  buildLoanProposal,
+  buildProposal,
+  buildSummary,
+  cardLines,
   daysInPeriod,
   formatMoneyInput,
   frenchInstallment,
@@ -36,12 +58,17 @@ export {
   loanState,
   monthDiff,
   monthlyRatePct,
+  NEAR_THRESHOLD,
   numberToInput,
   parseMoney,
   proposeLoanPayment,
   round2,
+  TDC_KEY,
   toArs,
 } from "../../../src/lib/plan/core.ts";
+
+// `dailyAllowance` de core (libre ÷ días que quedan, contando hoy); el de `data/selectors` solo divide.
+export { dailyAllowance as planDailyAllowance } from "../../../src/lib/plan/core.ts";
 
 import { currentPeriod as coreCurrentPeriod, todayIso as coreTodayIso } from "../../../src/lib/plan/core.ts";
 

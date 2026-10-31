@@ -20,6 +20,8 @@
     "due": "",
     "weekClosed": "",
     "debtDown": "",
+    "budgetNear": "",
+    "budgetOverCategory": "",
     "unread": ""
   },
   "when": {

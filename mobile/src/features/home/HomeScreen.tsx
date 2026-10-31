@@ -6,15 +6,14 @@ import { Skeleton, VStack } from "../../components/atoms";
 import { AlertBanner, EmptyState } from "../../components/molecules";
 import {
   AppHeader,
+  BudgetSummaryCard,
   FixedProgressCard,
   HeroGasto,
   MascotMessage,
-  SpendingBreakdownCard,
   StoryTeaserCard,
-  type SpendingItem,
 } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { dailyAllowance, spendingTotal, useHome, useNotificationBadge } from "../../data";
+import { dailyAllowance, useBudget, useHome, useNotificationBadge } from "../../data";
 import { capitalize, formatDate, formatMoney } from "../../i18n/format";
 import { useHeroView } from "./useHeroView";
 
@@ -24,6 +23,7 @@ export function HomeScreen() {
   const { t: tc } = useTranslation("common");
   const qc = useQueryClient();
   const { data, isPending, isError, refetch } = useHome();
+  const budget = useBudget();
   const badge = useNotificationBadge();
   const [view, setView] = useHeroView();
   const [refreshing, setRefreshing] = useState(false);
@@ -31,7 +31,7 @@ export function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetch(), qc.invalidateQueries({ queryKey: ["notifications"] })]);
+      await Promise.all([refetch(), budget.refetch(), qc.invalidateQueries({ queryKey: ["notifications"] })]);
     } finally {
       setRefreshing(false);
     }
@@ -69,12 +69,6 @@ export function HomeScreen() {
   }
 
   const perDay = dailyAllowance(data.free, data.daysLeft);
-  const items: SpendingItem[] = data.spendingByCategory.map((c) => ({
-    id: c.id,
-    label: c.labelKey ? (t as unknown as (k: string) => string)(c.labelKey) : (c.name ?? c.id),
-    amount: c.amount,
-  }));
-
   return (
     <ScreenTemplate header={header} testID="home" refreshing={refreshing} onRefresh={onRefresh}>
       <HeroGasto perDay={perDay} daysLeft={data.daysLeft} available={data.available} free={data.free} view={view} onViewChange={setView} />
@@ -87,7 +81,19 @@ export function HomeScreen() {
           onPress={() => router.push("/notificaciones")}
         />
       ) : null}
-      <SpendingBreakdownCard items={items} total={spendingTotal(data.spendingByCategory)} />
+      {budget.isPending ? (
+        <Skeleton height={120} />
+      ) : budget.data ? (
+        <BudgetSummaryCard
+          month={formatDate(data.period, "month")}
+          empty={budget.data.assigned <= 0}
+          spent={budget.data.variableTotals.actual}
+          budget={budget.data.variableTotals.budget}
+          near={budget.data.counts.near}
+          over={budget.data.counts.over}
+          onPress={() => router.push("/presupuesto")}
+        />
+      ) : null}
       <FixedProgressCard {...data.fixed} />
       <StoryTeaserCard chapter={data.story.chapter} progress={data.story.progress} onPress={() => router.push("/patrimonio")} />
     </ScreenTemplate>

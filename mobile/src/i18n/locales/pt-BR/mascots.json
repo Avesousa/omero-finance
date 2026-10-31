@@ -149,6 +149,58 @@
       "voiceDraftIncomplete": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "budgetUnassigned": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetBalanced": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOver": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistIntro": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavings": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategory": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistMore": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistDone": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetNear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOverCategory": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "actions": {
@@ -251,6 +303,58 @@
         "atrevido": ""
       },
       "voiceDraftIncomplete": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetUnassigned": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetBalanced": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOver": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistIntro": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavings": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategory": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistMore": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistDone": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetNear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOverCategory": {
         "tranqui": "",
         "atrevido": ""
       }
@@ -370,6 +474,58 @@
       "voiceDraftIncomplete": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "budgetUnassigned": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetBalanced": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOver": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistIntro": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavings": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategory": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistMore": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistDone": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetNear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOverCategory": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -487,6 +643,58 @@
       "voiceDraftIncomplete": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "budgetUnassigned": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetBalanced": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOver": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistIntro": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavings": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategory": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistMore": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistDone": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetNear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOverCategory": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -602,6 +810,58 @@
         "atrevido": ""
       },
       "voiceDraftIncomplete": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetUnassigned": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetBalanced": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOver": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistIntro": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavings": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategory": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistMore": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetAssistDone": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetNear": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "budgetOverCategory": {
         "tranqui": "",
         "atrevido": ""
       }

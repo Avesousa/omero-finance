@@ -1,0 +1,131 @@
+{
+  "title": "",
+  "back": "",
+  "summary": {
+    "title": "",
+    "spent": "",
+    "near_one": "",
+    "near_other": "",
+    "over_one": "",
+    "over_other": "",
+    "empty": "",
+    "emptyCta": "",
+    "open": "",
+    "progress": "",
+    "spentNoCap": ""
+  },
+  "projected": {
+    "notice": ""
+  },
+  "hero": {
+    "label": "",
+    "over": "",
+    "income": "",
+    "assigned": ""
+  },
+  "actions": {
+    "assist": "",
+    "copy": "",
+    "copying": "",
+    "copyError": ""
+  },
+  "savings": {
+    "title": "",
+    "hint": "",
+    "of": "",
+    "empty": "",
+    "define": "",
+    "edit": "",
+    "goals": "",
+    "goalOf": "",
+    "goalProgress": ""
+  },
+  "committed": {
+    "title": "",
+    "hint": "",
+    "paid": "",
+    "withCap": "",
+    "explainFixed": "",
+    "explainCards": "",
+    "toggle": ""
+  },
+  "variable": {
+    "title": "",
+    "of": "",
+    "noCap": "",
+    "empty": "",
+    "edit": "",
+    "progress": ""
+  },
+  "status": {
+    "ok": "",
+    "near": "",
+    "over": "",
+    "unbudgeted": "",
+    "unused": ""
+  },
+  "add": {
+    "title": "",
+    "hint": "",
+    "chip": ""
+  },
+  "state": {
+    "loading": "",
+    "errorTitle": "",
+    "errorBody": ""
+  },
+  "edit": {
+    "title": "",
+    "subtitle": "",
+    "amount": "",
+    "amountPlaceholder": "",
+    "suggestions": "",
+    "samePrevious": "",
+    "spent": "",
+    "remove": "",
+    "save": "",
+    "saving": "",
+    "close": "",
+    "error": "",
+    "invalid": "",
+    "notFound": ""
+  },
+  "assistant": {
+    "title": "",
+    "with": "",
+    "close": "",
+    "placeholder": "",
+    "inputLabel": "",
+    "replies": "",
+    "same": "",
+    "spent": "",
+    "change": "",
+    "skip": "",
+    "done": "",
+    "said": {
+      "same": "",
+      "change": "",
+      "skip": "",
+      "done": "",
+      "pick": "",
+      "confirm": ""
+    },
+    "summary": {
+      "title": "",
+      "empty": "",
+      "unassigned": "",
+      "over": "",
+      "confirm": "",
+      "manual": "",
+      "saving": "",
+      "saved": "",
+      "error": ""
+    },
+    "state": {
+      "loading": "",
+      "errorTitle": "",
+      "errorBody": ""
+    },
+    "enter": ""
+  }
+}

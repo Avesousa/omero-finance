@@ -25,6 +25,9 @@ function Shell() {
           <Stack.Screen name="deudas/nueva" options={{ presentation: "modal" }} />
           <Stack.Screen name="ingresos/nuevo" options={{ presentation: "modal" }} />
           <Stack.Screen name="gastos/nuevo" options={{ presentation: "modal" }} />
+          <Stack.Screen name="presupuesto/index" />
+          <Stack.Screen name="presupuesto/editar" options={{ presentation: "modal" }} />
+          <Stack.Screen name="presupuesto/armar" options={{ presentation: "modal" }} />
           <Stack.Screen name="notificaciones" />
         </Stack.Protected>
         <Stack.Protected guard={!allowed}>

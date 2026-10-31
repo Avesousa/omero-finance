@@ -42,7 +42,20 @@ export type MascotMoment =
   | "expenseSaved"
   | "debtSaved"
   | "loadGreeting"
-  | "draftDismissed";
+  | "draftDismissed"
+  | "budgetUnassigned"
+  | "budgetBalanced"
+  | "budgetOver"
+  | "budgetAssistIntro"
+  | "budgetAssistSavings"
+  | "budgetAssistSavingsNew"
+  | "budgetAssistCategory"
+  | "budgetAssistCategoryNew"
+  | "budgetAssistAskAmount"
+  | "budgetAssistMore"
+  | "budgetAssistDone"
+  | "budgetNear"
+  | "budgetOverCategory";
 
 /** Props de cada dibujo. Dibuja elementos SVG en un viewBox 0 0 200 200 (los envuelve <Mascot/>). */
 export interface DrawingProps {
