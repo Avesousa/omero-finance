@@ -57,6 +57,8 @@ export {
   loanKind,
   loanState,
   monthDiff,
+  monthlyAmount,
+  occurrencesInPeriod,
   monthlyRatePct,
   NEAR_THRESHOLD,
   numberToInput,

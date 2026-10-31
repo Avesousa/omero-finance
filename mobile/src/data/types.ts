@@ -274,7 +274,70 @@ export interface NewEntryInput {
   date: string | null;
   note: string | null;
   /** Si es fijo, `amount` es el monto por vez. */
-  fixed: { frequency: Frequency } | null;
+  fixed: { frequency: Frequency; /** 0 = domingo … 6 = sábado; solo semanal. */ weekday?: number | null; /** Día del mes (1–31) en que vence. */ dueDay?: number | null } | null;
+}
+
+/**
+ * Cambios a un movimiento del mes (`PATCH /api/plan/entries/[id]`). `amount` es el total del mes de ese movimiento
+ * (para un fijo no mensual: monto por vez × veces en el mes, ver `monthlyAmount`).
+ * `applyToRule` guarda también en la regla (próximos meses) y es lo único que habilita `frequency`, `weekday` y `dueDay`.
+ */
+export type EntryPatch = Partial<{
+  name: string;
+  amount: number;
+  currency: Currency;
+  categoryId: string | null;
+  isDone: boolean;
+  note: string | null;
+}> & {
+  applyToRule?: boolean;
+  frequency?: Frequency;
+  weekday?: number | null;
+  dueDay?: number | null;
+};
+
+/** Un gasto fijo del mes (movimiento real o proyectado si el mes no empezó). */
+export interface FixedItem {
+  /** null si es proyectado (el mes todavía no empezó): no se puede editar. */
+  entryId: string | null;
+  /** Clave estable de la fila (id de la regla; o de la entry si no hay regla). */
+  recurringId: string | null;
+  name: string;
+  /** Total del mes, en `currency`. */
+  amount: number;
+  currency: Currency;
+  /** Monto por vez (por semana, quincena o mes). */
+  unitAmount: number;
+  frequency: Frequency;
+  weekday: number | null;
+  dueDay: number | null;
+  /** 'YYYY-MM-DD' del próximo vencimiento (mensual: el día pactado; semanal: la próxima vez que cae ese día; sin dato: null). */
+  dueDate: string | null;
+  isDone: boolean;
+  categoryId: string | null;
+}
+
+export interface FixedGroup {
+  categoryId: string | null;
+  /** Nombre de la categoría; "" si no tiene (la UI pone el texto). */
+  name: string;
+  /** En ARS. */
+  total: number;
+  items: FixedItem[];
+}
+
+export interface FixedExpensesView {
+  /** El mes no empezó: son los fijos propuestos (solo lectura). */
+  projected: boolean;
+  /** Totales en ARS. */
+  total: number;
+  paid: number;
+  pending: number;
+  count: number;
+  paidCount: number;
+  /** El próximo fijo sin pagar con vencimiento desde hoy. */
+  nextDue: { name: string; date: string; days: number } | null;
+  groups: FixedGroup[];
 }
 
 /** Entrada de voz: el audio grabado (URI local) o texto escrito. */

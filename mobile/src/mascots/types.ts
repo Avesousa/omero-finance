@@ -53,6 +53,11 @@ export type MascotMoment =
   | "budgetAssistCategoryNew"
   | "budgetAssistAskAmount"
   | "budgetAssistMore"
+  | "fixedAllPaid"
+  | "fixedPending"
+  | "fixedNextDue"
+  | "fixedSaved"
+  | "fixedStopped"
   | "budgetAssistDone"
   | "budgetNear"
   | "budgetOverCategory";

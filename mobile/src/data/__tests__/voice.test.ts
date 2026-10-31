@@ -142,13 +142,13 @@ test("mock: addEntry EXPENSE resta del disponible; el libre solo baja si pasa de
   assert.equal(total(after), total(before) + 1_200);
 });
 
-test("mock: getCategories por tipo (gasto = las de la web + tarjetas)", async () => {
+test("mock: getCategories por tipo (gasto = las de la web, sin la de sistema de tarjetas)", async () => {
   const inc = await mockSource.getCategories("INCOME");
   const exp = await mockSource.getCategories("EXPENSE");
   assert.ok(inc.some((c) => c.id === "ic-sueldo"));
-  assert.equal(exp.length, 15);
+  assert.equal(exp.length, 14);
   assert.deepEqual(exp.slice(0, 4).map((c) => c.name), ["Alquiler", "Expensas", "Servicios", "Supermercado"]);
-  assert.ok(exp.some((c) => c.name === "Ahorro e inversión") && exp.some((c) => c.name === "Tarjetas de crédito"));
+  assert.ok(exp.some((c) => c.name === "Ahorro e inversión") && !exp.some((c) => c.name === "Tarjetas de crédito"));
 });
 
 test("toAppError: red, timeout y HTTP", () => {

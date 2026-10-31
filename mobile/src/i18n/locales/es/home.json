@@ -26,10 +26,11 @@
     "summary": "Gastos del mes por categoría"
   },
   "fixed": {
-    "title": "Fijos pagados",
-    "progress": "{{paid}} de {{total}}",
-    "summary": "Fijos pagados {{paid}} de {{total}}",
-    "amounts": "{{paid}} de {{total}}"
+    "title": "Gastos fijos",
+    "progress": "{{paid}} de {{total}} pagados",
+    "summary": "Gastos fijos: {{paid}} de {{total}} pagados",
+    "amounts": "{{paid}} de {{total}}",
+    "open": "Ver los gastos fijos"
   },
   "alert": {
     "pendingApplePay_one": "{{count}} pago con Apple Pay por confirmar",

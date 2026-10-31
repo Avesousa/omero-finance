@@ -2,6 +2,9 @@ import type { DataSource } from "./DataSource";
 import {
   loanDueDate,
   loanKind,
+  monthlyAmount,
+  occurrencesInPeriod,
+  round2,
   proposeLoanPayment,
   TDC_KEY,
   toArs,
@@ -31,6 +34,7 @@ import type {
   HomeSummary,
   Category,
   EntryKind,
+  EntryPatch,
   NewEntryInput,
   NewLoanInput,
   PendingPayment,
@@ -81,7 +85,7 @@ const planCategories: CategoryDTO[] = [
 ];
 
 const categoriesOf = (kind: EntryKind): Category[] =>
-  planCategories.filter((c) => c.kind === kind && !c.isArchived).map((c) => ({ id: c.id, name: c.name }));
+  planCategories.filter((c) => c.kind === kind && !c.isArchived && !c.systemKey).map((c) => ({ id: c.id, name: c.name }));
 
 /** Errores que el mock "le avisó al admin" (para probar en desarrollo). */
 export const mockErrorReports: ErrorReport[] = [];
@@ -385,14 +389,53 @@ export const mockSource: DataSource = {
       recurringId = `r-new-${planSeq}`;
       recurrings.push({
         id: recurringId, kind: input.kind, name: input.name, categoryId: input.categoryId, targetCategoryId: null,
-        currency: input.currency, amount: input.amount, frequency: input.fixed.frequency, weekday: null, dueDay: null, isActive: true,
+        currency: input.currency, amount: input.amount, frequency: input.fixed.frequency,
+        weekday: input.fixed.frequency === "WEEKLY" ? (input.fixed.weekday ?? null) : null, dueDay: input.fixed.dueDay ?? null, isActive: true,
       });
     }
+    // Como la web: un fijo entra con el total del mes (monto por vez × veces) y sin pagar.
+    const rule = recurringId ? recurrings.find((r) => r.id === recurringId) : undefined;
     planEntries.push({
       id: `e-new-${planSeq}`, period: CURRENT_PERIOD, kind: input.kind, recurringId, name: input.name, categoryId: input.categoryId,
-      targetCategoryId: null, currency: input.currency, amount: input.amount, date: input.date ?? TODAY, isDone: true,
+      targetCategoryId: null, currency: input.currency,
+      amount: rule ? monthlyAmount(rule.amount, rule.frequency, CURRENT_PERIOD, rule.weekday) : input.amount,
+      date: rule ? null : (input.date ?? TODAY), isDone: !rule,
       note: input.note, loanId: null, interestAmount: null,
     });
+    await wait(undefined);
+  },
+  updateEntry: async (id: string, patch: EntryPatch) => {
+    // Como la web: solo los movimientos cargados (no las propuestas ni las cuotas de préstamos).
+    const e = planEntries.find((x) => x.id === id);
+    if (!e) throw new AppError("No encontrado", { code: "unknown" });
+    if (patch.name !== undefined) e.name = patch.name;
+    if (patch.amount !== undefined) e.amount = patch.amount;
+    if (patch.currency !== undefined) e.currency = patch.currency;
+    if (patch.categoryId !== undefined) e.categoryId = patch.categoryId;
+    if (patch.note !== undefined) e.note = patch.note;
+    if (patch.isDone !== undefined) e.isDone = patch.isDone;
+    const rule = patch.applyToRule === true && e.recurringId ? recurrings.find((r) => r.id === e.recurringId) : undefined;
+    if (rule) {
+      const frequency = patch.frequency ?? rule.frequency;
+      const weekday = frequency !== "WEEKLY" ? null : patch.weekday !== undefined ? patch.weekday : rule.weekday;
+      rule.name = e.name;
+      rule.currency = e.currency;
+      rule.categoryId = e.categoryId;
+      rule.frequency = frequency;
+      rule.weekday = weekday;
+      if (patch.dueDay !== undefined) rule.dueDay = patch.dueDay;
+      rule.amount = round2(e.amount / occurrencesInPeriod(frequency, e.period, weekday));
+    }
+    await wait(undefined);
+  },
+  deleteEntry: async (id: string, scope: "month" | "rule") => {
+    const i = planEntries.findIndex((x) => x.id === id);
+    if (i < 0) throw new AppError("No encontrado", { code: "unknown" });
+    const [removed] = planEntries.splice(i, 1);
+    if (scope === "rule" && removed.recurringId) {
+      const rule = recurrings.find((r) => r.id === removed.recurringId);
+      if (rule) rule.isActive = false;
+    }
     await wait(undefined);
   },
   reportError: async (report: ErrorReport) => {

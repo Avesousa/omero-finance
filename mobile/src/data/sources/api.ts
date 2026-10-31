@@ -7,7 +7,7 @@ import type { MonthPlan, VoiceApiError, VoiceOutcome } from "../../domain";
 import { homeFromPlan } from "../plan.ts";
 import { AppError, toAppError } from "../errors";
 import { NotImplementedError, type DataSource } from "./DataSource";
-import type { BudgetItem, EntryKind, NewEntryInput, PendingPayment, VoiceInput } from "../types";
+import type { BudgetItem, EntryKind, EntryPatch, NewEntryInput, PendingPayment, VoiceInput } from "../types";
 
 const VOICE_TIMEOUT_MS = 45_000;
 
@@ -211,7 +211,8 @@ export const apiSource: DataSource = {
   getCategories: async (kind: EntryKind) => {
     const data = await fetchPlan();
     return data.categories
-      .filter((c) => c.kind === kind && !c.isArchived)
+      // Las de sistema (ej. "Tarjetas de crédito") se arman solas: no se eligen al cargar.
+      .filter((c) => c.kind === kind && !c.isArchived && !c.systemKey)
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((c) => ({ id: c.id, name: c.name }));
   },
@@ -227,6 +228,12 @@ export const apiSource: DataSource = {
       note: input.note,
       ...(input.fixed ? { fixed: input.fixed } : {}),
     });
+  },
+  updateEntry: async (id: string, patch: EntryPatch) => {
+    await api("PATCH", `/api/plan/entries/${encodeURIComponent(id)}`, patch);
+  },
+  deleteEntry: async (id: string, scope: "month" | "rule") => {
+    await api("DELETE", `/api/plan/entries/${encodeURIComponent(id)}${scope === "rule" ? "?scope=rule" : ""}`);
   },
   reportError: async (report) => {
     await api("POST", "/api/plan/errors", report);

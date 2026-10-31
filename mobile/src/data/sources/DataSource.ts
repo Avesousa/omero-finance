@@ -8,6 +8,7 @@ import type {
   HomeSummary,
   Category,
   EntryKind,
+  EntryPatch,
   NewEntryInput,
   NewLoanInput,
   PendingPayment,
@@ -45,6 +46,10 @@ export interface DataSource {
   getCategories(kind: EntryKind): Promise<Category[]>;
   /** Agrega un ingreso o un gasto (`input.kind`). */
   addEntry(input: NewEntryInput): Promise<void>;
+  /** Edita un movimiento del mes (`PATCH /api/plan/entries/[id]`); con `applyToRule` también la regla del fijo. */
+  updateEntry(id: string, patch: EntryPatch): Promise<void>;
+  /** Quita un movimiento: `month` solo este mes; `rule` además deja de repetirse (`DELETE …?scope=rule`). */
+  deleteEntry(id: string, scope: "month" | "rule"): Promise<void>;
   /** Registra un error para el admin. */
   reportError(report: ErrorReport): Promise<void>;
 }

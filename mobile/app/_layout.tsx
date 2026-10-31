@@ -28,6 +28,9 @@ function Shell() {
           <Stack.Screen name="presupuesto/index" />
           <Stack.Screen name="presupuesto/editar" options={{ presentation: "modal" }} />
           <Stack.Screen name="presupuesto/armar" options={{ presentation: "modal" }} />
+          <Stack.Screen name="gastos-fijos/index" />
+          <Stack.Screen name="gastos-fijos/nuevo" options={{ presentation: "modal" }} />
+          <Stack.Screen name="gastos-fijos/editar" options={{ presentation: "modal" }} />
           <Stack.Screen name="notificaciones" />
         </Stack.Protected>
         <Stack.Protected guard={!allowed}>

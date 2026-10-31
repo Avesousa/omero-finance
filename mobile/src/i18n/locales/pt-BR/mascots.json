@@ -201,6 +201,32 @@
       "budgetOverCategory": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "fixedAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedPending": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedNextDue": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedStopped": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "actions": {
@@ -355,6 +381,32 @@
         "atrevido": ""
       },
       "budgetOverCategory": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedPending": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedNextDue": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedStopped": {
         "tranqui": "",
         "atrevido": ""
       }
@@ -526,6 +578,32 @@
       "budgetOverCategory": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "fixedAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedPending": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedNextDue": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedStopped": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -695,6 +773,32 @@
       "budgetOverCategory": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "fixedAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedPending": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedNextDue": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedStopped": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -862,6 +966,32 @@
         "atrevido": ""
       },
       "budgetOverCategory": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedAllPaid": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedPending": {
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedNextDue": {
+        "tranqui": "",
+        "tranqui_one": "",
+        "tranqui_other": "",
+        "atrevido": "",
+        "atrevido_one": "",
+        "atrevido_other": ""
+      },
+      "fixedSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "fixedStopped": {
         "tranqui": "",
         "atrevido": ""
       }

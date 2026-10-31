@@ -4,6 +4,7 @@ export { MoneyHero, type MoneyHeroProps } from "./MoneyHero";
 export { HeroGasto, type HeroGastoProps, type HeroView } from "./HeroGasto";
 export { MascotMessage, type MascotMessageProps } from "./MascotMessage";
 export { SpendingBreakdownCard, type SpendingBreakdownCardProps, type SpendingItem } from "./SpendingBreakdownCard";
+export { FixedExpenseRow, type FixedExpenseRowProps } from "./FixedExpenseRow";
 export { FixedProgressCard, type FixedProgressCardProps } from "./FixedProgressCard";
 export { StoryTeaserCard, type StoryTeaserCardProps } from "./StoryTeaserCard";
 export { PendingConfirmCard, type PendingConfirmCardProps } from "./PendingConfirmCard";

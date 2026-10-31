@@ -39,12 +39,25 @@
       "INCOME": "No pude guardar el ingreso. Probá de nuevo.",
       "EXPENSE": "No pude guardar el gasto. Probá de nuevo."
     },
-    "categoriesError": "No pude traer las categorías. Podés guardar sin elegir una."
+    "categoriesError": "No pude traer las categorías. Podés guardar sin elegir una.",
+    "amountPerTime": "Monto por vez",
+    "frequency": "Frecuencia",
+    "frequencyMONTHLY": "Mensual",
+    "frequencyBIWEEKLY": "Quincenal",
+    "frequencyWEEKLY": "Semanal",
+    "frequencyDAILY": "Diario",
+    "dueDay": "Día de vencimiento (opcional)",
+    "dueDayPlaceholder": "1 a 31",
+    "weekday": "Día de la semana",
+    "applyToRule": "Aplicar también a los próximos meses",
+    "applyToRuleHint": "Si lo apagás, el cambio vale solo para este mes."
   },
   "errors": {
     "name": "Poné un nombre.",
     "amount": "Poné un monto mayor a cero.",
-    "day": "Poné un día válido del mes."
+    "day": "Poné un día válido del mes.",
+    "dueDay": "Poné un día entre 1 y 31.",
+    "weekday": "Elegí el día de la semana."
   },
   "saved": {
     "done": {

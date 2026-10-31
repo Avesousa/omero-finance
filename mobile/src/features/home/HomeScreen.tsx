@@ -94,7 +94,7 @@ export function HomeScreen() {
           onPress={() => router.push("/presupuesto")}
         />
       ) : null}
-      <FixedProgressCard {...data.fixed} />
+      <FixedProgressCard {...data.fixed} onPress={() => router.push("/gastos-fijos")} />
       <StoryTeaserCard chapter={data.story.chapter} progress={data.story.progress} onPress={() => router.push("/patrimonio")} />
     </ScreenTemplate>
   );

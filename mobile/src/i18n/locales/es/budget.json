@@ -42,12 +42,10 @@
   },
   "committed": {
     "title": "Sale solo",
-    "hint": "Fijos, cuotas y tarjetas: el monto se arma solo cada mes.",
+    "hint": "Fijos, cuotas y tarjetas: el monto se arma solo cada mes. Tocá una línea para ir a editarla.",
     "paid": "{{paid}} de {{total}} pagados",
     "withCap": "Tope {{amount}}",
-    "explainFixed": "Sale de tus gastos fijos y de las cuotas de préstamos cargados en el mes. Para cambiarlo, editá el gasto fijo o la deuda.",
-    "explainCards": "Sale de los resúmenes de tus tarjetas y de las cuotas del mes. Para cambiarlo, andá a Tarjetas.",
-    "toggle": "Ver de dónde sale {{name}}"
+    "open": "Ver {{name}}"
   },
   "variable": {
     "title": "Gastos del mes",

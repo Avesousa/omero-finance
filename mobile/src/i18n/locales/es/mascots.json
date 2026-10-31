@@ -201,6 +201,32 @@
       "budgetOverCategory": {
         "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos.",
         "atrevido": "Pasaste el tope de {{name}}. Hay que frenar."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Gastos fijos del mes pagados. Un compromiso menos.",
+        "atrevido": "Fijos del mes, todos pagados. Ni uno colgado."
+      },
+      "fixedPending": {
+        "tranqui_one": "Queda {{count}} gasto fijo por {{amount}}. Lo vemos con calma.",
+        "tranqui_other": "Quedan {{count}} gastos fijos por {{amount}}. Los vamos cerrando.",
+        "atrevido_one": "Falta {{count}} fijo por {{amount}}. Pagalo y nos olvidamos.",
+        "atrevido_other": "Faltan {{count}} fijos por {{amount}}. Ni un peso sin pagar, dale."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo fijo. Lo dejamos listo con tiempo.",
+        "tranqui_one": "{{name}} se paga en {{count}} día. Lo tenemos a mano.",
+        "tranqui_other": "{{name}} se paga en {{count}} días. Lo vemos con calma.",
+        "atrevido": "{{name}} es el próximo fijo. No te lo olvides, eh.",
+        "atrevido_one": "{{name}} sale en {{count}} día. Prepará la plata ya.",
+        "atrevido_other": "{{name}} sale en {{count}} días. Prepará la plata a tiempo."
+      },
+      "fixedSaved": {
+        "tranqui": "Listo, {{name}} quedó guardado. Un fijo más ordenado.",
+        "atrevido": "{{name}} guardado. Ya tiene lugar en el mes."
+      },
+      "fixedStopped": {
+        "tranqui": "Dejamos de contar {{name}}. Cuando haga falta, lo volvemos a cargar.",
+        "atrevido": "{{name}} fuera del mes. Menos compromisos, más libertad."
       }
     },
     "actions": {
@@ -357,6 +383,32 @@
       "budgetOverCategory": {
         "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos sin culpa.",
         "atrevido": "Pasaste el tope de {{name}}. Esa pared se cae sola."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Los fijos del mes están pagados. Cada ladrillo en su lugar.",
+        "atrevido": "Fijos pagados, todos. Ni un ladrillo suelto. Así se construye."
+      },
+      "fixedPending": {
+        "tranqui_one": "Falta {{count}} ladrillo fijo por {{amount}}. Lo ponemos de a poco.",
+        "tranqui_other": "Faltan {{count}} ladrillos fijos por {{amount}}. Sin apuro, pero seguimos.",
+        "atrevido_one": "Te falta {{count}} ladrillo: {{amount}}. Ponelo y seguimos levantando.",
+        "atrevido_other": "Te faltan {{count}} ladrillos: {{amount}}. Pagalos y la pared sube."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo ladrillo. Lo tenemos preparado.",
+        "tranqui_one": "{{name}} cae en {{count}} día. Barro listo para ponerlo.",
+        "tranqui_other": "{{name}} cae en {{count}} días. Juntemos el barro a tiempo.",
+        "atrevido": "{{name}} es el próximo ladrillo. Que no se caiga la pared.",
+        "atrevido_one": "{{name}} cae en {{count}} día. Ojo con el andamio.",
+        "atrevido_other": "{{name}} cae en {{count}} días. Acomodá el barro ya, eh."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} guardado. Un ladrillo más en la casa.",
+        "atrevido": "{{name}} puesto en la pared. Esa casa crece."
+      },
+      "fixedStopped": {
+        "tranqui": "Saqué {{name}} de la obra. Si lo retomás, ponemos el ladrillo de nuevo.",
+        "atrevido": "{{name}} fuera de la pared. Menos ladrillos, pero bien puestos."
       }
     },
     "nest": {
@@ -526,6 +578,32 @@
       "budgetOverCategory": {
         "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos flotando.",
         "atrevido": "Pasaste el tope de {{name}}. Eso se fue río abajo, ojo."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Fijos pagados. La laguna queda en calma.",
+        "atrevido": "Fijos pagados. Ni un camalote suelto en la laguna."
+      },
+      "fixedPending": {
+        "tranqui_one": "Flota {{count}} fijo por {{amount}}. Lo sacamos sin apuro.",
+        "tranqui_other": "Flotan {{count}} fijos por {{amount}}. Los sacamos sin apuro, flotando.",
+        "atrevido_one": "Flota {{count}} fijo por {{amount}}. Sacalo antes de que lo lleve el río.",
+        "atrevido_other": "Flotan {{count}} fijos por {{amount}}. Sacalos antes de que los lleve el río."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo en llegar flotando. Todo a su tiempo.",
+        "tranqui_one": "{{name}} llega en {{count}} día. Lo vemos flotando.",
+        "tranqui_other": "{{name}} llega en {{count}} días. Hay tiempo, flotá tranquilo.",
+        "atrevido": "{{name}} viene por el río. Ojo, que el agua no espera.",
+        "atrevido_one": "{{name}} viene en {{count}} día. La corriente pega fuerte.",
+        "atrevido_other": "{{name}} viene en {{count}} días. Atento a la corriente, eh."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} guardado. Lo dejamos flotando en orden.",
+        "atrevido": "{{name}} en la laguna, a salvo. Así sí, carpincho."
+      },
+      "fixedStopped": {
+        "tranqui": "{{name}} sale de la laguna. Si vuelve, lo recibimos igual.",
+        "atrevido": "{{name}} se fue río abajo. Un fijo menos, qué bien."
       }
     },
     "nest": {
@@ -695,6 +773,32 @@
       "budgetOverCategory": {
         "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos sin culpa, con un mate.",
         "atrevido": "Pasaste el tope de {{name}}. Se tiró el mate encima, ojo."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Fijos pagados. Termo lleno, mate tranquilo.",
+        "atrevido": "Fijos pagados todos. La ronda cerró perfecta."
+      },
+      "fixedPending": {
+        "tranqui_one": "Queda {{count}} fijo por {{amount}}. ¿Lo cerramos con un mate?",
+        "tranqui_other": "Quedan {{count}} fijos por {{amount}}. Los cerramos de a uno, con mate.",
+        "atrevido_one": "Falta {{count}} fijo: {{amount}}. Ceba y pagalo, que se enfría.",
+        "atrevido_other": "Faltan {{count}} fijos: {{amount}}. Cebalos y no dejes que se enfríen."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo en la ronda. Lo dejamos listo con tiempo.",
+        "tranqui_one": "{{name}} vence en {{count}} día. Termo listo para pagarlo.",
+        "tranqui_other": "{{name}} vence en {{count}} días. Con tiempo, como un buen mate.",
+        "atrevido": "{{name}} es el próximo en la ronda. No lo dejes para después.",
+        "atrevido_one": "{{name}} vence en {{count}} día. Cebá la plata ya.",
+        "atrevido_other": "{{name}} vence en {{count}} días. Cebá la plata con tiempo, dale."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} guardado. Un mate más, todo en orden.",
+        "atrevido": "{{name}} anotado. Ceba parejo, que la ronda sigue."
+      },
+      "fixedStopped": {
+        "tranqui": "Sacamos {{name}} de la ronda. Si lo retomás, lo cebamos de nuevo.",
+        "atrevido": "{{name}} fuera de la ronda. Menos bombilla, menos gasto."
       }
     },
     "nest": {
@@ -864,6 +968,32 @@
       "budgetOverCategory": {
         "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos sin culpa.",
         "atrevido": "Caíste en la trampa de {{name}}. Ahora la esquivamos, pícaro."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Fijos pagados. Otra pieza del mapa encontrada.",
+        "atrevido": "Fijos pagados. Esquivaste todas las trampas del mes."
+      },
+      "fixedPending": {
+        "tranqui_one": "Queda {{count}} fijo por {{amount}}. Una pista más para el mapa.",
+        "tranqui_other": "Quedan {{count}} fijos por {{amount}}. Más pistas por seguir.",
+        "atrevido_one": "Te queda {{count}} trampa: {{amount}}. Desarmala y seguimos.",
+        "atrevido_other": "Te quedan {{count}} trampas: {{amount}}. Desarmalas antes de que muerdan."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es la próxima pista. La ubicamos con tiempo.",
+        "tranqui_one": "{{name}} aparece en {{count}} día. La ubicamos hoy.",
+        "tranqui_other": "{{name}} aparece en {{count}} días. Hay tiempo para la jugada.",
+        "atrevido": "{{name}} es la próxima trampa. Tenela en el radar.",
+        "atrevido_one": "{{name}} salta en {{count}} día. Ojo, que muerde.",
+        "atrevido_other": "{{name}} salta en {{count}} días. Esquivala a tiempo, eh."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} anotado en el mapa. Vamos bien.",
+        "atrevido": "{{name}} marcado en el mapa. Trampa controlada."
+      },
+      "fixedStopped": {
+        "tranqui": "Quité {{name}} del mapa. Si reaparece, lo marcamos.",
+        "atrevido": "{{name}} borrado del mapa. Una trampa menos en la ruta."
       }
     },
     "nest": {

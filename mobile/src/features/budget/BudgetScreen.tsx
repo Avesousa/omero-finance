@@ -16,7 +16,7 @@ import {
   type CommittedItem,
 } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { spendingTotal, useBudget, useCopyPreviousBudget, useHome, usePlan, useWealth, goalProgress, type BudgetLine } from "../../data";
+import { spendingTotal, useBudget, useFixedExpenses, useCopyPreviousBudget, useHome, usePlan, useWealth, goalProgress, type BudgetLine } from "../../data";
 import { useTheme } from "../../design-system";
 import { formatDate, formatMoney } from "../../i18n/format";
 import { useMascotStory } from "../../mascots/useMascotLine";
@@ -39,6 +39,7 @@ export function BudgetScreen() {
   const period = selected ?? plan.data?.period ?? null;
   const home = useHome(selected ?? undefined);
   const goals = useWealth();
+  const fixed = useFixedExpenses(selected ?? undefined);
   const copy = useCopyPreviousBudget();
   const spendingItems = useSpendingItems(home.data);
   const [refreshing, setRefreshing] = useState(false);
@@ -59,6 +60,12 @@ export function BudgetScreen() {
     () => (goals.data?.goals ?? []).map((g) => ({ id: g.id, name: g.name, saved: g.saved, target: g.target, currency: g.currency, ratio: goalProgress(g).ratio })),
     [goals.data],
   );
+
+  const openCommitted = (item: CommittedItem) => {
+    if (item.source === "cards") router.push("/tarjetas");
+    else if (item.source === "loans") router.push("/deudas");
+    else router.push({ pathname: "/gastos-fijos", params: { ...(period ? { period } : {}), ...(item.id !== "uncategorized" ? { category: item.id } : {}) } });
+  };
 
   const edit = (categoryId: string | null) => {
     if (!categoryId || !period) return;
@@ -94,6 +101,8 @@ export function BudgetScreen() {
   const mood = free < 0 ? "atento" : free === 0 ? "festeja" : "feliz";
   const savingsId = b.savings?.categoryId ?? null;
 
+  // De dónde sale cada línea: tarjetas, gastos fijos (si la categoría tiene) o deudas y préstamos.
+  const fixedCategories = new Set((fixed.data?.groups ?? []).map((g) => g.categoryId));
   const committed: CommittedItem[] = b.committed.map((l: BudgetLine) => ({
     id: l.categoryId ?? "uncategorized",
     name: l.name,
@@ -101,7 +110,7 @@ export function BudgetScreen() {
     paidAmount: l.paid,
     paid: l.fixed?.paid ?? 0,
     total: l.fixed?.total ?? 0,
-    source: l.isCards ? "cards" : "fixed",
+    source: l.isCards ? "cards" : l.categoryId !== null && fixedCategories.has(l.categoryId) ? "fixed" : "loans",
     cap: l.budget > 0 ? l.budget : undefined,
   }));
 
@@ -116,29 +125,33 @@ export function BudgetScreen() {
       <HeroUnassigned free={b.free} income={b.income} assigned={b.assigned} />
       <MascotMessage moment={moment} params={free === 0 ? undefined : { amount: formatMoney(Math.abs(free)) }} mood={mood} />
 
-      <VStack gap={2}>
-        <Button
-          testID="budget-assist"
-          icon="sparkles-outline"
-          label={t("actions.assist", { name: mascotName })}
-          onPress={() => router.push({ pathname: "/presupuesto/armar", params: { period } })}
-        />
-        {b.canCopyPrevious && b.previousPeriod ? (
-          <Button
-            testID="budget-copy"
-            variant="secondary"
-            icon="copy-outline"
-            label={copy.isPending ? t("actions.copying") : t("actions.copy", { month: monthName(b.previousPeriod) })}
-            busy={copy.isPending}
-            onPress={() => copy.mutate({ period })}
-          />
-        ) : null}
-        {copy.isError ? (
-          <Text variant="secondary" tone="dangerInk" accessibilityLiveRegion="polite">
-            {t("actions.copyError")}
-          </Text>
-        ) : null}
-      </VStack>
+      {b.assigned <= 0 || (b.canCopyPrevious && b.previousPeriod) || copy.isError ? (
+        <VStack gap={2}>
+          {b.assigned <= 0 ? (
+            <Button
+              testID="budget-assist"
+              icon="sparkles-outline"
+              label={t("actions.assist", { name: mascotName })}
+              onPress={() => router.push({ pathname: "/presupuesto/armar", params: { period } })}
+            />
+          ) : null}
+          {b.canCopyPrevious && b.previousPeriod ? (
+            <Button
+              testID="budget-copy"
+              variant="secondary"
+              icon="copy-outline"
+              label={copy.isPending ? t("actions.copying") : t("actions.copy", { month: monthName(b.previousPeriod) })}
+              busy={copy.isPending}
+              onPress={() => copy.mutate({ period })}
+            />
+          ) : null}
+          {copy.isError ? (
+            <Text variant="secondary" tone="dangerInk" accessibilityLiveRegion="polite">
+              {t("actions.copyError")}
+            </Text>
+          ) : null}
+        </VStack>
+      ) : null}
 
       {b.savings ? (
         <BudgetSavingsCard
@@ -150,7 +163,7 @@ export function BudgetScreen() {
         />
       ) : null}
 
-      {committed.length > 0 ? <BudgetCommittedCard items={committed} /> : null}
+      {committed.length > 0 ? <BudgetCommittedCard items={committed} onItemPress={openCommitted} /> : null}
 
       <VStack gap={3} testID="budget-variable">
         <SectionHeader title={t("variable.title")} />
