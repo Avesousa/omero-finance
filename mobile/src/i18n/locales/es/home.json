@@ -5,7 +5,7 @@
     "show": "Mostrar montos",
     "hiddenAmount": "Monto oculto",
     "hint": "Mantené presionado para ver el mes",
-    "holdingHint": "Soltá para volver",
+    "holdingHint": "Soltá y se desvanece",
     "dailyA11y": "Hoy podés gastar {{perDay}} por día. Libre del mes {{free}}.",
     "dailyA11yHidden": "Hoy podés gastar: monto oculto.",
     "a11yHint": "Mantené presionado para ver el libre del mes",

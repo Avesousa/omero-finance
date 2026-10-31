@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,8 +36,10 @@ export interface BalanceHeroProps {
 const HOLD_MS = 300;
 /** Alto de la extensión del degradé hacia arriba (cubre el rebote al arrastrar). */
 const OVERSCROLL = 1200;
-/** Un toque simple muestra el libre del mes este rato y vuelve solo. */
-const PEEK_MS = 2500;
+/** Al soltar, el libre del mes se queda y se va desvaneciendo este rato; después vuelve "Hoy podés gastar". */
+const FADE_MS = 2800;
+
+type Phase = "idle" | "holding" | "fading";
 
 /**
  * Héroe de Inicio, sin borde ni tarjeta: un degradé que se funde con el fondo y, encima, la mascota con el saludo y la campana,
@@ -62,35 +64,41 @@ export function BalanceHero({
   const { colors, gradients, radius, space, sizes } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
-  const [pressing, setPressing] = useState(false);
-  const [peeking, setPeeking] = useState(false);
-  const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const holding = pressing || peeking;
+  const [phase, setPhase] = useState<Phase>("idle");
+  const fade = useRef(new Animated.Value(1)).current;
+  const showMonth = phase !== "idle";
 
-  useEffect(() => () => {
-    if (peekTimer.current) clearTimeout(peekTimer.current);
-  }, []);
+  // Al soltar: el libre del mes se desvanece (si hay animación) y recién ahí vuelve el diario. Volver a presionar lo corta.
+  const stopFade = useCallback(() => {
+    fade.stopAnimation();
+    fade.setValue(1);
+  }, [fade]);
 
-  const onTap = useCallback(() => {
-    // Sin AccessibilityInfo.announce: el lector ya lee la etiqueta con ambos montos y en algunas plataformas la llamada falla.
-    setPeeking(true);
-    if (peekTimer.current) clearTimeout(peekTimer.current);
-    peekTimer.current = setTimeout(() => setPeeking(false), PEEK_MS);
-  }, []);
-
-  const shownAmount = holding ? freeMonth : perDay;
-  const amountText = hidden ? maskedMoney() : formatMoney(shownAmount);
-  const label = holding ? t("balance.monthFreeLabel") : t("balance.dailyLabel");
+  useEffect(() => () => fade.stopAnimation(), [fade]);
 
   const onHold = useCallback(() => {
-    setPressing(true);
+    stopFade();
+    setPhase("holding");
     // Háptica liviana; si el dispositivo no la soporta, se sigue sin ella.
     try {
       Promise.resolve(Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)).catch(() => {});
     } catch {
       /* sin háptica */
     }
-  }, []);
+  }, [stopFade]);
+
+  const onRelease = useCallback(() => {
+    if (phase !== "holding") return;
+    setPhase("fading");
+    Animated.timing(fade, { toValue: 0, duration: FADE_MS, useNativeDriver: true }).start(({ finished }) => {
+      if (!finished) return;
+      setPhase("idle");
+      fade.setValue(1);
+    });
+  }, [fade, phase]);
+
+  const amountText = hidden ? maskedMoney() : formatMoney(showMonth ? freeMonth : perDay);
+  const label = showMonth ? t("balance.monthFreeLabel") : t("balance.dailyLabel");
 
   const dailyA11y = hidden
     ? t("balance.dailyA11yHidden")
@@ -182,6 +190,7 @@ export function BalanceHero({
       </View>
 
       <View style={{ gap: space[2], alignItems: "flex-start" }}>
+        <Animated.View style={{ opacity: fade, maxWidth: "100%" }}>
         <Pressable
           testID="balance-daily"
           accessible
@@ -190,8 +199,7 @@ export function BalanceHero({
           accessibilityHint={t("balance.a11yHint")}
           delayLongPress={HOLD_MS}
           onLongPress={onHold}
-          onPressOut={() => setPressing(false)}
-          onPress={onTap}
+          onPressOut={onRelease}
           style={({ pressed }) => ({
             minHeight: sizes.touch,
             maxWidth: "100%",
@@ -200,20 +208,21 @@ export function BalanceHero({
             gap: space[2],
             paddingHorizontal: space[4],
             borderRadius: radius.pill,
-            backgroundColor: holding ? colors.accent : colors.heroChip,
+            backgroundColor: showMonth ? colors.accent : colors.heroChip,
             // Siempre un arreglo: con `undefined` esta versión de RN rompe (`forEach of null`) al presionar o al empezar un scroll sobre la cápsula.
             transform: [{ scale: !reduceMotion && pressed ? 0.98 : 1 }],
           })}
         >
-          <Text variant="secondarySemi" tone={holding ? "onAccent" : "heroInk"} numberOfLines={1} style={{ flexShrink: 1 }}>
+          <Text variant="secondarySemi" tone={showMonth ? "onAccent" : "heroInk"} numberOfLines={1} style={{ flexShrink: 1 }}>
             {label}
           </Text>
-          <Text testID="balance-daily-amount" variant="numberSmall" tone={holding ? "onAccent" : "heroInk"} numberOfLines={1}>
+          <Text testID="balance-daily-amount" variant="numberSmall" tone={showMonth ? "onAccent" : "heroInk"} numberOfLines={1}>
             {amountText}
           </Text>
         </Pressable>
+        </Animated.View>
         <Text variant="secondary" tone="heroInkMuted" importantForAccessibility="no" accessibilityElementsHidden>
-          {holding ? t("balance.holdingHint") : t("balance.hint")}
+          {phase === "holding" ? t("balance.holdingHint") : t("balance.hint")}
         </Text>
       </View>
     </View>
