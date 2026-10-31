@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { AccessibilityInfo, Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -34,6 +34,8 @@ export interface BalanceHeroProps {
 
 /** Tiempo de presión para pasar de "Hoy podés gastar" a "Libre del mes". */
 const HOLD_MS = 300;
+/** Un toque simple muestra el libre del mes este rato y vuelve solo. */
+const PEEK_MS = 2500;
 
 /**
  * Héroe de Inicio, sin borde ni tarjeta: un degradé que se funde con el fondo y, encima, la mascota con el saludo y la campana,
@@ -58,16 +60,34 @@ export function BalanceHero({
   const { colors, gradients, radius, space, sizes } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
-  const [holding, setHolding] = useState(false);
+  const [pressing, setPressing] = useState(false);
+  const [peeking, setPeeking] = useState(false);
+  const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holding = pressing || peeking;
+
+  useEffect(() => () => {
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+  }, []);
+
+  const onTap = useCallback(() => {
+    // Sin AccessibilityInfo.announce: el lector ya lee la etiqueta con ambos montos y en algunas plataformas la llamada falla.
+    setPeeking(true);
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    peekTimer.current = setTimeout(() => setPeeking(false), PEEK_MS);
+  }, []);
 
   const shownAmount = holding ? freeMonth : perDay;
   const amountText = hidden ? maskedMoney() : formatMoney(shownAmount);
   const label = holding ? t("balance.monthFreeLabel") : t("balance.dailyLabel");
 
   const onHold = useCallback(() => {
-    setHolding(true);
+    setPressing(true);
     // Háptica liviana; si el dispositivo no la soporta, se sigue sin ella.
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    try {
+      Promise.resolve(Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)).catch(() => {});
+    } catch {
+      /* sin háptica */
+    }
   }, []);
 
   const dailyA11y = hidden
@@ -163,8 +183,8 @@ export function BalanceHero({
           accessibilityHint={t("balance.a11yHint")}
           delayLongPress={HOLD_MS}
           onLongPress={onHold}
-          onPressOut={() => setHolding(false)}
-          onPress={() => AccessibilityInfo.announceForAccessibility(dailyA11y)}
+          onPressOut={() => setPressing(false)}
+          onPress={onTap}
           style={({ pressed }) => ({
             minHeight: sizes.touch,
             maxWidth: "100%",
