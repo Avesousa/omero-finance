@@ -87,6 +87,21 @@ const planCategories: CategoryDTO[] = [
 const categoriesOf = (kind: EntryKind): Category[] =>
   planCategories.filter((c) => c.kind === kind && !c.isArchived && !c.systemKey).map((c) => ({ id: c.id, name: c.name }));
 
+const expenseCategories: Category[] = [
+  { id: "exp-supermercado", name: "Supermercado" },
+  { id: "exp-transporte", name: "Transporte" },
+  { id: "exp-salidas", name: "Salidas y ocio" },
+  { id: "exp-servicios", name: "Servicios" },
+  { id: "exp-otros", name: "Otros" },
+];
+
+/** Tramo de "En qué se va el mes" al que suma cada categoría de gasto del mock; el resto va a Otros. */
+const SPENDING_BUCKET: Record<string, string> = {
+  "exp-supermercado": "groceries",
+  "exp-transporte": "transport",
+  "exp-salidas": "outings",
+};
+
 /** Errores que el mock "le avisó al admin" (para probar en desarrollo). */
 export const mockErrorReports: ErrorReport[] = [];
 
