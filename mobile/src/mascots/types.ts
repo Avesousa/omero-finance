@@ -37,7 +37,10 @@ export type MascotMoment =
   | "voiceErrorReported"
   | "voicePermission"
   | "voiceDraftReady"
+  | "voiceDraftIncomplete"
   | "incomeSaved"
+  | "expenseSaved"
+  | "debtSaved"
   | "loadGreeting"
   | "draftDismissed";
 

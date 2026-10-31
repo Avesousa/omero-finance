@@ -1,48 +1,88 @@
 import { useCallback, useEffect, useRef } from "react";
 import { router } from "expo-router";
-import { toAppError, useInterpretVoice, type VoiceInput } from "../../../data";
+import { toAppError, useAddEntry, useCategories, useInterpretVoice, type VoiceInput } from "../../../data";
+import { formatMoney } from "../../../i18n/format";
 import type { MascotMoment } from "../../../mascots/types";
 import type { RecordedAudio } from "../useVoiceRecorder";
 import { conversation, useLoadConversation } from "./store";
+import { draftToEntryInput } from "./draft";
 import type { ManualKind } from "./types";
-
-/** Cuánto se ve a la mascota decir que armó el borrador antes de abrir el formulario. */
-export const DRAFT_OPEN_DELAY_MS = 900;
 
 const MANUAL_ROUTES: Partial<Record<ManualKind, string>> = {
   income: "/ingresos/nuevo",
+  expense: "/gastos/nuevo",
   debt: "/deudas/nueva",
 };
+
+/** Marca de que el formulario se abrió desde el chat: al guardar vuelve (`router.back()`) y la mascota lo cuenta. */
+const FROM_CHAT = { chatRef: "1" };
+
+/** El borrador de la conversación, solo si sigue esperando Confirmar/Editar. */
+function findPending(draftId: string) {
+  const msg = conversation.getState().messages.find((m) => m.kind === "mascot.draft" && m.draftId === draftId);
+  return msg && msg.kind === "mascot.draft" && msg.status === "pending" ? msg : null;
+}
 
 /**
  * Orquesta el chat de Cargar: manda lo que escribís o grabás a interpretar y deja la respuesta en el hilo.
  * Monta el hilo (saludo) y lo reinicia al desmontarse la pantalla. Una sola interpretación a la vez (`busy`).
+ * Lo que arma la mascota queda como tarjeta (Confirmar / Editar): nunca abre el formulario sola.
+ * Los formularios se apilan arriba de Cargar (`router.push`), así el hilo sigue montado detrás.
  */
 export function useLoadChat() {
   const { messages, dispatch } = useLoadConversation();
   const interpret = useInterpretVoice();
   const busy = useRef(false);
   const inputs = useRef(new Map<string, VoiceInput>());
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const addEntry = useAddEntry();
+  const incomeCategories = useCategories("INCOME");
+  const expenseCategories = useCategories("EXPENSE");
 
   useEffect(() => {
     dispatch({ type: "start" });
     return () => {
-      if (timer.current) clearTimeout(timer.current);
       inputs.current.clear();
       dispatch({ type: "reset" });
     };
   }, [dispatch]);
 
-  /** Abre el formulario con el borrador; el hilo queda detrás. */
-  const openDraft = useCallback((draftId: string) => {
-    const msg = conversation.getState().messages.find((m) => m.kind === "mascot.draft" && m.draftId === draftId);
-    if (!msg || msg.kind !== "mascot.draft") return;
+  /** Editar: abre el formulario del tipo correcto arriba del chat, precargado con el borrador. */
+  const editDraft = useCallback((draftId: string) => {
+    const msg = findPending(draftId);
+    if (!msg) return;
     router.push({
-      pathname: "/ingresos/nuevo",
-      params: { draft: JSON.stringify(msg.draft), transcript: msg.transcript, draftId },
+      pathname: msg.draft.kind === "EXPENSE" ? "/gastos/nuevo" : "/ingresos/nuevo",
+      params: {
+        ...FROM_CHAT,
+        draft: JSON.stringify(msg.draft),
+        draftId,
+        source: msg.source,
+        ...(msg.transcript ? { transcript: msg.transcript } : {}),
+      },
     });
   }, []);
+
+  /** Confirmar: guarda directo si la información está completa; si falta algo, abre el formulario. */
+  const confirmDraft = useCallback(
+    async (draftId: string) => {
+      const msg = findPending(draftId);
+      if (!msg) return;
+      const categories = msg.intent === "income" ? incomeCategories.data : expenseCategories.data;
+      const input = draftToEntryInput(msg.draft, categories?.find((c) => c.id === msg.draft.categoryId)?.name);
+      if (!input) {
+        editDraft(draftId);
+        return;
+      }
+      dispatch({ type: "draftSaving", draftId });
+      try {
+        await addEntry.mutateAsync(input);
+        dispatch({ type: "draftSaved", draftId, amount: formatMoney(input.amount, input.currency) });
+      } catch {
+        dispatch({ type: "draftFailed", draftId });
+      }
+    },
+    [addEntry, dispatch, editDraft, expenseCategories.data, incomeCategories.data],
+  );
 
   const run = useCallback(
     async (messageId: string, input: VoiceInput, retry: boolean) => {
@@ -51,22 +91,14 @@ export function useLoadChat() {
       dispatch(retry ? { type: "thinking", forMessageId: messageId } : { type: "thinking" });
       try {
         const outcome = await interpret.mutateAsync(input);
-        const draftId = conversation.newId("d");
-        dispatch({ type: "outcome", outcome, forMessageId: messageId, draftId });
-        if (outcome.kind === "draft") {
-          if (timer.current) clearTimeout(timer.current);
-          timer.current = setTimeout(() => {
-            const d = conversation.getState().messages.find((m) => m.kind === "mascot.draft" && m.draftId === draftId);
-            if (d && d.kind === "mascot.draft" && d.status === "pending") openDraft(draftId);
-          }, DRAFT_OPEN_DELAY_MS);
-        }
+        dispatch({ type: "outcome", outcome, forMessageId: messageId, draftId: conversation.newId("d") });
       } catch (e) {
         dispatch({ type: "error", error: toAppError(e), forMessageId: messageId });
       } finally {
         busy.current = false;
       }
     },
-    [dispatch, interpret, openDraft],
+    [dispatch, interpret],
   );
 
   const sendText = useCallback(
@@ -103,16 +135,14 @@ export function useLoadChat() {
     [run],
   );
 
-  /** Opción de carga manual (sin borrador). Los tipos sin pantalla todavía no hacen nada. */
+  /** Opción de carga manual (sin borrador): el formulario se abre arriba del chat y al guardar vuelve a él. */
   const openManual = useCallback((kind: ManualKind) => {
-    // A mano no hay borrador que seguir en el chat: el formulario reemplaza a Cargar y al
-    // guardar se vuelve a la app (como antes). Lo dictado sí vuelve al chat (ver openDraft).
     const href = MANUAL_ROUTES[kind];
-    if (href) router.replace(href as never);
+    if (href) router.push({ pathname: href, params: FROM_CHAT } as never);
   }, []);
 
   /** La mascota dice un momento suelto (p. ej. `voicePermission`, `voiceUnclear` si el audio fue muy corto). */
   const say = useCallback((moment: MascotMoment) => dispatch({ type: "say", moment }), [dispatch]);
 
-  return { messages, busy: interpret.isPending, sendText, sendAudio, retry, openDraft, openManual, say };
+  return { messages, busy: interpret.isPending, sendText, sendAudio, retry, confirmDraft, editDraft, openManual, say };
 }

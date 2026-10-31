@@ -27,7 +27,7 @@ Variables de entorno (archivo `.env` dentro de `mobile/`):
 
 ### Probar la voz de verdad
 
-Con `EXPO_PUBLIC_DATA_SOURCE=mock` y `EXPO_PUBLIC_VOICE_SOURCE=api`, `interpretVoice` y `reportError` van a la API real (OpenAI) y todo lo demás, incluidos `addIncome` y las categorías, sigue en mock: no se escribe nada en la base. Como la API pide sesión, en este modo la app muestra el login (hay que entrar con un usuario real). Está centralizado en `src/data/sources/index.ts`.
+Con `EXPO_PUBLIC_DATA_SOURCE=mock` y `EXPO_PUBLIC_VOICE_SOURCE=api`, `interpretVoice` y `reportError` van a la API real (OpenAI) y todo lo demás, incluidos `addEntry` y las categorías, sigue en mock: no se escribe nada en la base. Como la API pide sesión, en este modo la app muestra el login (hay que entrar con un usuario real). Está centralizado en `src/data/sources/index.ts`.
 
 Una limitación: las categorías que devuelve la voz son las reales del hogar, y el formulario usa las del mock, así que la categoría no se preselecciona (se elige a mano).
 
@@ -61,6 +61,8 @@ mobile/
     (tabs)/mas.tsx            Más.
     cargar.tsx                Modal Cargar: chat con la mascota (src/features/load).
     deudas/nueva.tsx          Modal Nueva deuda o préstamo.
+    ingresos/nuevo.tsx        Modal Nuevo ingreso (NewEntryScreen kind="INCOME").
+    gastos/nuevo.tsx          Modal Nuevo gasto (NewEntryScreen kind="EXPENSE").
     notificaciones.tsx        Notificaciones.
     login.tsx                 Login (solo modo api).
   src/
@@ -288,6 +290,9 @@ interface DataSource {
   getPendingPayments(): Promise<PendingPayment[]>;
   getNotifications(): Promise<AppNotifications>;     // { pending, notices }
   confirmPayment(id: string, amount?: number): Promise<void>;
+  getCategories(kind: "INCOME" | "EXPENSE"): Promise<Category[]>;  // chips de categoría del formulario
+  addEntry(input: NewEntryInput): Promise<void>;                    // ingreso o gasto (`kind`), igual a POST /api/plan/entries
+  // ...más: getCards, getWealth, getDebts, addLoan, interpretVoice, etc. (ver DataSource.ts)
 }
 ```
 
@@ -305,6 +310,8 @@ Los tipos (`src/data/types.ts`): `HomeSummary`, `SpendingCategory`, `FixedProgre
 - `useNotifications()`: `{ pending, notices }` para la pantalla de Notificaciones.
 - `useNotificationBadge()`: número del globo de la campana (pendientes + avisos sin leer). Devuelve 0 mientras carga.
 - `useConfirmPayment()`: mutación `mutate({ id, amount? })`. Al confirmar invalida `["home"]`, pendientes y notificaciones.
+- `useCategories(kind)`: categorías del hogar de un tipo (`"INCOME"` o `"EXPENSE"`).
+- `useAddEntry()`: mutación para guardar un ingreso o un gasto (`NewEntryInput` con `kind`). Invalida Inicio y Patrimonio. En `mock`, un gasto resta del disponible y del libre y suma al tramo de "En qué se va el mes" que corresponda.
 
 El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la app (`AppState`).
 
@@ -323,11 +330,15 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 
 - **Secciones** (`src/navigation/sections.ts`): fuente única, en orden de la barra: **Inicio** (`index`), **Tarjetas** (`tarjetas`), **Deudas** (`deudas`), **Patrimonio** (`patrimonio`) y **Más** (`mas`). Cada una trae `key`, `route` e íconos (`icon` / `iconActive`). La barra y los títulos salen de ahí.
 - **TabBar** (`components/organisms/TabBar.tsx`): píldora flotante con las 5 secciones (la activa con cápsula `tabActiveBg` e ícono relleno) y, fuera de la píldora, el botón circular **Cargar** (`fab-cargar`). Medidas en `sizes.tabBarHeight` y `sizes.fab`. `ScreenTemplate` deja el aire inferior para que la barra no tape nada.
-- **Cargar** no es una pestaña: el botón hace `router.push("/cargar")` y abre el modal con las opciones (Gasto, Ingreso, Deuda o préstamo, Resumen de tarjeta). Arriba está **"Contale a {{mascota}}"** (`VoiceCapture` + `useVoiceRecorder` con `expo-audio`): grabás o escribís, `useInterpretVoice` llama a `POST /api/plan/voice` (en `mock`, un intérprete local por palabras clave) y la mascota responde según el `VoiceOutcome` (contrato compartido en `src/lib/plan/voice.ts`): `draft` abre el formulario precargado, `notYet` pide que esperes, `chat` aclara que solo carga finanzas, `unclear` pide repetir; los errores reintentables se reintentan solos y los demás quedan reportados (`AppErrorReport`). Qué se carga por voz lo define `VOICE_SUPPORTED` (hoy solo ingreso). Opciones a mano habilitadas: Ingreso (`/ingresos/nuevo`) y Deuda o préstamo (`/deudas/nueva`).
+- **Cargar** no es una pestaña: el botón hace `router.push("/cargar")` y abre `LoadChatScreen`, un chat con la mascota elegida. Respuestas rápidas del primer mensaje, en este orden: **Gasto, Ingreso, Deuda o préstamo** y Resumen (todavía "pronto"). Podés escribir o grabar un audio (`useVoiceRecorder` con `expo-audio`; el audio queda en el hilo como burbuja con onda y play). `useLoadChat` manda eso a `useInterpretVoice` (`POST /api/plan/voice`; en `mock`, un intérprete local por palabras clave) y la mascota responde según el `VoiceOutcome` (contrato compartido en `src/lib/plan/voice.ts`): `notYet` pide que esperes, `chat` aclara que solo carga finanzas, `unclear` pide repetir; los errores reintentables se reintentan solos y los demás quedan reportados (`AppErrorReport`). Qué se carga por voz lo define `VOICE_SUPPORTED` (hoy ingreso y gasto).
+  - **Tarjeta del borrador** (`DraftCard`): cuando la mascota arma algo (`draft`) **no se abre ningún formulario solo**. Muestra tipo (Ingreso/Gasto), nombre, monto, categoría, fecha (Hoy, Ayer, 5/11) y "Fijo", con dos botones: **Confirmar** (`draft-confirm`, guarda directo con `useAddEntry`; sin nombre usa el de la categoría) y **Editar** (`draft-edit`, abre el formulario). Si falta algo obligatorio (`isDraftComplete`: monto > 0 y nombre o categoría) no hay Confirmar: aparece "Falta el monto" y **Completar** (abre el formulario). Estados: guardando (spinner en Confirmar), guardado ✓, y si falla vuelve a pendiente con un aviso y la mascota pide reintentar.
+  - **Formularios arriba del chat**: Gasto, Ingreso y Deuda (y Editar) se abren con `router.push` encima de `/cargar` con `chatRef=1`; el chat sigue montado con su hilo. Al guardar, `router.back()` vuelve al chat y la mascota lo cuenta (`incomeSaved`, `expenseSaved`, `debtSaved`); cerrar sin guardar también vuelve y la tarjeta queda pendiente. Abiertos desde otro lado (p. ej. "Agregar" en Deudas), los formularios se comportan como siempre.
+  - **Formulario único de movimiento** (`features/entry/NewEntryScreen.tsx`, textos en el namespace `entry` con variantes por tipo): rutas `/ingresos/nuevo` y `/gastos/nuevo`. Muestra "Escuché: …" solo si el borrador vino de un audio (`source: "audio"`).
+  - El hilo vive en memoria (`features/load/conversation`: reducer puro con tests, store y `useLoadChat`) y se reinicia al cerrar Cargar. testIDs: `draft-card`, `draft-confirm`, `draft-edit`, `new-entry`, `new-entry-save`, `new-entry-amount`, `new-entry-name`, `new-entry-close`, `new-entry-heard`.
 - **Deudas** (`app/(tabs)/deudas.tsx` → `DebtsScreen`): Debo / Me deben, tarjetas, préstamos y terminados. "Agregar" abre `app/deudas/nueva.tsx` (`NewDebtScreen`, modal) con `?direction=OWE|OWED`.
 - **Inicio** tiene la campana en el header (`AppHeader`). Va a `/notificaciones` y muestra el badge de `useNotificationBadge()`.
 - **Notificaciones** (`app/notificaciones.tsx` → `NotificationsScreen`) tiene dos secciones separadas: **Por confirmar** (arriba, `PendingConfirmCard`) y **Avisos** (abajo, `NoticeRow`).
-- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `deudas/nueva` (modal), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
+- **Stack raíz** (`app/_layout.tsx`): `(tabs)`, `cargar` (modal), `deudas/nueva`, `ingresos/nuevo` y `gastos/nuevo` (modales), `notificaciones`. `login` solo aparece en modo `api` cuando no hay sesión.
 - **Más**: modo Tranqui/Atrevido, mascota, idioma y, en modo `api`, cuenta y cierre de sesión.
 
 ### Lógica centralizada
@@ -339,7 +350,7 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 
 ## 8. Pendiente
 
-- **Cargar**: Gasto y Resumen de tarjeta muestran "Próximamente". Por voz solo se carga Ingreso (deuda por voz es lo próximo). En `mock`, con audio se usa un texto de ejemplo; escribí `error` o `error fatal` para probar los errores.
+- **Cargar**: Resumen de tarjeta muestra "pronto". Por voz se cargan Ingreso y Gasto (deuda por voz es lo próximo). En `mock`, con audio se usa un texto de ejemplo; escribí `error` o `error fatal` para probar los errores.
 - **Confirmar un pago** en `mock` ignora la categoría y el monto: el flujo de categoría llega con Cargar.
 - **Fuente `api`**: solo implementa pagos por confirmar. `getHome` tira error, así que en modo `api` Inicio muestra el estado de error.
 - **Selector de idioma** no implementado (ver sección 5).

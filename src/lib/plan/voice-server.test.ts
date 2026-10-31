@@ -4,11 +4,11 @@ import {
 } from "./voice-server";
 import type { VoiceContext } from "./voice";
 
-const ctx: VoiceContext = { today: "2026-10-30", incomeCategories: [{ id: "c1", name: "Sueldo" }] };
+const ctx: VoiceContext = { today: "2026-10-30", incomeCategories: [{ id: "c1", name: "Sueldo" }], expenseCategories: [{ id: "e1", name: "Supermercado" }] };
 
 const extraction = (over: object = {}) => JSON.stringify({
   intent: "income",
-  income: { name: "Sueldo", amount: 1200000, currency: "ARS", categoryName: "sueldo", date: null, fixed: true, frequency: "MONTHLY", note: null, ...over },
+  entry: { name: "Sueldo", amount: 1200000, currency: "ARS", categoryName: "sueldo", date: null, fixed: true, frequency: "MONTHLY", note: null, ...over },
 });
 
 function mock(opts: { text?: string; chat?: (n: number) => unknown } = {}) {
@@ -31,7 +31,7 @@ describe("interpretVoice", () => {
     const out = await interpretVoice({ audio: audio() }, ctx, { openai: m.openai });
     expect(out).toMatchObject({
       kind: "draft", intent: "income", transcript: "Cobré el sueldo, un palo doscientos",
-      draft: { amount: 1200000, categoryId: "c1", fixed: { frequency: "MONTHLY" } },
+      draft: { kind: "INCOME", amount: 1200000, categoryId: "c1", fixed: { frequency: "MONTHLY" } },
     });
     const t = m.transcribe.mock.calls[0] as unknown as [{ model: string; language: string; file: File }];
     expect(t[0]).toMatchObject({ model: "gpt-4o-mini-transcribe", language: "es" });

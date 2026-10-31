@@ -1,4 +1,4 @@
-import type { IncomeDraft, VoicePendingIntent } from "../../../domain/index.ts";
+import type { EntryDraft, VoicePendingIntent } from "../../../domain/index.ts";
 import type { MascotMoment } from "../../../mascots/types.ts";
 
 /** Tipos de carga manual que ofrece la mascota como respuestas rápidas. */
@@ -48,19 +48,26 @@ export interface MascotOptionsMessage extends Base {
   kind: "mascot.options";
 }
 
-export type DraftStatus = "pending" | "saved" | "dismissed";
+/** `pending` = esperando Confirmar/Editar (también si se cerró el formulario sin guardar). */
+export type DraftStatus = "pending" | "saving" | "saved";
+
+/** De dónde salió el borrador: el formulario muestra "Escuché: …" solo si fue un audio. */
+export type DraftSource = "audio" | "text";
 
 export interface MascotDraftMessage extends Base {
   from: "mascot";
   kind: "mascot.draft";
   draftId: string;
-  intent: "income";
-  draft: IncomeDraft;
-  /** Lo que se escuchó (para el formulario). */
-  transcript: string;
+  intent: "income" | "expense";
+  draft: EntryDraft;
+  source: DraftSource;
+  /** Lo que se escuchó; solo si `source` es "audio". */
+  transcript?: string;
   status: DraftStatus;
   /** Monto ya formateado, cuando `status` es "saved". */
   savedAmount?: string;
+  /** El último intento de guardar falló (vuelve a `pending` con el aviso). */
+  error?: boolean;
 }
 
 export interface MascotErrorMessage extends Base {

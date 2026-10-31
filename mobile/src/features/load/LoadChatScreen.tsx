@@ -6,18 +6,19 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { HStack, IconButton, Text, VStack } from "../../components/atoms";
 import { AudioBubble, ChatBubble, MascotAvatar, QuickReplies, TypingBubble, formatClock, type QuickReply } from "../../components/molecules";
 import { ChatComposer, ChatErrorActions, ChatThread, DraftCard, type ChatThreadItem } from "../../components/organisms";
-import { useIncomeCategories } from "../../data";
+import { useCategories } from "../../data";
+import { addDays, todayIso } from "../../domain";
 import { useTheme } from "../../design-system";
 import { formatDate, formatMoney } from "../../i18n/format";
 import { useMascotStory } from "../../mascots/useMascotLine";
-import { useChatAudio, useChatLine, useLoadChat, type ChatMessage, type ManualKind, type MascotLineMessage } from "./conversation";
+import { isDraftComplete, useChatAudio, useChatLine, useLoadChat, type ChatMessage, type ManualKind, type MascotLineMessage } from "./conversation";
 import { MAX_RECORDING_MS, useVoiceRecorder } from "./useVoiceRecorder";
 
-/** Opciones de carga manual que ofrece la mascota; sin pantalla todavía = apagadas con "pronto". */
+/** Opciones de carga manual que ofrece la mascota (en este orden); sin pantalla todavía = apagadas con "pronto". */
 const MANUAL: readonly { kind: ManualKind; ready: boolean }[] = [
+  { kind: "expense", ready: true },
   { kind: "income", ready: true },
   { kind: "debt", ready: true },
-  { kind: "expense", ready: false },
   { kind: "statement", ready: false },
 ];
 
@@ -68,11 +69,14 @@ export function LoadChatScreen() {
   const chat = useLoadChat();
   const audio = useChatAudio();
   const recorder = useVoiceRecorder();
-  const categories = useIncomeCategories();
+  const incomeCategories = useCategories("INCOME");
+  const expenseCategories = useCategories("EXPENSE");
   const [text, setText] = useState("");
+  const today = useMemo(() => todayIso(), []);
+  const yesterday = useMemo(() => addDays(today, -1), [today]);
   const recording = recorder.status === "recording";
 
-  const { sendText, sendAudio, say, openManual, openDraft, retry } = chat;
+  const { sendText, sendAudio, say, openManual, confirmDraft, editDraft, retry } = chat;
   const { stop: stopAudio } = audio;
 
   const onSendText = useCallback(() => {
@@ -141,18 +145,27 @@ export function LoadChatScreen() {
           break;
         case "mascot.draft": {
           const d = m.draft;
-          const category = d.categoryId ? categories.data?.find((c) => c.id === d.categoryId)?.name : undefined;
-          const details = [category, d.date ? formatDate(d.date, "short") : undefined].filter((v): v is string => !!v);
+          const income = m.intent === "income";
+          const list = income ? incomeCategories.data : expenseCategories.data;
+          const category = d.categoryId ? list?.find((c) => c.id === d.categoryId)?.name : undefined;
+          const when = !d.date || d.date === today ? t("draft.today") : d.date === yesterday ? t("draft.yesterday") : formatDate(d.date, "short");
+          const details = [category, when].filter((v): v is string => !!v);
+          const hasAmount = d.amount != null && d.amount > 0;
+          const missing = isDraftComplete(d) ? null : hasAmount ? t("draft.missingName") : t("draft.missingAmount");
           add(m, () => (
             <DraftCard
-              kindLabel={t("draft.kind")}
-              name={d.name}
-              amount={d.amount != null ? formatMoney(d.amount, d.currency) : null}
+              kind={m.intent}
+              kindLabel={t(income ? "draft.kind.income" : "draft.kind.expense")}
+              name={d.name?.trim() || category || null}
+              amount={hasAmount ? formatMoney(d.amount as number, d.currency) : null}
               details={details}
               fixed={!!d.fixed}
+              missing={missing}
               status={m.status}
               savedAmount={m.savedAmount}
-              onReview={() => openDraft(m.draftId)}
+              error={m.error}
+              onConfirm={() => void confirmDraft(m.draftId)}
+              onEdit={() => editDraft(m.draftId)}
             />
           ));
           break;
@@ -165,7 +178,7 @@ export function LoadChatScreen() {
     return out;
     // `options` se rehace en cada render con los mismos textos; depende de t.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chat.messages, chat.busy, audio.activeId, audio.playing, audio.positionMs, categories.data, t, name, openManual, openDraft, retry]);
+  }, [chat.messages, chat.busy, audio.activeId, audio.playing, audio.positionMs, incomeCategories.data, expenseCategories.data, today, yesterday, t, name, openManual, confirmDraft, editDraft, retry]);
 
   return (
     <SafeAreaView edges={["top"]} testID="load-chat" style={{ flex: 1, backgroundColor: colors.bg }}>

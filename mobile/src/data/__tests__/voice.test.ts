@@ -13,6 +13,13 @@ const ctx: VoiceContext = {
     { id: "ic-alquileres", name: "Alquileres" },
     { id: "ic-otros", name: "Otros ingresos" },
   ],
+  expenseCategories: [
+    { id: "exp-supermercado", name: "Supermercado" },
+    { id: "exp-transporte", name: "Transporte" },
+    { id: "exp-salidas", name: "Salidas y ocio" },
+    { id: "exp-servicios", name: "Servicios" },
+    { id: "exp-otros", name: "Otros" },
+  ],
 };
 
 test("parseSpokenAmount: dígitos, escalas y palabras", () => {
@@ -32,19 +39,42 @@ test("parseSpokenAmount: dígitos, escalas y palabras", () => {
 test("mockInterpret: ingreso con monto, moneda, categoría, fijo y fecha", () => {
   const e = mockInterpret("Me pagaron el sueldo, un millón doscientos mil", ctx);
   assert.equal(e.intent, "income");
-  assert.equal(e.income?.amount, 1_200_000);
-  assert.equal(e.income?.categoryName, "Sueldo");
-  assert.equal(e.income?.fixed, false);
+  assert.equal(e.entry?.amount, 1_200_000);
+  assert.equal(e.entry?.categoryName, "Sueldo");
+  assert.equal(e.entry?.fixed, false);
 
   const usd = mockInterpret("Cobré 300 dólares de freelance ayer", ctx);
-  assert.equal(usd.income?.currency, "USD");
-  assert.equal(usd.income?.categoryName, "Freelance");
-  assert.equal(usd.income?.date, "2026-11-02");
+  assert.equal(usd.entry?.currency, "USD");
+  assert.equal(usd.entry?.categoryName, "Freelance");
+  assert.equal(usd.entry?.date, "2026-11-02");
 
   const fijo = mockInterpret("Me depositan alquiler, ingreso de 150 mil todos los meses", ctx);
-  assert.equal(fijo.income?.fixed, true);
-  assert.equal(fijo.income?.frequency, "MONTHLY");
-  assert.equal(fijo.income?.categoryName, "Alquileres");
+  assert.equal(fijo.entry?.fixed, true);
+  assert.equal(fijo.entry?.frequency, "MONTHLY");
+  assert.equal(fijo.entry?.categoryName, "Alquileres");
+});
+
+test("mockInterpret: gasto con monto, categoría, fecha y fijo; tarjeta es card_purchase", () => {
+  const sup = mockInterpret("gasté 5 mil en el súper", ctx);
+  assert.equal(sup.intent, "expense");
+  assert.equal(sup.entry?.amount, 5_000);
+  assert.equal(sup.entry?.categoryName, "Supermercado");
+
+  const nafta = mockOutcome("ayer pagué 30 mil de nafta", ctx);
+  assert.equal(nafta.kind, "draft");
+  if (nafta.kind === "draft") {
+    assert.equal(nafta.intent, "expense");
+    assert.equal(nafta.draft.kind, "EXPENSE");
+    assert.equal(nafta.draft.categoryId, "exp-transporte");
+    assert.equal(nafta.draft.date, "2026-11-02");
+  }
+  const luz = mockInterpret("pagué la luz 20 mil todos los meses", ctx);
+  assert.equal(luz.entry?.categoryName, "Servicios");
+  assert.equal(luz.entry?.frequency, "MONTHLY");
+  const sinCat = mockInterpret("gasté 800", ctx);
+  assert.equal(sinCat.entry?.categoryName, null);
+  assert.equal(mockInterpret("compré una tele en 12 cuotas", ctx).intent, "card_purchase");
+  assert.equal(mockInterpret("gasté 50 mil con la visa en cuotas", ctx).intent, "card_purchase");
 });
 
 test("mockInterpret: cada intención", () => {
@@ -67,7 +97,7 @@ test("mockOutcome pasa por resolveVoiceOutcome", () => {
     assert.equal(o.draft.categoryId, "ic-sueldo");
     assert.equal(o.draft.amount, 2_000_000);
   }
-  assert.deepEqual(mockOutcome("gasté 100", ctx), { kind: "notYet", intent: "expense", transcript: "gasté 100" });
+  assert.equal(mockOutcome("quiero pagar la deuda", ctx).kind, "notYet");
   assert.equal(mockOutcome("hola", ctx).kind, "chat");
 });
 
@@ -78,15 +108,45 @@ test("mock: audio usa el texto de ejemplo y los textos 'error' lanzan AppError",
   await assert.rejects(mockSource.interpretVoice({ text: "error fatal" }), (e: AppError) => !e.retryable && e.reported);
 });
 
-test("mock: addIncome suma a Inicio", async () => {
+test("mock: addEntry INCOME suma a Inicio", async () => {
   const before = await mockSource.getHome();
-  await mockSource.addIncome({
-    period: before.period, name: "Freelance", amount: 100, currency: "ARS", categoryId: null, date: null, note: null, fixed: null,
+  await mockSource.addEntry({
+    kind: "INCOME", period: before.period, name: "Freelance", amount: 100, currency: "ARS", categoryId: null, date: null, note: null, fixed: null,
   });
   const after = await mockSource.getHome();
   assert.equal(after.income, before.income + 100);
   assert.equal(after.available, before.available + 100);
   assert.equal(after.free, before.free + 100);
+});
+
+test("mock: addEntry EXPENSE resta de disponible y libre y suma al tramo", async () => {
+  const snap = async () => {
+    const h = await mockSource.getHome();
+    const amount = (id: string) => h.spendingByCategory.find((c) => c.id === id)!.amount;
+    return { ...h, grocery: amount("groceries"), other: amount("other") };
+  };
+  const before = await snap();
+  await mockSource.addEntry({
+    kind: "EXPENSE", period: before.period, name: "Súper", amount: 1_000, currency: "ARS",
+    categoryId: "exp-supermercado", date: null, note: null, fixed: null,
+  });
+  await mockSource.addEntry({
+    kind: "EXPENSE", period: before.period, name: "Varios", amount: 200, currency: "ARS",
+    categoryId: "exp-servicios", date: null, note: null, fixed: null,
+  });
+  const after = await snap();
+  assert.equal(after.income, before.income);
+  assert.equal(after.available, before.available - 1_200);
+  assert.equal(after.free, before.free - 1_200);
+  assert.equal(after.grocery, before.grocery + 1_000);
+  assert.equal(after.other, before.other + 200);
+});
+
+test("mock: getCategories por tipo", async () => {
+  const inc = await mockSource.getCategories("INCOME");
+  const exp = await mockSource.getCategories("EXPENSE");
+  assert.ok(inc.some((c) => c.id === "ic-sueldo"));
+  assert.deepEqual(exp.map((c) => c.name), ["Supermercado", "Transporte", "Salidas y ocio", "Servicios", "Otros"]);
 });
 
 test("toAppError: red, timeout y HTTP", () => {

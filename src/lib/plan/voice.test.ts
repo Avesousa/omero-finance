@@ -9,11 +9,15 @@ const ctx: VoiceContext = {
     { id: "c1", name: "Sueldo" },
     { id: "c2", name: "Educación extra" },
   ],
+  expenseCategories: [
+    { id: "e1", name: "Supermercado" },
+    { id: "e2", name: "Salidas y ocio" },
+  ],
 };
 
-const income = (over: Partial<NonNullable<VoiceExtraction["income"]>> = {}): VoiceExtraction => ({
+const income = (over: Partial<NonNullable<VoiceExtraction["entry"]>> = {}): VoiceExtraction => ({
   intent: "income",
-  income: {
+  entry: {
     name: "Sueldo", amount: 1_200_000, currency: "ARS", categoryName: null, date: null,
     fixed: false, frequency: null, note: null, ...over,
   },
@@ -24,18 +28,43 @@ describe("resolveVoiceOutcome", () => {
     const out = resolveVoiceOutcome(" Cobré el sueldo ", income(), ctx);
     expect(out).toEqual({
       kind: "draft", intent: "income", transcript: "Cobré el sueldo",
-      draft: { name: "Sueldo", amount: 1_200_000, currency: "ARS", categoryId: null, date: null, fixed: null, note: null },
+      draft: { kind: "INCOME", name: "Sueldo", amount: 1_200_000, currency: "ARS", categoryId: null, date: null, fixed: null, note: null },
     });
     expect(VOICE_SUPPORTED).toContain("income");
   });
 
-  it.each(["expense", "debt", "card_purchase", "card_statement"] as VoiceIntent[])("%s → notYet", (intent) => {
-    expect(resolveVoiceOutcome("algo", { intent, income: null }, ctx)).toEqual({ kind: "notYet", intent, transcript: "algo" });
+  it.each(["debt", "card_purchase", "card_statement"] as VoiceIntent[])("%s → notYet", (intent) => {
+    expect(resolveVoiceOutcome("algo", { intent, entry: null }, ctx)).toEqual({ kind: "notYet", intent, transcript: "algo" });
+  });
+
+  it("expense arma un borrador EXPENSE y resuelve contra categorías de gasto", () => {
+    const e: VoiceExtraction = {
+      intent: "expense",
+      entry: { name: "Súper", amount: 5000, currency: "ARS", categoryName: "supermercado", date: null, fixed: false, frequency: null, note: null },
+    };
+    expect(resolveVoiceOutcome("gasté 5 mil en el súper", e, ctx)).toEqual({
+      kind: "draft", intent: "expense", transcript: "gasté 5 mil en el súper",
+      draft: { kind: "EXPENSE", name: "Súper", amount: 5000, currency: "ARS", categoryId: "e1", date: null, fixed: null, note: null },
+    });
+    expect(VOICE_SUPPORTED).toContain("expense");
+  });
+
+  it("la categoría no se cruza entre tipos", () => {
+    const e: VoiceExtraction = {
+      intent: "expense",
+      entry: { name: "x", amount: 1, currency: "ARS", categoryName: "Sueldo", date: null, fixed: false, frequency: null, note: null },
+    };
+    const out = resolveVoiceOutcome("x", e, ctx);
+    expect(out.kind === "draft" && out.draft.categoryId).toBeNull();
+  });
+
+  it("expense sin entry → unclear", () => {
+    expect(resolveVoiceOutcome("gasté", { intent: "expense", entry: null }, ctx).kind).toBe("unclear");
   });
 
   it("chat y unclear", () => {
-    expect(resolveVoiceOutcome("hola", { intent: "chat", income: null }, ctx).kind).toBe("chat");
-    expect(resolveVoiceOutcome("eh", { intent: "unclear", income: null }, ctx).kind).toBe("unclear");
+    expect(resolveVoiceOutcome("hola", { intent: "chat", entry: null }, ctx).kind).toBe("chat");
+    expect(resolveVoiceOutcome("eh", { intent: "unclear", entry: null }, ctx).kind).toBe("unclear");
   });
 
   it("transcripción vacía o extracción nula → unclear", () => {
@@ -44,7 +73,7 @@ describe("resolveVoiceOutcome", () => {
   });
 
   it("income sin datos de ingreso → unclear", () => {
-    expect(resolveVoiceOutcome("cobré", { intent: "income", income: null }, ctx).kind).toBe("unclear");
+    expect(resolveVoiceOutcome("cobré", { intent: "income", entry: null }, ctx).kind).toBe("unclear");
   });
 
   it("categoría por nombre sin acentos ni mayúsculas", () => {
@@ -99,6 +128,7 @@ describe("voiceSystemPrompt", () => {
     const p = voiceSystemPrompt(ctx);
     expect(p).toContain("2026-10-30");
     expect(p).toContain("Sueldo, Educación extra");
-    expect(voiceSystemPrompt({ ...ctx, incomeCategories: [] })).toContain("(ninguna)");
+    expect(p).toContain("Supermercado, Salidas y ocio");
+    expect(voiceSystemPrompt({ ...ctx, incomeCategories: [], expenseCategories: [] })).toContain("(ninguna)");
   });
 });

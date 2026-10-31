@@ -24,14 +24,22 @@
     "label": "{{name}} está escribiendo"
   },
   "draft": {
-    "kind": "Ingreso",
+    "kind": {
+      "income": "Ingreso",
+      "expense": "Gasto"
+    },
     "unnamed": "Sin nombre",
     "missingAmount": "Falta el monto",
+    "missingName": "Falta el nombre o la categoría",
     "fixed": "Fijo",
-    "review": "Revisar y guardar",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "confirm": "Confirmar",
+    "edit": "Editar",
+    "complete": "Completar",
+    "saving": "Guardando…",
     "saved": "Guardado",
-    "dismissed": "Descartado",
-    "resume": "Retomar"
+    "error": "No pude guardarlo. Probá de nuevo o editalo."
   },
   "quick": {
     "income": "Ingreso",
