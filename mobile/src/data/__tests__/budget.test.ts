@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assistantTargets, budgetNotices, budgetView, previousBudgetItems, projectedFree, suggestedBudget, withBudgetItems } from "../budget.ts";
-import { homeFromPlan, projectedPlan } from "../plan.ts";
+import { assistantTargets, budgetAllocation, budgetNotices, budgetView, categoryColorOrder, previousBudgetItems, projectedFree, suggestedBudget, withBudgetItems } from "../budget.ts";
+import { homeDefinitions, homeFromPlan, projectedPlan } from "../plan.ts";
 import { mockSource } from "../sources/mock.ts";
 import { parseSpokenAmount } from "../../domain/index.ts";
 import type { MonthPlan } from "../../domain/index.ts";
@@ -182,4 +182,76 @@ test("diciembre: con el presupuesto de noviembre copiado el Sin asignar queda po
   const before = budgetView(plan).free;
   const after = projectedFree(plan, previousBudgetItems(plan));
   assert.ok(after > 0);
+});
+
+test("definiciones de Inicio: balance, por día, libre del mes, ingresos y gastos del mes", async () => {
+  const plan = await load();
+  const h = homeFromPlan(plan, extras);
+  const d = homeDefinitions(h);
+  assert.equal(d.balance, 2_618_000);
+  assert.equal(d.balance, h.available);
+  assert.equal(d.freeMonth, 170_325);
+  assert.equal(d.perDay, 6_083); // floor(170.325 / 28)
+  assert.equal(d.monthIncome, 3_500_000);
+  assert.equal(h.monthIncome, h.income);
+  // Gastos = lo que ya salió = ingresos − balance.
+  assert.equal(d.monthExpenses, 3_500_000 - 2_618_000);
+});
+
+test("definiciones de Inicio: sin libre o sin días el gasto diario es 0", () => {
+  const base = { balance: 100, monthIncome: 500, monthExpenses: 400 };
+  assert.equal(homeDefinitions({ ...base, free: -50, daysLeft: 10 }).perDay, 0);
+  assert.equal(homeDefinitions({ ...base, free: 900, daysLeft: 0 }).perDay, 0);
+  assert.equal(homeDefinitions({ ...base, free: 900, daysLeft: 0 }).freeMonth, 900);
+});
+
+test("categoryColorOrder: ahorro primero, solo gastos activos, igual en todos los meses", async () => {
+  const nov = await load();
+  const order = categoryColorOrder(nov);
+  const names = order.map((id) => nov.categories.find((c) => c.id === id)?.name);
+  assert.equal(names[0], "Ahorro e inversión");
+  assert.ok(order.every((id) => nov.categories.find((c) => c.id === id)?.kind === "EXPENSE"));
+  assert.equal(new Set(order).size, order.length);
+  assert.deepEqual(categoryColorOrder(await load("2026-12")), order);
+  // No cambia al editar un tope.
+  assert.deepEqual(categoryColorOrder(withBudgetItems(nov, [{ categoryId: order[1], amount: 1 }])), order);
+});
+
+test("budgetAllocation: un tramo por categoría con tope o gasto, y el resto sin asignar", async () => {
+  const v = budgetView(await load());
+  const a = budgetAllocation(v);
+  assert.equal(a.income, 3_500_000);
+  assert.equal(a.free, 170_325);
+  assert.equal(a.remainder, 170_325);
+  assert.equal(a.items[0].name, "Ahorro e inversión");
+  assert.ok(a.items.every((i) => i.value > 0));
+  // Lo asignado + lo que queda = los ingresos.
+  assert.equal(a.items.reduce((s, i) => s + i.value, 0) + a.remainder, a.income);
+});
+
+test("budgetAllocation: si asignaste de más no queda sin asignar y free es negativo", async () => {
+  const plan = await load();
+  const savingsId = budgetView(plan).savings!.categoryId!;
+  const over = budgetAllocation(budgetView(withBudgetItems(plan, [{ categoryId: savingsId, amount: 5_000_000 }])));
+  assert.ok(over.free < 0);
+  assert.equal(over.remainder, 0);
+});
+
+test("budgetAllocation: con muchas categorías, las 5 de mayor monto + Otras (la suma del resto)", async () => {
+  const v = budgetView(await load());
+  const full = [...(v.savings ? [v.savings] : []), ...v.committed, ...v.variable].map((l) => ({ key: l.categoryId ?? "uncategorized", value: Math.max(l.budget, l.actual) })).filter((i) => i.value > 0);
+  assert.ok(full.length > 6);
+  const a = budgetAllocation(v);
+  assert.equal(a.items.length, 6);
+  const other = a.items[5];
+  assert.equal(other.key, "__other");
+  assert.equal(other.group, "other");
+  const top5 = a.items.slice(0, 5);
+  const expected = [...full].sort((x, y) => y.value - x.value).slice(0, 5).map((i) => i.key).sort();
+  assert.deepEqual(top5.map((i) => i.key).sort(), expected);
+  // Mismo orden relativo que la lista completa (no se recalcula el orden de colores).
+  const order = full.map((i) => i.key).filter((k) => expected.includes(k));
+  assert.deepEqual(top5.map((i) => i.key), order);
+  assert.equal(other.value, full.filter((i) => !expected.includes(i.key)).reduce((s, i) => s + i.value, 0));
+  assert.equal(a.items.reduce((s, i) => s + i.value, 0), full.reduce((s, i) => s + i.value, 0));
 });

@@ -1,9 +1,11 @@
 export { AppHeader, type AppHeaderProps } from "./AppHeader";
 export { TabBar, ADD_ROUTE } from "./TabBar";
 export { MoneyHero, type MoneyHeroProps } from "./MoneyHero";
-export { HeroGasto, type HeroGastoProps, type HeroView } from "./HeroGasto";
+export { BalanceHero, type BalanceHeroProps } from "./BalanceHero";
+export { ShortcutRow, type ShortcutRowProps, type ShortcutItem } from "./ShortcutRow";
+export { IncomeExpenseCards, type IncomeExpenseCardsProps } from "./IncomeExpenseCards";
+export { MASKED_AMOUNT, maskedMoney } from "./privacy";
 export { MascotMessage, type MascotMessageProps } from "./MascotMessage";
-export { SpendingBreakdownCard, type SpendingBreakdownCardProps, type SpendingItem } from "./SpendingBreakdownCard";
 export { FixedExpenseRow, type FixedExpenseRowProps } from "./FixedExpenseRow";
 export { FixedProgressCard, type FixedProgressCardProps } from "./FixedProgressCard";
 export { StoryTeaserCard, type StoryTeaserCardProps } from "./StoryTeaserCard";
@@ -38,7 +40,10 @@ export { ChatErrorActions, type ChatErrorActionsProps } from "./ChatErrorActions
 
 // — presupuesto —
 export { BudgetSummaryCard, type BudgetSummaryCardProps } from "./BudgetSummaryCard";
-export { BudgetRowCard, type BudgetRowCardProps, type BudgetRowStatus } from "./BudgetRowCard";
-export { BudgetSavingsCard, type BudgetSavingsCardProps, type BudgetSavingsGoal } from "./BudgetSavingsCard";
-export { BudgetCommittedCard, type BudgetCommittedCardProps, type CommittedItem } from "./BudgetCommittedCard";
+export { AllocationSummary, type AllocationSummaryProps } from "./AllocationSummary";
+export { BudgetLineRow, type BudgetLineRowProps } from "./BudgetLineRow";
+export { BudgetGoalsCard, type BudgetGoalsCardProps, type BudgetGoal } from "./BudgetGoalsCard";
 export { BudgetAssistSummaryCard, type BudgetAssistSummaryCardProps, type AssistSummaryLine } from "./BudgetAssistSummaryCard";
+
+// — movimientos —
+export { MovementRow, type MovementRowProps } from "./MovementRow";

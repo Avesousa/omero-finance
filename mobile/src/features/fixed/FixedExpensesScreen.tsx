@@ -4,10 +4,10 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Divider, Skeleton, Surface, Text, VStack } from "../../components/atoms";
-import { EmptyState, PeriodSwitcher } from "../../components/molecules";
+import { AllocationBar, EmptyState, PeriodSwitcher, categoryColorIndex, categoryIcon, type AllocationSegment } from "../../components/molecules";
 import { FixedExpenseRow, MascotMessage, MoneyHero, ScreenHeader } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useFixedExpenses, usePlan, useToggleEntryDone, type FixedGroup } from "../../data";
+import { useCategoryColorOrder, useFixedExpenses, usePlan, useToggleEntryDone, type FixedGroup } from "../../data";
 import { useTheme } from "../../design-system";
 import { capitalize, formatDate, formatMoney } from "../../i18n/format";
 
@@ -27,6 +27,7 @@ export function FixedExpensesScreen() {
   const plan = usePlan(selected ?? undefined);
   const view = useFixedExpenses(selected ?? undefined);
   const toggle = useToggleEntryDone();
+  const colorOrder = useCategoryColorOrder(selected ?? undefined);
   const period = selected ?? plan.data?.period ?? null;
   const [refreshing, setRefreshing] = useState(false);
   const highlighted = params.category || null;
@@ -48,6 +49,14 @@ export function FixedExpensesScreen() {
     const all = view.data?.groups ?? [];
     return highlighted ? [...all].sort((a, b) => Number(b.categoryId === highlighted) - Number(a.categoryId === highlighted)) : all;
   }, [view.data, highlighted]);
+
+  const colorOf = (categoryId: string | null) => categoryColorIndex(categoryId ?? "uncategorized", colorOrder);
+  const segments: AllocationSegment[] = groups.map((g) => ({
+    key: g.categoryId ?? "uncategorized",
+    label: g.name || t("group.uncategorized"),
+    value: g.total,
+    colorIndex: colorOf(g.categoryId),
+  }));
 
   const add = () => router.push({ pathname: "/gastos-fijos/nuevo", params: period ? { period } : {} });
   const edit = (entryId: string) => router.push({ pathname: "/gastos-fijos/editar", params: { entryId, ...(period ? { period } : {}) } });
@@ -91,6 +100,12 @@ export function FixedExpensesScreen() {
           </Text>
         }
       />
+
+      {v.count > 0 ? (
+        <Surface>
+          <AllocationBar testID="fixed-allocation" segments={segments} accessibilityLabel={t("allocation.label")} />
+        </Surface>
+      ) : null}
 
       {v.projected ? (
         <Text testID="fixed-projected" variant="secondary" tone="inkMuted">
@@ -137,6 +152,8 @@ export function FixedExpensesScreen() {
                         weekday={item.weekday}
                         dueDay={item.dueDay}
                         isDone={item.isDone}
+                        icon={categoryIcon(g.name)}
+                        colorIndex={colorOf(g.categoryId)}
                         readOnly={v.projected || item.entryId == null}
                         toggling={toggle.isPending && toggle.variables?.id === item.entryId}
                         onPress={item.entryId ? () => edit(item.entryId!) : undefined}

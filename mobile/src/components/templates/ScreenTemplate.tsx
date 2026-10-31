@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { RefreshControl, ScrollView, View, type StyleProp, type ViewStyle } from "react-native";
+import type { ReactNode, Ref } from "react";
+import { RefreshControl, ScrollView, View, type ScrollViewInstance, type StyleProp, type ViewStyle } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { useTheme } from "../../design-system";
 
@@ -15,6 +15,8 @@ export interface ScreenTemplateProps {
   refreshing?: boolean;
   onRefresh?: () => void;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Ref del ScrollView (para hacer scroll a una sección). Solo con `scroll`. */
+  scrollRef?: Ref<ScrollViewInstance>;
   testID?: string;
 }
 
@@ -30,6 +32,7 @@ export function ScreenTemplate({
   refreshing,
   onRefresh,
   contentStyle,
+  scrollRef,
   testID,
 }: ScreenTemplateProps) {
   const { colors, space, sizes } = useTheme();
@@ -44,6 +47,7 @@ export function ScreenTemplate({
       {header ? <View style={{ paddingTop: space[4] }}>{header}</View> : null}
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={[padding, contentStyle]}
           keyboardShouldPersistTaps="handled"

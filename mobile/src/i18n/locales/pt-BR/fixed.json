@@ -71,5 +71,8 @@
     "notFoundTitle": "",
     "notFoundBody": "",
     "readOnly": ""
+  },
+  "allocation": {
+    "label": ""
   }
 }

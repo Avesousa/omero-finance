@@ -18,7 +18,9 @@
     "retry": "Reintentar",
     "logout": "Cerrar sesión",
     "login": "Entrar",
-    "seeAll": "Ver todo"
+    "seeAll": "Ver todo",
+    "done": "Listo",
+    "undo": "Deshacer"
   },
   "status": {
     "loading": "Cargando…",

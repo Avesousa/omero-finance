@@ -25,6 +25,17 @@ export const palette = {
     overlay: "rgba(20,35,59,0.40)",
     shadow: "rgba(20,35,59,0.18)",
     tabActiveBg: "#F4F6F8",
+    positiveTint: "#DDF1EC",
+    heroInk: "#14233B",
+    heroInkMuted: "#2E4262",
+    heroChip: "rgba(255,255,255,0.72)",
+    /** Degradé del héroe de Inicio: celeste suave que se funde con `bg` (último tramo). */
+    heroGradient: ["#9CC3E8", "#D0E1F2", "#F4F6F8"],
+    /** Paleta categórica (barras apiladas y leyendas): familia Río de la Plata, 8 tonos distinguibles entre sí. */
+    categorical: ["#2F6FB0", "#CF8A1F", "#2A8C7C", "#D4624C", "#7E5BB5", "#5E8A2E", "#C2567F", "#9A6B43"],
+    unassigned: "#C9D2DD",
+    /** "Otras" (resto de categorías chicas): gris medio, más oscuro que `unassigned`. */
+    other: "#8795A8",
   },
 
   atrevido: {
@@ -49,6 +60,16 @@ export const palette = {
     tabActiveBg: "rgba(56,225,255,0.16)",
     glowHero: "rgba(47,91,255,0.55)",
     glowFab: "rgba(47,91,255,0.7)",
+    positiveTint: "#0F3A3A",
+    heroInk: "#F5F7FF",
+    heroInkMuted: "#D5DCF2",
+    heroChip: "rgba(255,255,255,0.14)",
+    /** Degradé del héroe de Inicio: azul eléctrico que se hunde en `bg` (último tramo). */
+    heroGradient: ["#2747D6", "#14216F", "#070B1A"],
+    /** Paleta categórica eléctrica, 8 tonos distinguibles sobre `surface`. */
+    categorical: ["#38E1FF", "#FF4D9D", "#FFE14D", "#2EE6A8", "#9B7BFF", "#FF8A3D", "#4D8DFF", "#C7F94A"],
+    unassigned: "#4A5690",
+    other: "#8E9BD0",
   },
 
   /** Texto oscuro sobre rellenos de warning/danger (igual en los dos modos). */

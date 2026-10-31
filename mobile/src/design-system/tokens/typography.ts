@@ -24,6 +24,9 @@ export const typography = {
   heroAmount: { fontFamily: fontFamily.display900, fontSize: 30, lineHeight: 36, letterSpacing: em(30, -0.02) },
   /** Decimales del monto de héroe (`,00`), alineados por la base con `heroAmount`. */
   heroAmountDecimals: { fontFamily: fontFamily.display800, fontSize: 17, lineHeight: 22 },
+  /** Balance de Inicio: monto más grande que el de héroe común (`HeroAmount large`). */
+  heroBalance: { fontFamily: fontFamily.display900, fontSize: 34, lineHeight: 42, letterSpacing: em(34, -0.02) },
+  heroBalanceDecimals: { fontFamily: fontFamily.display800, fontSize: 19, lineHeight: 26 },
   screenTitle: { fontFamily: fontFamily.display800, fontSize: 24, lineHeight: 30, letterSpacing: em(24, -0.02) },
   cardTitle: { fontFamily: fontFamily.display700, fontSize: 15, lineHeight: 20, letterSpacing: em(15, -0.02) },
   number: { fontFamily: fontFamily.display800, fontSize: 18, lineHeight: 24, letterSpacing: em(18, -0.02) },

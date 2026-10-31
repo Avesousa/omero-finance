@@ -227,6 +227,10 @@
       "fixedStopped": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "budgetSaveError": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "actions": {

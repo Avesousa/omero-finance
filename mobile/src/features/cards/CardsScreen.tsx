@@ -56,7 +56,7 @@ export function CardsScreen() {
     }
   }, [qc, refetch]);
 
-  const header = <ScreenHeader title={sectionTitle} />;
+  const header = <ScreenHeader title={sectionTitle} onBack={() => router.back()} backLabel={tc("actions.back")} />;
   const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} /> : null;
 
   if (isPending) {

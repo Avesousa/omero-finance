@@ -413,6 +413,7 @@ export const mockSource: DataSource = {
     if (patch.currency !== undefined) e.currency = patch.currency;
     if (patch.categoryId !== undefined) e.categoryId = patch.categoryId;
     if (patch.note !== undefined) e.note = patch.note;
+    if (patch.date !== undefined) e.date = patch.date;
     if (patch.isDone !== undefined) e.isDone = patch.isDone;
     const rule = patch.applyToRule === true && e.recurringId ? recurrings.find((r) => r.id === e.recurringId) : undefined;
     if (rule) {

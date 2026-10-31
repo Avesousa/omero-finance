@@ -25,7 +25,10 @@ function Shell() {
           <Stack.Screen name="deudas/nueva" options={{ presentation: "modal" }} />
           <Stack.Screen name="ingresos/nuevo" options={{ presentation: "modal" }} />
           <Stack.Screen name="gastos/nuevo" options={{ presentation: "modal" }} />
-          <Stack.Screen name="presupuesto/index" />
+          <Stack.Screen name="tarjetas" />
+          <Stack.Screen name="deudas/index" />
+          <Stack.Screen name="movimientos/index" />
+          <Stack.Screen name="movimientos/editar" options={{ presentation: "modal" }} />
           <Stack.Screen name="presupuesto/editar" options={{ presentation: "modal" }} />
           <Stack.Screen name="presupuesto/armar" options={{ presentation: "modal" }} />
           <Stack.Screen name="gastos-fijos/index" />

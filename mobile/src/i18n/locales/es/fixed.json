@@ -71,5 +71,8 @@
     "notFoundTitle": "No encontramos ese gasto fijo",
     "notFoundBody": "Puede que ya lo hayas quitado.",
     "readOnly": "Este mes todavía no empezó: no se puede editar."
+  },
+  "allocation": {
+    "label": "Fijos por categoría"
   }
 }

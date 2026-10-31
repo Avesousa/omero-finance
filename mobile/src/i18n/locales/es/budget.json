@@ -18,10 +18,11 @@
     "notice": "{{month}} todavía no empezó: los ingresos y fijos son los que se repiten cada mes."
   },
   "hero": {
-    "label": "SIN ASIGNAR",
     "over": "Asignaste de más",
-    "income": "Ingresos {{amount}}",
-    "assigned": "Asignado {{amount}}"
+    "available": "Disponible",
+    "toAssign": "Por asignar",
+    "unassignedLegend": "Sin asignar",
+    "other": "Otras"
   },
   "actions": {
     "assist": "Armar con {{name}}",
@@ -125,5 +126,19 @@
       "errorBody": "Revisá tu conexión y volvé a intentar."
     },
     "enter": "Poner monto"
+  },
+  "manage": {
+    "open": "Gestionar categorías",
+    "close": "Cerrar categorías"
+  },
+  "row": {
+    "amountLabel": "Tope de {{name}}",
+    "amountHint": "Escribí el monto y tocá Listo para guardar",
+    "committedAmount": "{{name}}: {{amount}} que sale solo",
+    "remove": "Quitar el tope de {{name}}",
+    "removed": "Sacaste el tope de {{name}}",
+    "paidOf": "{{paid}} de {{total}} pagados",
+    "noCap": "Gastado {{spent}} · sin tope",
+    "of": "Gastado {{spent}} de {{budget}}"
   }
 }

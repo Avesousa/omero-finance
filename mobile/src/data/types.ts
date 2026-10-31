@@ -19,6 +19,18 @@ export interface FixedProgress {
   totalAmount: number;
 }
 
+/** Las cinco cifras de Inicio, definidas en un solo lugar (`homeDefinitions` en `data/plan.ts`). */
+export interface HomeDefinitions {
+  /** Balance = la plata que tenés hoy. */
+  balance: number;
+  /** Disponible = gasto diario: libre ÷ días que quedan (hacia abajo, nunca negativo). */
+  perDay: number;
+  /** Libre del mes: lo que se ve al mantener presionado "Hoy podés gastar". */
+  freeMonth: number;
+  monthIncome: number;
+  monthExpenses: number;
+}
+
 export interface HomeSummary {
   greetingName: string;
   /** Mes en curso, 'YYYY-MM'. */
@@ -27,7 +39,13 @@ export interface HomeSummary {
   today: string;
   daysLeft: number;
   income: number;
-  /** Lo que queda del mes descontando lo ya pagado. */
+  /** BALANCE: la plata que tenés hoy (ingresos que cuentan − lo que ya pagaste). Es `summary.availableArs`. */
+  balance: number;
+  /** Ingresos del mes (tarjeta "Ingresos" de Inicio). */
+  monthIncome: number;
+  /** Lo que ya salió en el mes (tarjeta "Gastos" de Inicio): `summary.paidArs`. */
+  monthExpenses: number;
+  /** Lo que queda del mes descontando lo ya pagado (igual a `balance`). */
   available: number;
   /** Lo que queda de verdad libre (después de lo reservado para pagos pendientes). */
   free: number;
@@ -289,6 +307,8 @@ export type EntryPatch = Partial<{
   categoryId: string | null;
   isDone: boolean;
   note: string | null;
+  /** 'YYYY-MM-DD' o null (sin fecha). */
+  date: string | null;
 }> & {
   applyToRule?: boolean;
   frequency?: Frequency;
