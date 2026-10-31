@@ -56,38 +56,6 @@
     "next": ""
   },
   "load": {
-    "title": "",
-    "subtitle": "",
-    "expense": {
-      "title": "",
-      "body": ""
-    },
-    "income": {
-      "title": "",
-      "body": ""
-    },
-    "debt": {
-      "title": "",
-      "body": ""
-    },
-    "statement": {
-      "title": "",
-      "body": ""
-    }
-  },
-  "voice": {
-    "title": "",
-    "micStart": "",
-    "micStop": "",
-    "micDisabled": "",
-    "recording": "",
-    "thinking": "",
-    "orWrite": "",
-    "textLabel": "",
-    "textPlaceholder": "",
-    "send": "",
-    "retry": "",
-    "manual": "",
-    "webHint": ""
+    "title": ""
   }
 }

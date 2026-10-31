@@ -1,5 +1,5 @@
-import { LoadSheetScreen } from "../src/features/load/LoadSheetScreen";
+import { LoadChatScreen } from "../src/features/load/LoadChatScreen";
 
 export default function Cargar() {
-  return <LoadSheetScreen />;
+  return <LoadChatScreen />;
 }

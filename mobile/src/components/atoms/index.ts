@@ -16,3 +16,4 @@ export { TextField, type TextFieldProps } from "./TextField";
 export { hitSlopFor } from "./hitSlop";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { BrandMark, type BrandMarkProps, type BrandMarkBrand } from "./BrandMark";
+export { useReducedMotion } from "./useReducedMotion";

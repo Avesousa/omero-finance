@@ -18,7 +18,7 @@ export type VoiceIntent =
   | "unclear";       // no se entiende, está vacío o se va por las ramas
 
 /** Lo que la app ya sabe cargar por voz. Sumar acá cuando se habilite otro tipo. */
-export const VOICE_SUPPORTED = ["income"] as const satisfies readonly VoiceIntent[];
+export const VOICE_SUPPORTED = ["income", "expense"] as const satisfies readonly VoiceIntent[];
 export type VoiceSupportedIntent = (typeof VOICE_SUPPORTED)[number];
 
 /** Acciones reales que todavía no se cargan por voz (la mascota pide que esperes). */
@@ -26,12 +26,13 @@ export type VoicePendingIntent = Exclude<VoiceIntent, VoiceSupportedIntent | "ch
 
 export type VoiceFrequency = "DAILY" | "WEEKLY" | "BIWEEKLY" | "MONTHLY";
 
-/** Borrador de ingreso. Todo lo que no se dijo queda en null y lo completa el formulario. */
-export interface IncomeDraft {
+/** Borrador de un movimiento (ingreso o gasto). Todo lo que no se dijo queda en null y lo completa el formulario. */
+export interface EntryDraft {
+  kind: "INCOME" | "EXPENSE";
   name: string | null;
   amount: number | null;
   currency: "ARS" | "USD";
-  /** Id de una categoría de ingreso del hogar, solo si coincide con lo dicho. */
+  /** Id de una categoría del hogar del mismo tipo (ingreso o gasto), solo si coincide con lo dicho. */
   categoryId: string | null;
   /** 'YYYY-MM-DD' si se dijo una fecha ("ayer", "el 5"); si no, null (= hoy). */
   date: string | null;
@@ -40,8 +41,11 @@ export interface IncomeDraft {
   note: string | null;
 }
 
+/** @deprecated Usar `EntryDraft`. */
+export type IncomeDraft = EntryDraft;
+
 export type VoiceOutcome =
-  | { kind: "draft"; intent: "income"; transcript: string; draft: IncomeDraft }
+  | { kind: "draft"; intent: "income" | "expense"; transcript: string; draft: EntryDraft }
   | { kind: "notYet"; intent: VoicePendingIntent; transcript: string }
   | { kind: "chat"; transcript: string }
   | { kind: "unclear"; transcript: string };
@@ -49,13 +53,16 @@ export type VoiceOutcome =
 /** Datos del hogar que se le pasan al modelo para que no invente nombres. */
 export interface VoiceContext {
   today: string; // 'YYYY-MM-DD'
+  /** Categorías del hogar por tipo (sin la de sistema "Tarjetas de crédito"). */
   incomeCategories: { id: string; name: string }[];
+  expenseCategories: { id: string; name: string }[];
 }
 
 /** Respuesta cruda del modelo (debe cumplir `VOICE_EXTRACTION_SCHEMA`). */
 export interface VoiceExtraction {
   intent: VoiceIntent;
-  income: {
+  /** Se completa solo si el intent es income o expense. */
+  entry: {
     name: string | null;
     amount: number | null;
     currency: "ARS" | "USD" | null;
@@ -74,13 +81,13 @@ export const VOICE_EXTRACTION_SCHEMA = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["intent", "income"],
+    required: ["intent", "entry"],
     properties: {
       intent: {
         type: "string",
         enum: ["income", "expense", "debt", "card_purchase", "card_statement", "chat", "unclear"],
       },
-      income: {
+      entry: {
         anyOf: [
           { type: "null" },
           {
@@ -106,19 +113,22 @@ export const VOICE_EXTRACTION_SCHEMA = {
 
 /** Instrucciones para el modelo que interpreta el texto. */
 export function voiceSystemPrompt(ctx: VoiceContext): string {
-  const cats = ctx.incomeCategories.map((c) => c.name).join(", ") || "(ninguna)";
+  const inc = ctx.incomeCategories.map((c) => c.name).join(", ") || "(ninguna)";
+  const exp = ctx.expenseCategories.map((c) => c.name).join(", ") || "(ninguna)";
   return [
     "Interpretás lo que una persona de Argentina dice para cargar sus finanzas personales en una app.",
     `Hoy es ${ctx.today}. Montos en pesos argentinos salvo que diga dólares/USD/verdes.`,
-    "Clasificá la intención en una sola de: income (cobró o recibió plata), expense (gastó o pagó algo),",
-    "debt (préstamo o deuda, que debe o que le deben), card_purchase (compra con tarjeta en cuotas),",
+    "Clasificá la intención en una sola de: income (cobró o recibió plata), expense (gastó, pagó o compró algo),",
+    "debt (préstamo o deuda, que debe o que le deben), card_purchase (compra con tarjeta de crédito o en cuotas),",
     "card_statement (resumen de tarjeta), chat (saluda, le habla a la mascota, pregunta algo que no es cargar),",
     "unclear (vacío, sin sentido, o no se puede saber qué quiere cargar).",
-    "Solo si es income completá `income`; si no, `income` es null.",
+    '"Gasté", "pagué", "compré" es expense, salvo que diga tarjeta de crédito o en cuotas (card_purchase) o que hable del resumen (card_statement).',
+    "Si es income o expense completá `entry`; si no, `entry` es null.",
     'Montos: "45 mil" = 45000, "1 palo" o "un millón" = 1000000, "1,5 M" = 1500000, "lucas" = miles.',
-    `Categorías de ingreso del hogar (usá el nombre exacto si coincide, si no null): ${cats}.`,
+    `Categorías de ingreso del hogar (usalas solo si es income; nombre exacto si coincide, si no null): ${inc}.`,
+    `Categorías de gasto del hogar (usalas solo si es expense; nombre exacto si coincide, si no null): ${exp}.`,
     'Fechas relativas ("ayer", "el viernes", "el 5") → YYYY-MM-DD; si no dice, null.',
-    '"todos los meses", "fijo", "sueldo mensual" → fixed true con frequency MONTHLY.',
+    '"todos los meses", "fijo", "servicio mensual", "sueldo mensual" → fixed true con frequency MONTHLY.',
     "No inventes datos que no se dijeron: dejalos en null.",
   ].join("\n");
 }
@@ -145,20 +155,22 @@ export function resolveVoiceOutcome(
   const intent = extraction.intent;
   if (intent === "chat") return { kind: "chat", transcript: text };
   if (intent === "unclear") return { kind: "unclear", transcript: text };
-  if (intent === "income") {
-    const raw = extraction.income;
+  if (intent === "income" || intent === "expense") {
+    const raw = extraction.entry;
     if (!raw) return { kind: "unclear", transcript: text };
+    const list = intent === "income" ? ctx.incomeCategories : ctx.expenseCategories;
     const cat = raw.categoryName
-      ? ctx.incomeCategories.find((c) => norm(c.name) === norm(raw.categoryName!))
+      ? list.find((c) => norm(c.name) === norm(raw.categoryName!))
       : undefined;
     const amount = raw.amount != null && Number.isFinite(raw.amount) && raw.amount > 0
       ? Math.round(raw.amount * 100) / 100
       : null;
     return {
       kind: "draft",
-      intent: "income",
+      intent,
       transcript: text,
       draft: {
+        kind: intent === "income" ? "INCOME" : "EXPENSE",
         name: raw.name?.trim() || null,
         amount,
         currency: raw.currency === "USD" ? "USD" : "ARS",

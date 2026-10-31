@@ -1,0 +1,53 @@
+{
+  "header": {
+    "with": ""
+  },
+  "composer": {
+    "placeholder": "",
+    "inputLabel": "",
+    "send": "",
+    "sendAudio": "",
+    "mic": "",
+    "micBusy": "",
+    "micUnavailable": "",
+    "cancel": "",
+    "recording": "",
+    "recordingTime": "",
+    "cancelHint": ""
+  },
+  "audio": {
+    "play": "",
+    "pause": "",
+    "heard": ""
+  },
+  "typing": {
+    "label": ""
+  },
+  "draft": {
+    "kind": {
+      "income": "",
+      "expense": ""
+    },
+    "unnamed": "",
+    "missingAmount": "",
+    "missingName": "",
+    "fixed": "",
+    "today": "",
+    "yesterday": "",
+    "confirm": "",
+    "edit": "",
+    "complete": "",
+    "saving": "",
+    "saved": "",
+    "error": ""
+  },
+  "quick": {
+    "income": "",
+    "debt": "",
+    "expense": "",
+    "statement": "",
+    "soon": "",
+    "label": ""
+  },
+  "retry": ""
+}

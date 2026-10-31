@@ -6,9 +6,10 @@ import { Button, Chip, HStack, IconButton, Spacer, Surface, Text, TextField, VSt
 import { FormField, SegmentedToggle } from "../../components/molecules";
 import { MascotMessage } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useAddIncome, useIncomeCategories, type NewIncomeInput } from "../../data";
+import { useAddEntry, useCategories, type EntryKind, type NewEntryInput } from "../../data";
 import { useTheme } from "../../design-system";
 import { formatMoney } from "../../i18n/format";
+import { conversation } from "../load/conversation";
 import {
   addDays,
   currentPeriod,
@@ -17,25 +18,26 @@ import {
   numberToInput,
   parseMoney,
   todayIso,
-  type IncomeDraft,
+  type EntryDraft,
 } from "../../domain";
 
-type Currency = NewIncomeInput["currency"];
+type Currency = NewEntryInput["currency"];
 type DateMode = "today" | "yesterday" | "other";
 type FieldKey = "name" | "amount" | "day";
 
-/** Pausa para ver a la mascota festejar antes de volver a Inicio. */
+/** Pausa para ver a la mascota festejar antes de volver a Inicio (solo si no viene del chat). */
 const CELEBRATE_MS = 1500;
 
 const digits = (text: string) => text.replace(/\D/g, "");
 
-/** Lee el borrador que manda la hoja Cargar (JSON en el parámetro `draft`); null si falta o viene roto. */
-function parseDraft(raw: string | undefined): IncomeDraft | null {
+/** Lee el borrador que manda el chat de Cargar (JSON en el parámetro `draft`); null si falta o viene roto. */
+function parseDraft(raw: string | undefined, kind: EntryKind): EntryDraft | null {
   if (!raw) return null;
   try {
-    const d = JSON.parse(raw) as Partial<IncomeDraft> | null;
+    const d = JSON.parse(raw) as Partial<EntryDraft> | null;
     if (!d || typeof d !== "object") return null;
     return {
+      kind,
       name: typeof d.name === "string" ? d.name : null,
       amount: typeof d.amount === "number" && Number.isFinite(d.amount) ? d.amount : null,
       currency: d.currency === "USD" ? "USD" : "ARS",
@@ -49,17 +51,26 @@ function parseDraft(raw: string | undefined): IncomeDraft | null {
   }
 }
 
-/** Nuevo ingreso (modal): formulario a mano o precargado con lo que se dijo por voz. */
-export function NewIncomeScreen() {
-  const { t } = useTranslation("income");
-  const { colors } = useTheme();
-  const params = useLocalSearchParams<{ draft?: string; transcript?: string }>();
-  const draft = useMemo(() => parseDraft(params.draft), [params.draft]);
-  const transcript = params.transcript?.trim() || "";
-  const fromVoice = draft != null;
+const SAVED_KIND = { INCOME: "income", EXPENSE: "expense" } as const;
 
-  const categories = useIncomeCategories();
-  const add = useAddIncome();
+/**
+ * Nuevo ingreso o gasto (modal): formulario a mano o precargado con lo que armó la mascota.
+ * Si se abrió desde el chat de Cargar (`chatRef`, apilado arriba del hilo), al guardar vuelve a él
+ * (`router.back()`) y lo cuenta la mascota; cerrar sin guardar también vuelve y no dice nada.
+ */
+export function NewEntryScreen({ kind }: { kind: EntryKind }) {
+  const { t } = useTranslation("entry");
+  const { colors } = useTheme();
+  const params = useLocalSearchParams<{ draft?: string; transcript?: string; draftId?: string; source?: string; chatRef?: string }>();
+  const draft = useMemo(() => parseDraft(params.draft, kind), [params.draft, kind]);
+  /** "Escuché: …" solo si el borrador vino de un audio. */
+  const heard = params.source === "audio" ? params.transcript?.trim() || "" : "";
+  const fromVoice = draft != null;
+  const draftId = params.draftId || null;
+  const fromChat = params.chatRef === "1" || draftId != null;
+
+  const categories = useCategories(kind);
+  const add = useAddEntry();
   const today = useMemo(() => todayIso(), []);
   const yesterday = useMemo(() => addDays(today, -1), [today]);
 
@@ -102,7 +113,8 @@ export function NewIncomeScreen() {
   const onSave = () => {
     setSubmitted(true);
     if (Object.keys(errors).length > 0 || !date) return;
-    const input: NewIncomeInput = {
+    const input: NewEntryInput = {
+      kind,
       period: date.slice(0, 7),
       name: name.trim(),
       amount: amountValue,
@@ -114,6 +126,14 @@ export function NewIncomeScreen() {
     };
     add.mutate(input, {
       onSuccess: () => {
+        if (fromChat) {
+          const amountText = formatMoney(amountValue, currency);
+          conversation.dispatch(
+            draftId ? { type: "draftSaved", draftId, amount: amountText } : { type: "manualSaved", kind: SAVED_KIND[kind], amount: amountText },
+          );
+          router.back();
+          return;
+        }
         setSavedAmount(formatMoney(amountValue, currency));
         timer.current = setTimeout(() => router.dismissTo("/"), CELEBRATE_MS);
       },
@@ -122,27 +142,27 @@ export function NewIncomeScreen() {
 
   if (savedAmount != null) {
     return (
-      <ScreenTemplate edges={["top", "bottom"]} testID="new-income-saved">
-        <MascotMessage moment="incomeSaved" params={{ amount: savedAmount }} mood="festeja" />
+      <ScreenTemplate edges={["top", "bottom"]} testID="new-entry-saved">
+        <MascotMessage moment={kind === "EXPENSE" ? "expenseSaved" : "incomeSaved"} params={{ amount: savedAmount }} mood="festeja" />
       </ScreenTemplate>
     );
   }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScreenTemplate edges={["top", "bottom"]} testID="new-income">
+      <ScreenTemplate edges={["top", "bottom"]} testID="new-entry">
         <HStack>
           <Text variant="screenTitle" accessibilityRole="header" style={{ flexShrink: 1 }}>
-            {t("form.title")}
+            {t(`form.title.${kind}`)}
           </Text>
           <Spacer />
-          <IconButton icon="close" accessibilityLabel={t("form.close")} onPress={() => router.back()} />
+          <IconButton testID="new-entry-close" icon="close" accessibilityLabel={t("form.close")} onPress={() => router.back()} />
         </HStack>
 
-        {fromVoice ? (
-          <Surface testID="new-income-heard">
+        {heard || hasMissing ? (
+          <Surface testID={heard ? "new-entry-heard" : "new-entry-missing"}>
             <VStack gap={2}>
-              {transcript ? <Text variant="bodySemi">{t("form.heard", { text: transcript })}</Text> : null}
+              {heard ? <Text variant="bodySemi">{t("form.heard", { text: heard })}</Text> : null}
               {hasMissing ? (
                 <Text variant="secondary" tone="dangerInk">
                   {t("form.missing")}
@@ -154,11 +174,11 @@ export function NewIncomeScreen() {
 
         <VStack gap={4}>
           <FormField label={t("form.name")} error={shown("name")}>
-            <TextField testID="new-income-name" accessibilityLabel={t("form.name")} placeholder={t("form.namePlaceholder")} value={name} onChangeText={setName} />
+            <TextField testID="new-entry-name" accessibilityLabel={t("form.name")} placeholder={t(`form.namePlaceholder.${kind}`)} value={name} onChangeText={setName} />
           </FormField>
           <FormField label={t("form.amount")} error={shown("amount")}>
             <TextField
-              testID="new-income-amount"
+              testID="new-entry-amount"
               accessibilityLabel={t("form.amount")}
               placeholder={t("form.amountPlaceholder")}
               keyboardType="decimal-pad"
@@ -168,7 +188,7 @@ export function NewIncomeScreen() {
           </FormField>
           <FormField label={t("form.currency")}>
             <SegmentedToggle
-              testID="new-income-currency"
+              testID="new-entry-currency"
               accessibilityLabel={t("form.currency")}
               value={currency}
               onChange={setCurrency}
@@ -190,7 +210,7 @@ export function NewIncomeScreen() {
           <FormField label={t("form.date")} error={shown("day")}>
             <VStack gap={2}>
               <SegmentedToggle
-                testID="new-income-date"
+                testID="new-entry-date"
                 accessibilityLabel={t("form.date")}
                 value={dateMode}
                 onChange={setDateMode}
@@ -202,7 +222,7 @@ export function NewIncomeScreen() {
               />
               {dateMode === "other" ? (
                 <TextField
-                  testID="new-income-day"
+                  testID="new-entry-day"
                   accessibilityLabel={t("form.dayOfMonth")}
                   placeholder={t("form.dayPlaceholder", { max: maxDay })}
                   keyboardType="number-pad"
@@ -220,7 +240,7 @@ export function NewIncomeScreen() {
             </Text>
             <Spacer />
             <Switch
-              testID="new-income-fixed"
+              testID="new-entry-fixed"
               accessibilityLabel={t("form.fixed")}
               value={fixed}
               onValueChange={setFixed}
@@ -231,9 +251,9 @@ export function NewIncomeScreen() {
 
           <FormField label={t("form.note")}>
             <TextField
-              testID="new-income-note"
+              testID="new-entry-note"
               accessibilityLabel={t("form.note")}
-              placeholder={t("form.notePlaceholder")}
+              placeholder={t(`form.notePlaceholder.${kind}`)}
               value={note}
               onChangeText={setNote}
             />
@@ -242,10 +262,10 @@ export function NewIncomeScreen() {
 
         {add.isError ? (
           <Text variant="secondary" tone="dangerInk" accessibilityLiveRegion="polite">
-            {t("form.saveError")}
+            {t(`form.saveError.${kind}`)}
           </Text>
         ) : null}
-        <Button testID="new-income-save" label={add.isPending ? t("form.saving") : t("form.save")} busy={add.isPending} onPress={onSave} />
+        <Button testID="new-entry-save" label={add.isPending ? t("form.saving") : t(`form.save.${kind}`)} busy={add.isPending} onPress={onSave} />
       </ScreenTemplate>
     </KeyboardAvoidingView>
   );

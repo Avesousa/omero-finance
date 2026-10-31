@@ -5,7 +5,7 @@ import type { VoiceOutcome } from "../domain";
 import { dataSource, DATA_SOURCE } from "./sources";
 import { notificationBadgeCount } from "./selectors";
 import { AppError, reportAppError, toAppError } from "./errors";
-import type { NewIncomeInput, NewLoanInput, VoiceInput } from "./types";
+import type { EntryKind, NewEntryInput, NewLoanInput, VoiceInput } from "./types";
 
 export { DATA_SOURCE, VOICE_SOURCE, REQUIRES_LOGIN } from "./sources";
 export * from "./types";
@@ -29,7 +29,7 @@ export const queryKeys = {
   cards: (period?: string) => ["cards", period ?? "current"] as const,
   wealth: (period?: string) => ["wealth", period ?? "current"] as const,
   debts: (period?: string) => ["debts", period ?? "current"] as const,
-  incomeCategories: ["income-categories"] as const,
+  categories: (kind: EntryKind) => ["categories", kind] as const,
 };
 
 /** Resumen del mes para Inicio. */
@@ -135,16 +135,16 @@ export function useAddLoan() {
   });
 }
 
-/** Categorías de ingreso del hogar (chips del formulario de ingreso). */
-export function useIncomeCategories() {
-  return useQuery({ queryKey: queryKeys.incomeCategories, queryFn: () => dataSource.getIncomeCategories() });
+/** Categorías del hogar de un tipo (chips del formulario de ingreso o gasto). */
+export function useCategories(kind: EntryKind) {
+  return useQuery({ queryKey: queryKeys.categories(kind), queryFn: () => dataSource.getCategories(kind) });
 }
 
-/** Mutación: agregar un ingreso (`NewIncomeInput`). Refresca Inicio y Patrimonio. */
-export function useAddIncome() {
+/** Mutación: agregar un ingreso o un gasto (`NewEntryInput`). Refresca Inicio y Patrimonio. */
+export function useAddEntry() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: NewIncomeInput) => dataSource.addIncome(input),
+    mutationFn: (input: NewEntryInput) => dataSource.addEntry(input),
     onSuccess: () =>
       Promise.all([qc.invalidateQueries({ queryKey: ["home"] }), qc.invalidateQueries({ queryKey: ["wealth"] })]),
   });
@@ -170,7 +170,7 @@ export function useInterpretVoice() {
     retryDelay: (attempt) => 800 * 2 ** attempt,
     onError: (error) => {
       if (!error.reported && error.code !== "bad_audio") {
-        void reportAppError(error, { feature: "voice-income" }, "voice");
+        void reportAppError(error, { feature: "voice" }, "voice");
       }
     },
   });

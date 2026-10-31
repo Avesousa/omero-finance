@@ -87,8 +87,8 @@
         "atrevido": "Cobraste todo lo del mes. Ni un peso colgado."
       },
       "voiceIdle": {
-        "tranqui": "Contame qué cobraste y lo armo, sin apuro.",
-        "atrevido": "Dale, contame qué cobraste. Te escucho."
+        "tranqui": "Contame qué cobraste o gastaste, sin apuro.",
+        "atrevido": "Dale, contame qué cobraste o gastaste. Te escucho."
       },
       "voiceListening": {
         "tranqui": "Te escucho. Hablá tranquilo.",
@@ -104,7 +104,7 @@
       },
       "voiceChat": {
         "tranqui": "Me encanta charlar, pero solo estoy para cargar tus finanzas.",
-        "atrevido": "Charla linda, pero yo solo cargo tus finanzas. ¿Qué cobraste?"
+        "atrevido": "Charla linda, pero yo solo cargo tus finanzas. ¿Qué cargamos?"
       },
       "voiceNotYet": {
         "tranqui": "Cargar {{action}} todavía no lo sé hacer. Esperame un poquito, ya llega.",
@@ -129,6 +129,26 @@
       "incomeSaved": {
         "tranqui": "Listo, guardé el ingreso de {{amount}}. Bien hecho.",
         "atrevido": "Guardado: {{amount}} en tu bolsillo. Así se hace."
+      },
+      "expenseSaved": {
+        "tranqui": "Listo, anoté el gasto de {{amount}}. Sin culpa, seguimos.",
+        "atrevido": "Gasto de {{amount}} anotado. Ahora a mirar el mes completo."
+      },
+      "debtSaved": {
+        "tranqui": "Listo, anoté la deuda con {{name}}. La armamos con plan.",
+        "atrevido": "Deuda con {{name}} anotada. Ahora a sacarla de encima."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, acá estoy. Contame qué cobraste o gastaste, o elegí una opción de abajo.",
+        "atrevido": "Dale, ¿qué cobraste o gastaste? Escribime o elegí una opción de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador en el chat por si querés retomarlo.",
+        "atrevido": "Borrador guardado en el chat. Lo retomás cuando quieras."
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "Lo armé, pero me falta un dato. ¿Lo completás?",
+        "atrevido": "Casi: me falta un dato. Completalo y listo."
       }
     },
     "actions": {
@@ -171,8 +191,8 @@
         "atrevido": "Volviste. Sin drama: cargamos lo que falta y listo."
       },
       "voiceIdle": {
-        "tranqui": "Traé un ladrillo: contame qué cobraste.",
-        "atrevido": "Dale, pasame barro: ¿qué cobraste?"
+        "tranqui": "Traé un ladrillo: contame qué cobraste o gastaste.",
+        "atrevido": "Dale, pasame barro: ¿qué cobraste o gastaste?"
       },
       "voiceListening": {
         "tranqui": "Te escucho. Ponemos cada ladrillo en su lugar.",
@@ -188,7 +208,7 @@
       },
       "voiceChat": {
         "tranqui": "Yo solo levanto tu nido: estoy para cargar tus finanzas.",
-        "atrevido": "Yo acá solo pongo ladrillos: cargo tus finanzas. ¿Qué cobraste?"
+        "atrevido": "Yo acá solo pongo ladrillos: cargo tus finanzas. ¿Qué cargamos?"
       },
       "voiceNotYet": {
         "tranqui": "Para cargar {{action}} me falta un ladrillo. Esperame, ya llega.",
@@ -213,6 +233,26 @@
       "incomeSaved": {
         "tranqui": "Un ladrillo más: guardé {{amount}}. De a poco se arma.",
         "atrevido": "Ingreso de {{amount}} puesto. Qué buena pared."
+      },
+      "expenseSaved": {
+        "tranqui": "Anoté el gasto de {{amount}}. Sin culpa: lo registramos y seguimos.",
+        "atrevido": "{{amount}} en gastos, cargado. Anotarlo es la mitad de controlarlo."
+      },
+      "debtSaved": {
+        "tranqui": "Anoté la deuda de {{name}}. Ahora la armamos con plan, paso a paso.",
+        "atrevido": "Deuda de {{name}} anotada. Ponele barro y a pagarla."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, acá estoy. Contame qué cobraste o gastaste, o elegí una opción.",
+        "atrevido": "Dale, traé el barro: ¿qué cobraste o gastaste? Escribime o elegí de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el plano en el chat por si querés retomarlo después.",
+        "atrevido": "Plano guardado en el chat. Cuando quieras, lo retomamos, dale."
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "Tengo el plano, pero me falta un ladrillo. ¿Lo completás?",
+        "atrevido": "Me falta un ladrillo para cerrar esto. Completalo, dale."
       }
     },
     "nest": {
@@ -268,8 +308,8 @@
         "atrevido": "Volviste. Sin drama: la laguna se llena igual, cargá lo que falta."
       },
       "voiceIdle": {
-        "tranqui": "Contame qué entró, sin apuro. Flotamos.",
-        "atrevido": "Largá lo que cobraste. Yo floto tranqui."
+        "tranqui": "Contame qué entró o qué salió, sin apuro. Flotamos.",
+        "atrevido": "Largá lo que cobraste o gastaste. Yo floto tranqui."
       },
       "voiceListening": {
         "tranqui": "Te escucho. Todo llega flotando.",
@@ -285,7 +325,7 @@
       },
       "voiceChat": {
         "tranqui": "Qué lindo charlar, pero solo estoy para cargar tus finanzas.",
-        "atrevido": "Yo solo floto con tus finanzas, nada más. ¿Qué cobraste?"
+        "atrevido": "Yo solo floto con tus finanzas, nada más. ¿Qué cargamos?"
       },
       "voiceNotYet": {
         "tranqui": "Cargar {{action}} todavía no sé. Esperame tranqui, ya llega.",
@@ -310,6 +350,26 @@
       "incomeSaved": {
         "tranqui": "Guardé {{amount}} en la laguna. Todo llega flotando.",
         "atrevido": "Entraron {{amount}} a la laguna. Eso sí es caudal."
+      },
+      "expenseSaved": {
+        "tranqui": "Anoté el gasto de {{amount}}. Sin drama, flotando se lleva mejor.",
+        "atrevido": "Gasto de {{amount}} a la laguna. Ya está, no te hundas por eso."
+      },
+      "debtSaved": {
+        "tranqui": "Deuda con {{name}} anotada. La sacamos del agua de a poco.",
+        "atrevido": "{{name}} anotado como deuda. Que no se nos hunda el bote."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, acá estoy flotando. Contame qué entró o salió, o elegí una opción.",
+        "atrevido": "Llegué nadando. ¿Qué cobraste o gastaste? Decime o tocá una opción."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador a flote en el chat. Cuando quieras, seguimos.",
+        "atrevido": "Borrador a salvo en el chat. Lo retomás cuando quieras."
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "Casi lo tengo, me falta un dato. Completalo tranqui.",
+        "atrevido": "Me quedó un dato flotando. Completalo y seguimos."
       }
     },
     "nest": {
@@ -365,8 +425,8 @@
         "atrevido": "Este mate está lavado. Cebá un gasto y arrancamos de nuevo."
       },
       "voiceIdle": {
-        "tranqui": "¿Un mate y me contás qué cobraste?",
-        "atrevido": "Cebá la data: ¿qué cobraste?"
+        "tranqui": "¿Un mate y me contás qué cobraste o gastaste?",
+        "atrevido": "Cebá la data: ¿qué cobraste o gastaste?"
       },
       "voiceListening": {
         "tranqui": "Te escucho, tomate tu tiempo con el mate.",
@@ -381,8 +441,8 @@
         "atrevido": "Eso no lo cebé bien. Decímelo otra vez."
       },
       "voiceChat": {
-        "tranqui": "En esta ronda solo cargo tus finanzas. ¿Qué cobraste?",
-        "atrevido": "Yo solo cebo finanzas, eh. ¿Qué cobraste?"
+        "tranqui": "En esta ronda solo cargo tus finanzas. ¿Qué cargamos?",
+        "atrevido": "Yo solo cebo finanzas, eh. ¿Qué cargamos?"
       },
       "voiceNotYet": {
         "tranqui": "Cargar {{action}} todavía no lo cebo. Esperame un mate, ya llega.",
@@ -407,6 +467,26 @@
       "incomeSaved": {
         "tranqui": "Listo, sumé {{amount}} a la ronda. Un mate más tranquilos.",
         "atrevido": "Entraron {{amount}}. Cebador del mes, sin discusión."
+      },
+      "expenseSaved": {
+        "tranqui": "Anoté el gasto de {{amount}}. Un mate y seguimos, sin culpa.",
+        "atrevido": "Gasto de {{amount}} cargado. Cebalo y no lo pienses más."
+      },
+      "debtSaved": {
+        "tranqui": "Anoté la deuda con {{name}}. La vamos pagando con un mate al lado.",
+        "atrevido": "{{name}} anotado como deuda. Cebá el plan y dale."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, mate listo. ¿Me contás qué cobraste o gastaste, o elegís una opción?",
+        "atrevido": "Cebé el mate, ¿qué cobraste o gastaste? Contame o elegí algo de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador en el chat. Lo retomamos con un mate, cuando quieras.",
+        "atrevido": "Borrador guardado en el chat. Lo cebamos de nuevo cuando quieras."
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "Me falta un dato para cebar este. ¿Lo completás?",
+        "atrevido": "Falta la yerba: completá el dato que falta, dale."
       }
     },
     "nest": {
@@ -462,8 +542,8 @@
         "atrevido": "Volviste. Sin drama: el mapa sigue acá, cargá lo que falta."
       },
       "voiceIdle": {
-        "tranqui": "Contame qué cobraste y lo ubico en el mapa.",
-        "atrevido": "¿Qué cobraste? Dale, que tengo una jugada."
+        "tranqui": "Contame qué cobraste o gastaste y lo ubico en el mapa.",
+        "atrevido": "¿Qué cobraste o gastaste? Dale, que tengo una jugada."
       },
       "voiceListening": {
         "tranqui": "Te escucho. Cada dato es una pista.",
@@ -479,7 +559,7 @@
       },
       "voiceChat": {
         "tranqui": "Mi mapa es solo de tus finanzas. ¿Qué querés cargar?",
-        "atrevido": "Yo solo juego con tus finanzas. ¿Qué cobraste?"
+        "atrevido": "Yo solo juego con tus finanzas. ¿Qué cargamos?"
       },
       "voiceNotYet": {
         "tranqui": "Cargar {{action}} todavía no está en mi mapa. Esperame, ya llega.",
@@ -504,6 +584,26 @@
       "incomeSaved": {
         "tranqui": "Guardé {{amount}} en el mapa. Otra pieza encontrada.",
         "atrevido": "{{amount}} al tesoro. Jugada perfecta."
+      },
+      "expenseSaved": {
+        "tranqui": "Anoté el gasto de {{amount}} en el mapa. Sin culpa: ya sabemos por dónde va.",
+        "atrevido": "Gasto de {{amount}} marcado en el mapa. Lo vemos, pícaro, y seguimos."
+      },
+      "debtSaved": {
+        "tranqui": "Anoté la deuda con {{name}} en el mapa. La sacamos del camino paso a paso.",
+        "atrevido": "{{name}} es una trampa anotada. Ahora la esquivamos, pícaro."
+      },
+      "loadGreeting": {
+        "tranqui": "Hola, te estaba esperando. Contame qué cobraste o gastaste, o elegí una opción.",
+        "atrevido": "¿Qué cobraste o gastaste, pícaro? Tengo el mapa listo. Decime o elegí de abajo."
+      },
+      "draftDismissed": {
+        "tranqui": "Dejé el borrador en el mapa del chat. Lo retomamos cuando quieras.",
+        "atrevido": "Lo guardé en el mapa del chat. Jugada pendiente, pícaro."
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "Al mapa le falta una pista. ¿La completás?",
+        "atrevido": "Jugada casi lista: me falta un dato. Completalo, pícaro."
       }
     },
     "nest": {

@@ -1,5 +1,5 @@
-import { NewIncomeScreen } from "../../src/features/income/NewIncomeScreen";
+import { NewEntryScreen } from "../../src/features/entry/NewEntryScreen";
 
 export default function NuevoIngreso() {
-  return <NewIncomeScreen />;
+  return <NewEntryScreen kind="INCOME" />;
 }

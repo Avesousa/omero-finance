@@ -10,7 +10,7 @@ export const DATA_SOURCE: DataSourceKind = process.env.EXPO_PUBLIC_DATA_SOURCE =
 /**
  * `EXPO_PUBLIC_VOICE_SOURCE=api|mock` elige de dónde sale la voz (`interpretVoice` y `reportError`).
  * Si falta o es otra cosa, sigue a `DATA_SOURCE`. Con datos `mock` + voz `api` se prueba la voz real
- * (OpenAI) sin escribir nada en la base: todo lo demás, incluido `addIncome`, queda en mock.
+ * (OpenAI) sin escribir nada en la base: todo lo demás, incluido `addEntry`, queda en mock.
  */
 export const VOICE_SOURCE: DataSourceKind =
   process.env.EXPO_PUBLIC_VOICE_SOURCE === "api" ? "api"

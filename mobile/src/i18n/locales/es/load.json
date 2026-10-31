@@ -1,0 +1,53 @@
+{
+  "header": {
+    "with": "Charlando con {{name}}"
+  },
+  "composer": {
+    "placeholder": "Escribile a {{name}}…",
+    "inputLabel": "Mensaje para {{name}}",
+    "send": "Enviar mensaje",
+    "sendAudio": "Enviar audio",
+    "mic": "Grabar un audio",
+    "micBusy": "Esperá un momento",
+    "micUnavailable": "Acá no puedo grabar: escribilo y listo.",
+    "cancel": "Cancelar grabación",
+    "recording": "Grabando",
+    "recordingTime": "Grabando {{time}}",
+    "cancelHint": "Tocá ✕ para cancelar"
+  },
+  "audio": {
+    "play": "Reproducir audio de {{duration}}",
+    "pause": "Pausar audio",
+    "heard": "Escuché: “{{text}}”"
+  },
+  "typing": {
+    "label": "{{name}} está escribiendo"
+  },
+  "draft": {
+    "kind": {
+      "income": "Ingreso",
+      "expense": "Gasto"
+    },
+    "unnamed": "Sin nombre",
+    "missingAmount": "Falta el monto",
+    "missingName": "Falta el nombre o la categoría",
+    "fixed": "Fijo",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "confirm": "Confirmar",
+    "edit": "Editar",
+    "complete": "Completar",
+    "saving": "Guardando…",
+    "saved": "Guardado",
+    "error": "No pude guardarlo. Probá de nuevo o editalo."
+  },
+  "quick": {
+    "income": "Ingreso",
+    "debt": "Deuda o préstamo",
+    "expense": "Gasto",
+    "statement": "Resumen",
+    "soon": "pronto",
+    "label": "Opciones de carga"
+  },
+  "retry": "Reintentar"
+}

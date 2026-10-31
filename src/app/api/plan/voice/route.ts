@@ -43,12 +43,16 @@ export async function POST(req: NextRequest) {
     try {
       const input = await readInput(req);
       await ensurePlanDefaults(householdId);
-      const categories = await prisma.planCategory.findMany({
-        where: { householdId, kind: "INCOME", isArchived: false },
+      const rows = await prisma.planCategory.findMany({
+        where: { householdId, isArchived: false, systemKey: null },
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        select: { id: true, name: true },
+        select: { id: true, name: true, kind: true },
       });
-      const outcome = await interpretVoice(input, { today: todayIso(), incomeCategories: categories });
+      const pick = (kind: "INCOME" | "EXPENSE") =>
+        rows.filter((c) => c.kind === kind).map(({ id, name }) => ({ id, name }));
+      const outcome = await interpretVoice(input, {
+        today: todayIso(), incomeCategories: pick("INCOME"), expenseCategories: pick("EXPENSE"),
+      });
       return NextResponse.json({ outcome });
     } catch (e) {
       if (e instanceof VoiceError) {

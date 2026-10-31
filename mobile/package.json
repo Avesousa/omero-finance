@@ -38,7 +38,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "node --experimental-strip-types --no-warnings --test src/data/__tests__/*.test.ts"
+    "test": "node --experimental-strip-types --no-warnings --test src/data/__tests__/*.test.ts src/features/load/__tests__/*.test.ts src/features/load/conversation/__tests__/*.test.ts"
   },
   "private": true
 }

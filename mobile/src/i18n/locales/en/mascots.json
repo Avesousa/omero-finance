@@ -129,6 +129,26 @@
       "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "expenseSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debtSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "actions": {
@@ -211,6 +231,26 @@
         "atrevido": ""
       },
       "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "expenseSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debtSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftIncomplete": {
         "tranqui": "",
         "atrevido": ""
       }
@@ -310,6 +350,26 @@
       "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "expenseSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debtSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -407,6 +467,26 @@
       "incomeSaved": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "expenseSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debtSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftIncomplete": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -502,6 +582,26 @@
         "atrevido": ""
       },
       "incomeSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "expenseSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "debtSaved": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "loadGreeting": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "draftDismissed": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "voiceDraftIncomplete": {
         "tranqui": "",
         "atrevido": ""
       }
