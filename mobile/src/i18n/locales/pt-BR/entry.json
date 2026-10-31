@@ -1,11 +1,17 @@
 {
   "form": {
-    "title": "",
+    "title": {
+      "INCOME": "",
+      "EXPENSE": ""
+    },
     "close": "",
     "heard": "",
     "missing": "",
     "name": "",
-    "namePlaceholder": "",
+    "namePlaceholder": {
+      "INCOME": "",
+      "EXPENSE": ""
+    },
     "amount": "",
     "amountPlaceholder": "",
     "currency": "",
@@ -20,10 +26,19 @@
     "dayPlaceholder": "",
     "fixed": "",
     "note": "",
-    "notePlaceholder": "",
-    "save": "",
+    "notePlaceholder": {
+      "INCOME": "",
+      "EXPENSE": ""
+    },
+    "save": {
+      "INCOME": "",
+      "EXPENSE": ""
+    },
     "saving": "",
-    "saveError": "",
+    "saveError": {
+      "INCOME": "",
+      "EXPENSE": ""
+    },
     "categoriesError": ""
   },
   "errors": {
@@ -32,6 +47,9 @@
     "day": ""
   },
   "saved": {
-    "done": ""
+    "done": {
+      "INCOME": "",
+      "EXPENSE": ""
+    }
   }
 }

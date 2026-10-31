@@ -4,7 +4,7 @@
  *   npx tsx scripts/voice-try.ts "cobré 45 mil de sueldo"
  *   npx tsx scripts/voice-try.ts --audio ruta.m4a
  *   npx tsx scripts/voice-try.ts --batch
- *   npx tsx scripts/voice-try.ts "..." --categories "Sueldo,Changas"
+ *   npx tsx scripts/voice-try.ts "..." --categories "Sueldo,Changas" --expense-categories "Súper,Nafta"
  *
  * Necesita OPENAI_API_KEY en .env.local o .env. Nunca imprime la clave.
  */
@@ -22,6 +22,7 @@ config({ path: ".env.local", override: true, quiet: true });
 config({ quiet: true });
 
 const DEFAULT_CATEGORIES = ["Sueldo", "Freelance", "Alquileres", "Otros ingresos"];
+const DEFAULT_EXPENSE_CATEGORIES = ["Supermercado", "Transporte", "Salidas y ocio", "Servicios", "Otros"];
 
 const BATCH: string[] = [
   "cobré 45 mil de sueldo",                              // ingreso simple
@@ -30,6 +31,9 @@ const BATCH: string[] = [
   "cobro el alquiler del depto, 400 mil todos los meses", // fijo mensual
   "ayer me transfirieron 80 lucas",                      // "ayer"
   "gasté 12 mil en el supermercado",                     // gasto
+  "pagué 8 lucas de nafta",                              // gasto, transporte
+  "ayer salí a cenar y gasté 35 mil",                    // gasto con fecha
+  "pago la luz, 20 mil todos los meses",                 // gasto fijo
   "le presté 200 mil a Juan",                            // deuda
   "me compré zapatillas con la Visa en 6 cuotas de 25 mil", // compra en cuotas
   "el resumen de la Visa vino de 412 mil",               // resumen
@@ -39,16 +43,17 @@ const BATCH: string[] = [
   "   ",                                                 // vacío
 ];
 
-interface Args { text?: string; audio?: string; batch: boolean; categories: string[] }
+interface Args { text?: string; audio?: string; batch: boolean; categories: string[]; expenseCategories: string[] }
 
 function parseArgs(argv: string[]): Args {
-  const a: Args = { batch: false, categories: DEFAULT_CATEGORIES };
+  const a: Args = { batch: false, categories: DEFAULT_CATEGORIES, expenseCategories: DEFAULT_EXPENSE_CATEGORIES };
   const rest: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === "--batch") a.batch = true;
     else if (v === "--audio") a.audio = argv[++i];
     else if (v === "--categories") a.categories = (argv[++i] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    else if (v === "--expense-categories") a.expenseCategories = (argv[++i] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
     else if (v === "--help" || v === "-h") usage(0);
     else rest.push(v);
   }
@@ -58,7 +63,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 function usage(code: number): never {
-  console.log('Uso:\n  npx tsx scripts/voice-try.ts "<texto>" [--categories "A,B,C"]\n  npx tsx scripts/voice-try.ts --audio ruta.m4a\n  npx tsx scripts/voice-try.ts --batch');
+  console.log('Uso:\n  npx tsx scripts/voice-try.ts "<texto>" [--categories "A,B,C"] [--expense-categories "X,Y"]\n  npx tsx scripts/voice-try.ts --audio ruta.m4a\n  npx tsx scripts/voice-try.ts --batch');
   process.exit(code);
 }
 
@@ -143,7 +148,7 @@ function row(phrase: string, r: RunResult, ctx: VoiceContext): string[] {
   if (r.error) return [phrase, `ERROR ${r.error.code}${r.error.retryable ? " (retryable)" : ""}`, "-", "-", String(r.timings.totalMs)];
   const o = r.outcome!;
   if (o.kind === "draft") {
-    const cat = ctx.incomeCategories.find((c) => c.id === o.draft.categoryId)?.name ?? "-";
+    const cat = [...ctx.incomeCategories, ...ctx.expenseCategories].find((c) => c.id === o.draft.categoryId)?.name ?? "-";
     const amount = o.draft.amount == null ? "-" : `${o.draft.amount} ${o.draft.currency}`;
     return [phrase, `${o.intent}${o.draft.fixed ? " (fijo)" : ""}`, amount, cat, String(r.timings.totalMs)];
   }
@@ -163,15 +168,17 @@ function printTable(head: string[], rows: string[][]) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const slug = (name: string) => name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const names = args.categories.length ? args.categories : DEFAULT_CATEGORIES;
+  const expNames = args.expenseCategories.length ? args.expenseCategories : DEFAULT_EXPENSE_CATEGORIES;
   const ctx: VoiceContext = {
     today: todayBuenosAires(),
-    incomeCategories: names.map((name) => ({
-      id: `cat-${name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
-      name,
-    })),
+    incomeCategories: names.map((name) => ({ id: `cat-${slug(name)}`, name })),
+    expenseCategories: expNames.map((name) => ({ id: `exp-${slug(name)}`, name })),
   };
-  console.log(`Hoy (Buenos Aires): ${ctx.today} | categorías: ${ctx.incomeCategories.map((c) => `${c.name} [${c.id}]`).join(", ")}`);
+  console.log(`Hoy (Buenos Aires): ${ctx.today}`);
+  console.log(`Categorías de ingreso: ${ctx.incomeCategories.map((c) => `${c.name} [${c.id}]`).join(", ")}`);
+  console.log(`Categorías de gasto:   ${ctx.expenseCategories.map((c) => `${c.name} [${c.id}]`).join(", ")}`);
   console.log(`OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? "configurada" : "NO configurada"}\n`);
 
   if (args.batch) {

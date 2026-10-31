@@ -5,7 +5,7 @@ import type { InboxItemDTO, PlanData } from "../../../lib/types";
 import type { VoiceApiError, VoiceOutcome } from "../../domain";
 import { AppError, toAppError } from "../errors";
 import { NotImplementedError, type DataSource } from "./DataSource";
-import type { NewIncomeInput, PendingPayment, VoiceInput } from "../types";
+import type { EntryKind, NewEntryInput, PendingPayment, VoiceInput } from "../types";
 
 const VOICE_TIMEOUT_MS = 45_000;
 
@@ -161,16 +161,16 @@ export const apiSource: DataSource = {
     throw new NotImplementedError("addLoan");
   },
   interpretVoice: postVoice,
-  getIncomeCategories: async () => {
+  getCategories: async (kind: EntryKind) => {
     const data = await api<PlanData>("GET", "/api/plan/data");
     return data.categories
-      .filter((c) => c.kind === "INCOME" && !c.isArchived)
+      .filter((c) => c.kind === kind && !c.isArchived)
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((c) => ({ id: c.id, name: c.name }));
   },
-  addIncome: async (input: NewIncomeInput) => {
+  addEntry: async (input: NewEntryInput) => {
     await api("POST", "/api/plan/entries", {
-      kind: "INCOME",
+      kind: input.kind,
       period: input.period,
       name: input.name,
       amount: input.amount,

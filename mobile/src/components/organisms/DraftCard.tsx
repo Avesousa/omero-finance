@@ -4,7 +4,9 @@ import { useTheme } from "../../design-system";
 import { Button, HStack, Icon, Pill, Text, VStack } from "../atoms";
 
 export interface DraftCardProps {
-  /** "Ingreso" */
+  /** Ingreso suma (tono positivo); gasto es neutro. */
+  kind: "income" | "expense";
+  /** "Ingreso" / "Gasto" */
   kindLabel: string;
   name: string | null;
   /** Monto ya formateado; null = no se dijo. */
@@ -12,17 +14,27 @@ export interface DraftCardProps {
   /** Categoría, fecha, etc. ya formateados. */
   details: readonly string[];
   fixed?: boolean;
-  status: "pending" | "saved" | "dismissed";
+  /** Lo que falta para poder confirmar ("Falta el monto"); null = completo (hay Confirmar). */
+  missing: string | null;
+  status: "pending" | "saving" | "saved";
   /** Monto ya formateado cuando `status` es "saved". */
   savedAmount?: string;
-  onReview: () => void;
+  /** El último intento de guardar falló. */
+  error?: boolean;
+  onConfirm: () => void;
+  onEdit: () => void;
 }
 
-/** Resumen del borrador dentro del chat: lo que entendió la mascota y el paso para revisarlo y guardarlo. */
-export function DraftCard({ kindLabel, name, amount, details, fixed, status, savedAmount, onReview }: DraftCardProps) {
+/**
+ * Lo que armó la mascota, dentro del chat: la información y dos pasos, Confirmar (guarda directo)
+ * y Editar (abre el formulario). Si falta algo obligatorio no hay Confirmar y Completar es el principal.
+ */
+export function DraftCard({ kind, kindLabel, name, amount, details, fixed, missing, status, savedAmount, error, onConfirm, onEdit }: DraftCardProps) {
   const { t } = useTranslation("load");
   const { colors, radius, space, sizes } = useTheme();
   const done = status === "saved";
+  const saving = status === "saving";
+  const income = kind === "income";
   return (
     <View
       testID="draft-card"
@@ -35,12 +47,11 @@ export function DraftCard({ kindLabel, name, amount, details, fixed, status, sav
         backgroundColor: colors.surface,
         borderWidth: sizes.hairline,
         borderColor: done ? colors.positive : colors.border,
-        opacity: status === "dismissed" ? 0.8 : 1,
       }}
     >
       <HStack gap={2}>
-        <Icon name="arrow-down-circle-outline" size="sm" tone="inkMuted" />
-        <Text variant="label" tone="inkMuted">
+        <Icon name={income ? "arrow-down-circle-outline" : "arrow-up-circle-outline"} size="sm" tone={income ? "positiveInk" : "inkMuted"} />
+        <Text variant="label" tone={income ? "positiveInk" : "inkMuted"}>
           {kindLabel.toUpperCase()}
         </Text>
       </HStack>
@@ -52,13 +63,14 @@ export function DraftCard({ kindLabel, name, amount, details, fixed, status, sav
           <Text variant="screenTitle">{done && savedAmount ? savedAmount : amount}</Text>
         ) : (
           <Text variant="number" tone="dangerInk">
-            {t("draft.missingAmount")}
+            {missing ?? t("draft.missingAmount")}
           </Text>
         )}
       </VStack>
       {details.length > 0 || fixed ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[2] }}>
-          {details.map((d) => (
+          {/* Si el nombre es la categoría (pasa cuando no se dijo un nombre), no repetirla. */}
+          {details.filter((d) => d !== name).map((d) => (
             <Pill key={d} label={d} />
           ))}
           {fixed ? <Pill label={t("draft.fixed")} tone="accent" /> : null}
@@ -71,15 +83,27 @@ export function DraftCard({ kindLabel, name, amount, details, fixed, status, sav
             {t("draft.saved")}
           </Text>
         </HStack>
-      ) : status === "dismissed" ? (
-        <VStack gap={2}>
-          <Text variant="secondaryStrong" tone="inkMuted">
-            {t("draft.dismissed")}
-          </Text>
-          <Button testID="draft-review" variant="secondary" label={t("draft.resume")} onPress={onReview} />
-        </VStack>
       ) : (
-        <Button testID="draft-review" label={t("draft.review")} onPress={onReview} />
+        <VStack gap={2}>
+          {amount && missing ? (
+            <Text variant="secondaryStrong" tone="dangerInk">
+              {missing}
+            </Text>
+          ) : null}
+          {error ? (
+            <Text variant="secondary" tone="dangerInk" accessibilityLiveRegion="polite">
+              {t("draft.error")}
+            </Text>
+          ) : null}
+          {missing ? (
+            <Button testID="draft-edit" label={t("draft.complete")} onPress={onEdit} />
+          ) : (
+            <>
+              <Button testID="draft-confirm" label={saving ? t("draft.saving") : t("draft.confirm")} busy={saving} onPress={onConfirm} />
+              <Button testID="draft-edit" variant="secondary" label={t("draft.edit")} disabled={saving} onPress={onEdit} />
+            </>
+          )}
+        </VStack>
       )}
     </View>
   );

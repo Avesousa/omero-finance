@@ -70,6 +70,7 @@ export function todayIso(now: Date = new Date()): string {
 
 // Carga por voz: contrato compartido con la API web (`src/lib/plan/voice.ts`, lógica pura).
 export type {
+  EntryDraft,
   IncomeDraft,
   VoiceApiError,
   VoiceContext,

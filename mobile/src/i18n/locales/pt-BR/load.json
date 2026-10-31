@@ -24,14 +24,22 @@
     "label": ""
   },
   "draft": {
-    "kind": "",
+    "kind": {
+      "income": "",
+      "expense": ""
+    },
     "unnamed": "",
     "missingAmount": "",
+    "missingName": "",
     "fixed": "",
-    "review": "",
+    "today": "",
+    "yesterday": "",
+    "confirm": "",
+    "edit": "",
+    "complete": "",
+    "saving": "",
     "saved": "",
-    "dismissed": "",
-    "resume": ""
+    "error": ""
   },
   "quick": {
     "income": "",

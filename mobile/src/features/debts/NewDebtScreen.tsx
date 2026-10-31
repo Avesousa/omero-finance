@@ -8,6 +8,7 @@ import { ScreenTemplate } from "../../components/templates";
 import { previewLoan, useAddLoan, type NewLoanInput } from "../../data";
 import { useTheme } from "../../design-system";
 import { formatMoney, formatPeriod } from "../../i18n/format";
+import { conversation } from "../load/conversation";
 import { addMonths, currentPeriod, formatMoneyInput, parseMoney } from "../../domain";
 
 const MIN_PERIOD = "2020-01";
@@ -32,7 +33,7 @@ const digits = (text: string) => text.replace(/\D/g, "");
 export function NewDebtScreen() {
   const { t } = useTranslation("debts");
   const { colors } = useTheme();
-  const params = useLocalSearchParams<{ direction?: string }>();
+  const params = useLocalSearchParams<{ direction?: string; chatRef?: string }>();
   const add = useAddLoan();
 
   const [direction, setDirection] = useState<Direction>(params.direction === "OWED" ? "OWED" : "OWE");
@@ -92,7 +93,13 @@ export function NewDebtScreen() {
   const onSave = () => {
     setSubmitted(true);
     if (Object.keys(errors).length > 0) return;
-    add.mutate(input, { onSuccess: () => router.back() });
+    add.mutate(input, {
+      onSuccess: () => {
+        // Abierto desde el chat de Cargar: vuelve a él y la mascota lo cuenta.
+        if (params.chatRef === "1") conversation.dispatch({ type: "manualSaved", kind: "debt", name: input.name });
+        router.back();
+      },
+    });
   };
 
   const previewText = (() => {
@@ -111,7 +118,7 @@ export function NewDebtScreen() {
             {t(direction === "OWED" ? "form.titleOwed" : "form.title")}
           </Text>
           <Spacer />
-          <IconButton icon="close" accessibilityLabel={t("form.close")} onPress={() => router.back()} />
+          <IconButton testID="new-debt-close" icon="close" accessibilityLabel={t("form.close")} onPress={() => router.back()} />
         </HStack>
 
         <SegmentedToggle

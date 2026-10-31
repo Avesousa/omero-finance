@@ -11,8 +11,9 @@ import type {
   DebtsOverview,
   ErrorReport,
   HomeSummary,
-  IncomeCategory,
-  NewIncomeInput,
+  Category,
+  EntryKind,
+  NewEntryInput,
   NewLoanInput,
   PendingPayment,
   VoiceInput,
@@ -59,12 +60,27 @@ const notices: AppNotifications["notices"] = [
 const CURRENT_PERIOD = "2026-11";
 const USD_RATE = 1450;
 
-const incomeCategories: IncomeCategory[] = [
+const incomeCategories: Category[] = [
   { id: "ic-sueldo", name: "Sueldo" },
   { id: "ic-freelance", name: "Freelance" },
   { id: "ic-alquileres", name: "Alquileres" },
   { id: "ic-otros", name: "Otros ingresos" },
 ];
+
+const expenseCategories: Category[] = [
+  { id: "exp-supermercado", name: "Supermercado" },
+  { id: "exp-transporte", name: "Transporte" },
+  { id: "exp-salidas", name: "Salidas y ocio" },
+  { id: "exp-servicios", name: "Servicios" },
+  { id: "exp-otros", name: "Otros" },
+];
+
+/** Tramo de "En qué se va el mes" al que suma cada categoría de gasto del mock; el resto va a Otros. */
+const SPENDING_BUCKET: Record<string, string> = {
+  "exp-supermercado": "groceries",
+  "exp-transporte": "transport",
+  "exp-salidas": "outings",
+};
 
 /** Errores que el mock "le avisó al admin" (para probar en desarrollo). */
 export const mockErrorReports: ErrorReport[] = [];
@@ -228,16 +244,29 @@ export const mockSource: DataSource = {
     if (probe === "error") {
       throw new AppError("Error simulado", { code: "provider_unavailable", retryable: true });
     }
-    return mockOutcome(text, { today: home.today, incomeCategories: incomeCategories.map((c) => ({ ...c })) });
+    return mockOutcome(text, {
+      today: home.today,
+      incomeCategories: incomeCategories.map((c) => ({ ...c })),
+      expenseCategories: expenseCategories.map((c) => ({ ...c })),
+    });
   },
-  getIncomeCategories: async () => wait(incomeCategories.map((c) => ({ ...c }))),
-  addIncome: async (input: NewIncomeInput) => {
+  getCategories: async (kind: EntryKind) =>
+    wait((kind === "INCOME" ? incomeCategories : expenseCategories).map((c) => ({ ...c }))),
+  addEntry: async (input: NewEntryInput) => {
     // El mock tiene un solo mes (noviembre 2026) y el formulario usa la fecha real del teléfono:
-    // cualquier ingreso suma a Inicio para poder ver el efecto. En pesos (los dólares se convierten).
+    // todo movimiento suma a Inicio para poder ver el efecto. En pesos (los dólares se convierten).
     const ars = toArs(input.amount, input.currency, USD_RATE);
-    home.income += ars;
-    home.available += ars;
-    home.free += ars;
+    if (input.kind === "INCOME") {
+      home.income += ars;
+      home.available += ars;
+      home.free += ars;
+    } else {
+      home.available -= ars;
+      home.free -= ars;
+      const bucketId = (input.categoryId && SPENDING_BUCKET[input.categoryId]) || "other";
+      const bucket = home.spendingByCategory.find((c) => c.id === bucketId);
+      if (bucket) bucket.amount += ars;
+    }
     await wait(undefined);
   },
   reportError: async (report: ErrorReport) => {

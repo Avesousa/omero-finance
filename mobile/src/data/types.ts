@@ -249,14 +249,21 @@ export interface LoanPreview {
   endPeriod: string | null;
 }
 
-/** Categoría de ingreso del hogar (para el formulario de ingreso y para la voz). */
-export interface IncomeCategory {
+/** Tipo de movimiento que se carga a mano o por voz. */
+export type EntryKind = "INCOME" | "EXPENSE";
+
+/** Categoría de ingreso o de gasto del hogar (para el formulario y para la voz). */
+export interface Category {
   id: string;
   name: string;
 }
 
-/** Lo que carga el formulario de ingreso. Igual al body de `POST /api/plan/entries` con `kind: "INCOME"`. */
-export interface NewIncomeInput {
+/** @deprecated Usar `Category`. */
+export type IncomeCategory = Category;
+
+/** Lo que carga el formulario de ingreso o gasto. Igual al body de `POST /api/plan/entries`. */
+export interface NewEntryInput {
+  kind: EntryKind;
   /** Mes al que pertenece, 'YYYY-MM'. */
   period: string;
   name: string;

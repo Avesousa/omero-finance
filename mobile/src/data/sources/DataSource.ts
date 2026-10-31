@@ -5,8 +5,9 @@ import type {
   DebtsOverview,
   ErrorReport,
   HomeSummary,
-  IncomeCategory,
-  NewIncomeInput,
+  Category,
+  EntryKind,
+  NewEntryInput,
   NewLoanInput,
   PendingPayment,
   VoiceInput,
@@ -35,10 +36,10 @@ export interface DataSource {
   addLoan(input: NewLoanInput): Promise<LoanDTO>;
   /** Interpreta lo dicho (audio o texto). No guarda nada. Lanza `AppError`. */
   interpretVoice(input: VoiceInput): Promise<VoiceOutcome>;
-  /** Categorías de ingreso (no archivadas) del hogar. */
-  getIncomeCategories(): Promise<IncomeCategory[]>;
-  /** Agrega un ingreso. */
-  addIncome(input: NewIncomeInput): Promise<void>;
+  /** Categorías (no archivadas) del hogar, de ingreso o de gasto. */
+  getCategories(kind: EntryKind): Promise<Category[]>;
+  /** Agrega un ingreso o un gasto (`input.kind`). */
+  addEntry(input: NewEntryInput): Promise<void>;
   /** Registra un error para el admin. */
   reportError(report: ErrorReport): Promise<void>;
 }

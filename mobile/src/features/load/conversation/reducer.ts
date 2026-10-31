@@ -1,6 +1,7 @@
 import type { VoiceOutcome, VoicePendingIntent } from "../../../domain/index.ts";
 import type { MascotMoment } from "../../../mascots/types.ts";
 import type { ChatMessage, MascotDraftMessage } from "./types.ts";
+import { isDraftComplete } from "./draft.ts";
 
 export interface ConversationState {
   messages: ChatMessage[];
@@ -27,8 +28,14 @@ export type ConversationAction =
   | { type: "error"; at: number; error: ChatErrorInfo; forMessageId: string }
   /** La mascota dice un momento suelto (sin permiso de micrófono, audio muy corto…). */
   | { type: "say"; at: number; moment: MascotMoment }
+  /** Confirmar: la tarjeta pasa a "guardando". */
+  | { type: "draftSaving"; at: number; draftId: string }
+  /** Se guardó (confirmando o desde el formulario): tarjeta ✓ + frase de la mascota según el tipo. */
   | { type: "draftSaved"; at: number; draftId: string; amount: string }
-  | { type: "draftDismissed"; at: number; draftId: string }
+  /** Falló el guardado: la tarjeta vuelve a "pendiente" con el aviso y la mascota pide reintentar. */
+  | { type: "draftFailed"; at: number; draftId: string }
+  /** Se cargó algo a mano desde una opción del chat (formulario abierto arriba del hilo). */
+  | { type: "manualSaved"; at: number; kind: "income" | "expense" | "debt"; amount?: string; name?: string }
   | { type: "reset" };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
@@ -47,6 +54,12 @@ function hasMessage(state: ConversationState, id: string): boolean {
 
 function line(id: string, at: number, moment: MascotMoment, extra: { intent?: VoicePendingIntent } = {}): ChatMessage {
   return { id, at, from: "mascot", kind: "mascot.line", moment, ...extra };
+}
+
+const SAVED_MOMENT = { income: "incomeSaved", expense: "expenseSaved", debt: "debtSaved" } as const;
+
+function savedLine(id: string, at: number, kind: keyof typeof SAVED_MOMENT, vars: Record<string, string | number>): ChatMessage {
+  return { id, at, from: "mascot", kind: "mascot.line", moment: SAVED_MOMENT[kind], vars };
 }
 
 function patchDraft(state: ConversationState, draftId: string, patch: Partial<MascotDraftMessage>): ConversationState {
@@ -102,6 +115,7 @@ export function conversationReducer(state: ConversationState, action: Conversati
     case "outcome": {
       if (!hasMessage(state, action.forMessageId)) return state; // llegó tarde: el hilo ya se reinició
       const { outcome } = action;
+      const fromAudio = state.messages.some((m) => m.id === action.forMessageId && m.kind === "user.audio");
       const base = withoutTyping(state.messages).map((m) =>
         m.id === action.forMessageId && m.kind === "user.audio" ? { ...m, transcript: outcome.transcript } : m,
       );
@@ -111,7 +125,8 @@ export function conversationReducer(state: ConversationState, action: Conversati
         case "draft": {
           const draftId = action.draftId ?? `d${n}`;
           return push(next, [
-            line(`m${n}`, action.at, "voiceDraftReady"),
+            // Completo: "revisalo y confirmalo". Incompleto: pide lo que falta.
+            line(`m${n}`, action.at, isDraftComplete(outcome.draft) ? "voiceDraftReady" : "voiceDraftIncomplete"),
             {
               id: `m${n + 1}`,
               at: action.at,
@@ -120,7 +135,8 @@ export function conversationReducer(state: ConversationState, action: Conversati
               draftId,
               intent: outcome.intent,
               draft: outcome.draft,
-              transcript: outcome.transcript,
+              source: fromAudio ? "audio" : "text",
+              ...(fromAudio ? { transcript: outcome.transcript } : {}),
               status: "pending",
             },
           ], { seq: n + 2 });
@@ -157,22 +173,32 @@ export function conversationReducer(state: ConversationState, action: Conversati
     case "say":
       return push({ ...state, seq: state.seq + 1 }, [line(`m${state.seq}`, action.at, action.moment)]);
 
+    case "draftSaving": {
+      const draft = findDraft(state, action.draftId);
+      if (!draft || draft.status !== "pending") return state;
+      return patchDraft(state, action.draftId, { status: "saving", error: false });
+    }
+
     case "draftSaved": {
       const draft = findDraft(state, action.draftId);
       if (!draft || draft.status === "saved") return state;
-      const patched = patchDraft(state, action.draftId, { status: "saved", savedAmount: action.amount });
+      const patched = patchDraft(state, action.draftId, { status: "saved", savedAmount: action.amount, error: false });
       const n = patched.seq;
-      return push({ ...patched, seq: n + 1 }, [
-        { id: `m${n}`, at: action.at, from: "mascot", kind: "mascot.line", moment: "incomeSaved", vars: { amount: action.amount } },
-      ]);
+      return push({ ...patched, seq: n + 1 }, [savedLine(`m${n}`, action.at, draft.intent, { amount: action.amount })]);
     }
 
-    case "draftDismissed": {
+    case "draftFailed": {
       const draft = findDraft(state, action.draftId);
-      if (!draft || draft.status !== "pending") return state; // ya guardado, o ya descartado (la frase va una sola vez)
-      const patched = patchDraft(state, action.draftId, { status: "dismissed" });
+      if (!draft || draft.status !== "saving") return state;
+      const patched = patchDraft(state, action.draftId, { status: "pending", error: true });
       const n = patched.seq;
-      return push({ ...patched, seq: n + 1 }, [line(`m${n}`, action.at, "draftDismissed")]);
+      return push({ ...patched, seq: n + 1 }, [line(`m${n}`, action.at, "voiceErrorRetry")]);
+    }
+
+    case "manualSaved": {
+      const n = state.seq;
+      const vars: Record<string, string> = action.kind === "debt" ? { name: action.name ?? "" } : { amount: action.amount ?? "" };
+      return push({ ...state, seq: n + 1 }, [savedLine(`m${n}`, action.at, action.kind, vars)]);
     }
   }
 }
