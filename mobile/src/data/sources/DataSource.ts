@@ -1,12 +1,14 @@
-import type { LoanDTO, VoiceOutcome } from "../../domain";
+import type { LoanDTO, MonthPlan, VoiceOutcome } from "../../domain";
 import type {
   AppNotifications,
+  BudgetItem,
   CardsOverview,
   DebtsOverview,
   ErrorReport,
   HomeSummary,
   Category,
   EntryKind,
+  EntryPatch,
   NewEntryInput,
   NewLoanInput,
   PendingPayment,
@@ -18,6 +20,10 @@ import type {
 export interface DataSource {
   /** Resumen del mes (`period` 'YYYY-MM'; por defecto el actual). */
   getHome(period?: string): Promise<HomeSummary>;
+  /** Todo lo del mes (lo mismo que `GET /api/plan/data`): de acá salen Inicio y el presupuesto. */
+  getPlan(period?: string): Promise<MonthPlan>;
+  /** Guarda topes del presupuesto del mes (`PUT /api/plan/budget`); monto 0 quita la línea. */
+  saveBudget(period: string, items: BudgetItem[]): Promise<void>;
   getPendingPayments(): Promise<PendingPayment[]>;
   getNotifications(): Promise<AppNotifications>;
   /** Confirma un pago por confirmar (opcionalmente completando el monto). */
@@ -40,6 +46,10 @@ export interface DataSource {
   getCategories(kind: EntryKind): Promise<Category[]>;
   /** Agrega un ingreso o un gasto (`input.kind`). */
   addEntry(input: NewEntryInput): Promise<void>;
+  /** Edita un movimiento del mes (`PATCH /api/plan/entries/[id]`); con `applyToRule` también la regla del fijo. */
+  updateEntry(id: string, patch: EntryPatch): Promise<void>;
+  /** Quita un movimiento: `month` solo este mes; `rule` además deja de repetirse (`DELETE …?scope=rule`). */
+  deleteEntry(id: string, scope: "month" | "rule"): Promise<void>;
   /** Registra un error para el admin. */
   reportError(report: ErrorReport): Promise<void>;
 }

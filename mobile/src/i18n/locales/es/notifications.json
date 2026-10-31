@@ -20,6 +20,8 @@
     "due": "Vence {{name}} el {{date}} ({{amount}})",
     "weekClosed": "Cerraste la semana {{n}}",
     "debtDown": "Bajaste {{amount}} del préstamo",
+    "budgetNear": "{{name}} está cerca del tope",
+    "budgetOverCategory": "Te pasaste del tope de {{name}}",
     "unread": "Sin leer"
   },
   "when": {

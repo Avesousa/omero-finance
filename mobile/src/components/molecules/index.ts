@@ -15,6 +15,7 @@ export { FormField, type FormFieldProps } from "./FormField";
 
 // — chat —
 export { ChatBubble, type ChatBubbleProps } from "./ChatBubble";
+export { ChatTextBubble, type ChatTextBubbleProps } from "./ChatTextBubble";
 export { AudioBubble, formatClock, type AudioBubbleProps } from "./AudioBubble";
 export { TypingBubble, type TypingBubbleProps } from "./TypingBubble";
 export { QuickReplies, type QuickRepliesProps, type QuickReply } from "./QuickReplies";

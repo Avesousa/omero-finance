@@ -119,34 +119,36 @@ test("mock: addEntry INCOME suma a Inicio", async () => {
   assert.equal(after.free, before.free + 100);
 });
 
-test("mock: addEntry EXPENSE resta de disponible y libre y suma al tramo", async () => {
-  const snap = async () => {
-    const h = await mockSource.getHome();
-    const amount = (id: string) => h.spendingByCategory.find((c) => c.id === id)!.amount;
-    return { ...h, grocery: amount("groceries"), other: amount("other") };
-  };
-  const before = await snap();
+test("mock: addEntry EXPENSE resta del disponible; el libre solo baja si pasa del tope o no tenía", async () => {
+  const before = await mockSource.getHome();
+  // Dentro del tope de Supermercado: sale del disponible pero ya estaba reservado, el libre no cambia.
   await mockSource.addEntry({
     kind: "EXPENSE", period: before.period, name: "Súper", amount: 1_000, currency: "ARS",
     categoryId: "exp-supermercado", date: null, note: null, fixed: null,
   });
+  const mid = await mockSource.getHome();
+  assert.equal(mid.available, before.available - 1_000);
+  assert.equal(mid.free, before.free);
+  // Servicios no tiene tope: cada peso gastado baja el libre.
   await mockSource.addEntry({
     kind: "EXPENSE", period: before.period, name: "Varios", amount: 200, currency: "ARS",
     categoryId: "exp-servicios", date: null, note: null, fixed: null,
   });
-  const after = await snap();
+  const after = await mockSource.getHome();
   assert.equal(after.income, before.income);
   assert.equal(after.available, before.available - 1_200);
-  assert.equal(after.free, before.free - 1_200);
-  assert.equal(after.grocery, before.grocery + 1_000);
-  assert.equal(after.other, before.other + 200);
+  assert.equal(after.free, before.free - 200);
+  const total = (h: typeof before) => h.spendingByCategory.reduce((sum, c) => sum + c.amount, 0);
+  assert.equal(total(after), total(before) + 1_200);
 });
 
-test("mock: getCategories por tipo", async () => {
+test("mock: getCategories por tipo (gasto = las de la web, sin la de sistema de tarjetas)", async () => {
   const inc = await mockSource.getCategories("INCOME");
   const exp = await mockSource.getCategories("EXPENSE");
   assert.ok(inc.some((c) => c.id === "ic-sueldo"));
-  assert.deepEqual(exp.map((c) => c.name), ["Supermercado", "Transporte", "Salidas y ocio", "Servicios", "Otros"]);
+  assert.equal(exp.length, 14);
+  assert.deepEqual(exp.slice(0, 4).map((c) => c.name), ["Alquiler", "Expensas", "Servicios", "Supermercado"]);
+  assert.ok(exp.some((c) => c.name === "Ahorro e inversión") && !exp.some((c) => c.name === "Tarjetas de crédito"));
 });
 
 test("toAppError: red, timeout y HTTP", () => {

@@ -39,12 +39,25 @@
       "INCOME": "",
       "EXPENSE": ""
     },
-    "categoriesError": ""
+    "categoriesError": "",
+    "amountPerTime": "",
+    "frequency": "",
+    "frequencyMONTHLY": "",
+    "frequencyBIWEEKLY": "",
+    "frequencyWEEKLY": "",
+    "frequencyDAILY": "",
+    "dueDay": "",
+    "dueDayPlaceholder": "",
+    "weekday": "",
+    "applyToRule": "",
+    "applyToRuleHint": ""
   },
   "errors": {
     "name": "",
     "amount": "",
-    "day": ""
+    "day": "",
+    "dueDay": "",
+    "weekday": ""
   },
   "saved": {
     "done": {

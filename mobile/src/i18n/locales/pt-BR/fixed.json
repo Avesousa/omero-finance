@@ -1,0 +1,75 @@
+{
+  "title": "",
+  "back": "",
+  "close": "",
+  "hero": {
+    "label": "",
+    "caption": ""
+  },
+  "projected": {
+    "notice": ""
+  },
+  "group": {
+    "uncategorized": ""
+  },
+  "row": {
+    "dueOn": "",
+    "monthly": "",
+    "weekly": "",
+    "biweekly": "",
+    "daily": "",
+    "perTime": "",
+    "edit": "",
+    "markPaid": "",
+    "markPending": ""
+  },
+  "weekdayLong": {
+    "0": "",
+    "1": "",
+    "2": "",
+    "3": "",
+    "4": "",
+    "5": "",
+    "6": ""
+  },
+  "weekdayShort": {
+    "0": "",
+    "1": "",
+    "2": "",
+    "3": "",
+    "4": "",
+    "5": "",
+    "6": ""
+  },
+  "add": "",
+  "empty": {
+    "title": "",
+    "body": ""
+  },
+  "state": {
+    "loading": "",
+    "errorTitle": "",
+    "errorBody": ""
+  },
+  "toggleError": "",
+  "new": {
+    "title": "",
+    "save": "",
+    "error": ""
+  },
+  "edit": {
+    "title": "",
+    "save": "",
+    "error": "",
+    "removeMonth": "",
+    "stop": "",
+    "stopTitle": "",
+    "stopBody": "",
+    "stopConfirm": "",
+    "cancel": "",
+    "removeError": "",
+    "notFoundTitle": "",
+    "notFoundBody": "",
+    "readOnly": ""
+  }
+}

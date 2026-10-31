@@ -1,11 +1,13 @@
 import { Platform } from "react-native";
 import { getInfoAsync, readAsStringAsync } from "expo-file-system/legacy";
 import { api, API_URL, getToken } from "../../../lib/api";
+import { prefGet } from "../../../lib/storage";
 import type { InboxItemDTO, PlanData } from "../../../lib/types";
-import type { VoiceApiError, VoiceOutcome } from "../../domain";
+import type { MonthPlan, VoiceApiError, VoiceOutcome } from "../../domain";
+import { homeFromPlan } from "../plan.ts";
 import { AppError, toAppError } from "../errors";
 import { NotImplementedError, type DataSource } from "./DataSource";
-import type { EntryKind, NewEntryInput, PendingPayment, VoiceInput } from "../types";
+import type { BudgetItem, EntryKind, EntryPatch, NewEntryInput, PendingPayment, VoiceInput } from "../types";
 
 const VOICE_TIMEOUT_MS = 45_000;
 
@@ -123,13 +125,58 @@ function toPending(item: InboxItemDTO): PendingPayment {
   };
 }
 
+/** `GET /api/plan/data` → los campos que usa la app (sin traducir nada: la forma es la misma). */
+export function toMonthPlan(data: PlanData): MonthPlan {
+  return {
+    period: data.period,
+    today: data.today,
+    started: data.started,
+    usdRate: data.usdRate,
+    categories: data.categories,
+    recurrings: data.recurrings,
+    entries: data.entries,
+    budgets: data.budgets,
+    previousBudgets: data.previousBudgets,
+    previousBudgetPeriod: data.previousBudgetPeriod,
+    cards: data.cards,
+    statements: data.statements,
+    purchases: data.purchases,
+    loans: data.loans,
+  };
+}
+
+const fetchPlan = (period?: string) =>
+  api<PlanData>("GET", period ? `/api/plan/data?period=${encodeURIComponent(period)}` : "/api/plan/data");
+
+/** Primer nombre del usuario guardado en el login ("Avelino Sousa" → "Avelino"); vacío si no hay. */
+async function savedFirstName(): Promise<string> {
+  try {
+    const raw = await prefGet("omero_user");
+    const name = raw ? (JSON.parse(raw) as { name?: string }).name : "";
+    return name?.trim().split(/\s+/)[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
 /**
  * Fuente real. Solo los pagos por confirmar existen hoy en el backend (`/api/plan/inbox`);
  * el resto lanza NotImplementedError hasta que se conecte.
  */
 export const apiSource: DataSource = {
-  getHome: async () => {
-    throw new NotImplementedError("getHome");
+  // Inicio se deriva del plan del mes (misma cuenta que la web). La historia del nido todavía no tiene
+  // patrimonio real en api (getWealth no está), así que arranca en el capítulo 1.
+  getHome: async (period?: string) => {
+    const data = await fetchPlan(period);
+    return homeFromPlan(toMonthPlan(data), {
+      greetingName: await savedFirstName(),
+      pendingConfirmCount: data.inboxPendingCount,
+      story: { chapter: 1, progress: 0 },
+    });
+  },
+  getPlan: async (period?: string) => toMonthPlan(await fetchPlan(period)),
+  saveBudget: async (period: string, items: BudgetItem[]) => {
+    await api("PUT", "/api/plan/budget", { period, items });
   },
   getPendingPayments: async () => {
     const res = await api<{ items: InboxItemDTO[] }>("GET", "/api/plan/inbox");
@@ -162,9 +209,10 @@ export const apiSource: DataSource = {
   },
   interpretVoice: postVoice,
   getCategories: async (kind: EntryKind) => {
-    const data = await api<PlanData>("GET", "/api/plan/data");
+    const data = await fetchPlan();
     return data.categories
-      .filter((c) => c.kind === kind && !c.isArchived)
+      // Las de sistema (ej. "Tarjetas de crédito") se arman solas: no se eligen al cargar.
+      .filter((c) => c.kind === kind && !c.isArchived && !c.systemKey)
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((c) => ({ id: c.id, name: c.name }));
   },
@@ -180,6 +228,12 @@ export const apiSource: DataSource = {
       note: input.note,
       ...(input.fixed ? { fixed: input.fixed } : {}),
     });
+  },
+  updateEntry: async (id: string, patch: EntryPatch) => {
+    await api("PATCH", `/api/plan/entries/${encodeURIComponent(id)}`, patch);
+  },
+  deleteEntry: async (id: string, scope: "month" | "rule") => {
+    await api("DELETE", `/api/plan/entries/${encodeURIComponent(id)}${scope === "rule" ? "?scope=rule" : ""}`);
   },
   reportError: async (report) => {
     await api("POST", "/api/plan/errors", report);

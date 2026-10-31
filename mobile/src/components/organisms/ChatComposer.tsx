@@ -28,6 +28,12 @@ export interface ChatComposerProps {
   busy?: boolean;
   /** Espacio de zona segura inferior (0 con el teclado abierto). */
   bottomInset?: number;
+  /** false = solo texto (sin micrófono): el botón es solo "Enviar" y se apaga con el campo vacío. Default true. */
+  voice?: boolean;
+  /** Texto del campo vacío (ya traducido); por defecto el de Cargar. */
+  placeholder?: string;
+  /** Etiqueta accesible del campo (ya traducida); por defecto la de Cargar. */
+  inputLabel?: string;
 }
 
 /** Barra de abajo del chat: campo de texto + un botón que es micrófono (vacío), enviar (con texto) o enviar audio (grabando). */
@@ -44,6 +50,9 @@ export function ChatComposer({
   canRecord = true,
   busy = false,
   bottomInset = 0,
+  voice = true,
+  placeholder,
+  inputLabel,
 }: ChatComposerProps) {
   const { t } = useTranslation("load");
   const { name } = useMascotStory();
@@ -72,7 +81,9 @@ export function ChatComposer({
     ? { icon: "send" as const, label: t("composer.sendAudio"), onPress: onSendRecording, disabled: false }
     : hasText
       ? { icon: "send" as const, label: t("composer.send"), onPress: onSendText, disabled: !canSend }
-      : {
+      : !voice
+        ? { icon: "send" as const, label: t("composer.send"), onPress: onSendText, disabled: true }
+        : {
           icon: (canRecord ? "mic" : "mic-off") as "mic" | "mic-off",
           label: !canRecord ? t("composer.micUnavailable") : busy ? t("composer.micBusy") : t("composer.mic"),
           onPress: onStartRecording,
@@ -135,8 +146,8 @@ export function ChatComposer({
         ) : (
           <TextInput
             testID="chat-input"
-            accessibilityLabel={t("composer.inputLabel", { name })}
-            placeholder={t("composer.placeholder", { name })}
+            accessibilityLabel={inputLabel ?? t("composer.inputLabel", { name })}
+            placeholder={placeholder ?? t("composer.placeholder", { name })}
             placeholderTextColor={colors.inkMuted}
             value={text}
             onChangeText={onTextChange}
@@ -159,7 +170,7 @@ export function ChatComposer({
           />
         )}
         <Pressable
-          testID={recording || hasText ? "chat-send" : "chat-mic"}
+          testID={recording || hasText || !voice ? "chat-send" : "chat-mic"}
           accessibilityRole="button"
           accessibilityLabel={action.label}
           accessibilityState={{ disabled: action.disabled }}

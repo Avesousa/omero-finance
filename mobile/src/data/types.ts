@@ -1,6 +1,6 @@
-import type { Currency, Frequency, LoanDirection, LoanDTO, LoanMode } from "../domain";
+import type { BudgetRow, Currency, Frequency, LoanDirection, LoanDTO, LoanMode, Summary } from "../domain";
 
-export type { Currency, LoanDirection, LoanDTO, LoanMode } from "../domain";
+export type { Currency, LoanDirection, LoanDTO, LoanMode, MonthPlan } from "../domain";
 
 /** Un tramo del gráfico "En qué se va el mes". Usar `labelKey` (i18n) o, si viene del servidor, `name`. */
 export interface SpendingCategory {
@@ -52,7 +52,7 @@ export interface PendingPayment {
   occurredAt: string;
 }
 
-export type NoticeKind = "due" | "weekClosed" | "debtDown";
+export type NoticeKind = "due" | "weekClosed" | "debtDown" | "budgetNear" | "budgetOverCategory";
 
 /**
  * Aviso informativo. El texto sale de i18n: `notifications:notices.<kind>` con `params`
@@ -274,7 +274,70 @@ export interface NewEntryInput {
   date: string | null;
   note: string | null;
   /** Si es fijo, `amount` es el monto por vez. */
-  fixed: { frequency: Frequency } | null;
+  fixed: { frequency: Frequency; /** 0 = domingo … 6 = sábado; solo semanal. */ weekday?: number | null; /** Día del mes (1–31) en que vence. */ dueDay?: number | null } | null;
+}
+
+/**
+ * Cambios a un movimiento del mes (`PATCH /api/plan/entries/[id]`). `amount` es el total del mes de ese movimiento
+ * (para un fijo no mensual: monto por vez × veces en el mes, ver `monthlyAmount`).
+ * `applyToRule` guarda también en la regla (próximos meses) y es lo único que habilita `frequency`, `weekday` y `dueDay`.
+ */
+export type EntryPatch = Partial<{
+  name: string;
+  amount: number;
+  currency: Currency;
+  categoryId: string | null;
+  isDone: boolean;
+  note: string | null;
+}> & {
+  applyToRule?: boolean;
+  frequency?: Frequency;
+  weekday?: number | null;
+  dueDay?: number | null;
+};
+
+/** Un gasto fijo del mes (movimiento real o proyectado si el mes no empezó). */
+export interface FixedItem {
+  /** null si es proyectado (el mes todavía no empezó): no se puede editar. */
+  entryId: string | null;
+  /** Clave estable de la fila (id de la regla; o de la entry si no hay regla). */
+  recurringId: string | null;
+  name: string;
+  /** Total del mes, en `currency`. */
+  amount: number;
+  currency: Currency;
+  /** Monto por vez (por semana, quincena o mes). */
+  unitAmount: number;
+  frequency: Frequency;
+  weekday: number | null;
+  dueDay: number | null;
+  /** 'YYYY-MM-DD' del próximo vencimiento (mensual: el día pactado; semanal: la próxima vez que cae ese día; sin dato: null). */
+  dueDate: string | null;
+  isDone: boolean;
+  categoryId: string | null;
+}
+
+export interface FixedGroup {
+  categoryId: string | null;
+  /** Nombre de la categoría; "" si no tiene (la UI pone el texto). */
+  name: string;
+  /** En ARS. */
+  total: number;
+  items: FixedItem[];
+}
+
+export interface FixedExpensesView {
+  /** El mes no empezó: son los fijos propuestos (solo lectura). */
+  projected: boolean;
+  /** Totales en ARS. */
+  total: number;
+  paid: number;
+  pending: number;
+  count: number;
+  paidCount: number;
+  /** El próximo fijo sin pagar con vencimiento desde hoy. */
+  nextDue: { name: string; date: string; days: number } | null;
+  groups: FixedGroup[];
 }
 
 /** Entrada de voz: el audio grabado (URI local) o texto escrito. */
@@ -286,4 +349,74 @@ export interface ErrorReport {
   code: string;
   message: string;
   context?: Record<string, unknown>;
+}
+
+// ───────────── Presupuesto del mes ─────────────
+
+/** Una línea del presupuesto: `categoryId` + tope. Monto 0 quita la línea (igual a `PUT /api/plan/budget`). */
+export interface BudgetItem {
+  categoryId: string;
+  amount: number;
+}
+
+/** Entrada de Inicio que no sale del plan: saludo, pendientes de Apple Pay e historia del nido. */
+export interface HomeExtras {
+  greetingName: string;
+  pendingConfirmCount: number;
+  story: HomeSummary["story"];
+}
+
+/** Dónde se muestra la línea: ahorro primero, lo que sale solo, o los gastos con tope del mes. */
+export type BudgetGroup = "savings" | "committed" | "variable";
+
+export interface BudgetLine extends BudgetRow {
+  group: BudgetGroup;
+  /** gastado / tope (0 si no hay tope). Puede pasar de 1: la barra se recorta en la pantalla. */
+  ratio: number;
+  /** Comprometido: cuántos fijos / cuotas / tarjetas ya se pagaron de cuántos hay. Null en el resto. */
+  fixed: { paid: number; total: number } | null;
+}
+
+export interface BudgetView {
+  /** El mes todavía no empezó: ingresos y fijos son los que se repiten cada mes (`projectedPlan`). */
+  projected: boolean;
+  summary: Summary;
+  /** Libre del mes (lo que el presupuesto todavía no tiene destino). Negativo = asignaste de más. */
+  free: number;
+  income: number;
+  /** Suma de todos los topes del mes. */
+  assigned: number;
+  /** Línea de "Ahorro e inversión" (aunque no tenga tope todavía). Null solo si el hogar no tiene esa categoría. */
+  savings: BudgetLine | null;
+  committed: BudgetLine[];
+  variable: BudgetLine[];
+  /** Categorías de gasto editables sin tope ni línea (para "Agregar tope"). */
+  withoutBudget: { categoryId: string; name: string }[];
+  /** Hay presupuesto anterior y este mes todavía no tiene ninguno. */
+  canCopyPrevious: boolean;
+  previousPeriod: string | null;
+  /** Variables y comprometidas (no el ahorro) cerca del tope o pasadas. */
+  counts: { near: number; over: number };
+  /** Gastos del mes con tope vs gastado (solo variables), para la barra del resumen de Inicio. */
+  variableTotals: { budget: number; actual: number };
+}
+
+/** Para el asistente: qué se puso el mes anterior y cuánto se lleva gastado en la categoría. */
+export interface SuggestedBudget {
+  previous: number | null;
+  spentNow: number;
+}
+
+/** Una categoría que recorre el asistente de presupuesto, con lo que se sabe de ella. */
+export interface AssistantTarget {
+  categoryId: string;
+  name: string;
+  /** `savings` = "Ahorro e inversión" (siempre primero). */
+  kind: "savings" | "category";
+  /** Tope del mes anterior (null si no había). */
+  previous: number | null;
+  /** Lo gastado en el mes hasta ahora. */
+  spentNow: number;
+  /** Tope actual del mes (0 si no tiene). */
+  current: number;
 }

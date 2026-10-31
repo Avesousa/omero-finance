@@ -149,6 +149,84 @@
       "voiceDraftIncomplete": {
         "tranqui": "Lo armé, pero me falta un dato. ¿Lo completás?",
         "atrevido": "Casi: me falta un dato. Completalo y listo."
+      },
+      "budgetUnassigned": {
+        "tranqui": "Te quedan {{amount}} sin destino. ¿Los mandamos al ahorro?",
+        "atrevido": "Sobran {{amount}} sin destino. Ponelos en el ahorro, dale."
+      },
+      "budgetBalanced": {
+        "tranqui": "Cada peso tiene destino. Presupuesto completo.",
+        "atrevido": "Ni un peso sin destino. Mes armado, así se hace."
+      },
+      "budgetOver": {
+        "tranqui": "Asignaste {{amount}} de más. Bajemos algo para cuadrar.",
+        "atrevido": "Te pasaste {{amount}}. Hay que bajar algo ya."
+      },
+      "budgetAssistIntro": {
+        "tranqui": "Armemos el mes juntos. Empezamos por el ahorro.",
+        "atrevido": "Dale, armemos el mes. Primero el ahorro."
+      },
+      "budgetAssistSavings": {
+        "tranqui": "El mes pasado apartaste {{amount}}. ¿Seguimos igual?",
+        "atrevido": "Apartaste {{amount}} el mes pasado. ¿Repetimos o subimos?"
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "No hay datos del ahorro anterior. ¿Cuánto apartamos?",
+        "atrevido": "Sin historial de ahorro. ¿Cuánto apartamos este mes?"
+      },
+      "budgetAssistCategory": {
+        "tranqui": "Para {{name}} fueron {{amount}} el mes pasado. ¿Lo dejamos igual?",
+        "atrevido": "{{name}}: {{amount}} el mes pasado. ¿Lo dejamos o lo ajustamos?"
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "¿Cuánto ponemos de tope para {{name}}?",
+        "atrevido": "{{name}} sin tope todavía. ¿Cuánto le ponemos?"
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "Decime el monto. Podés escribir 300 mil o 1,5 palos.",
+        "atrevido": "Monto, dale. Escribilo como 300 mil o 1,5 palos."
+      },
+      "budgetAssistMore": {
+        "tranqui": "¿Agregamos otra categoría o cerramos el mes?",
+        "atrevido": "¿Sumamos otra categoría o cerramos?"
+      },
+      "budgetAssistDone": {
+        "tranqui": "Presupuesto listo. Te quedan {{amount}} sin asignar.",
+        "atrevido": "Mes armado. Te quedan {{amount}} sueltos, ojo."
+      },
+      "budgetNear": {
+        "tranqui": "{{name}} está cerca del tope. Vamos con calma.",
+        "atrevido": "{{name}} ya pisa el tope. Cuidado."
+      },
+      "budgetOverCategory": {
+        "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos.",
+        "atrevido": "Pasaste el tope de {{name}}. Hay que frenar."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Gastos fijos del mes pagados. Un compromiso menos.",
+        "atrevido": "Fijos del mes, todos pagados. Ni uno colgado."
+      },
+      "fixedPending": {
+        "tranqui_one": "Queda {{count}} gasto fijo por {{amount}}. Lo vemos con calma.",
+        "tranqui_other": "Quedan {{count}} gastos fijos por {{amount}}. Los vamos cerrando.",
+        "atrevido_one": "Falta {{count}} fijo por {{amount}}. Pagalo y nos olvidamos.",
+        "atrevido_other": "Faltan {{count}} fijos por {{amount}}. Ni un peso sin pagar, dale."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo fijo. Lo dejamos listo con tiempo.",
+        "tranqui_one": "{{name}} se paga en {{count}} día. Lo tenemos a mano.",
+        "tranqui_other": "{{name}} se paga en {{count}} días. Lo vemos con calma.",
+        "atrevido": "{{name}} es el próximo fijo. No te lo olvides, eh.",
+        "atrevido_one": "{{name}} sale en {{count}} día. Prepará la plata ya.",
+        "atrevido_other": "{{name}} sale en {{count}} días. Prepará la plata a tiempo."
+      },
+      "fixedSaved": {
+        "tranqui": "Listo, {{name}} quedó guardado. Un fijo más ordenado.",
+        "atrevido": "{{name}} guardado. Ya tiene lugar en el mes."
+      },
+      "fixedStopped": {
+        "tranqui": "Dejamos de contar {{name}}. Cuando haga falta, lo volvemos a cargar.",
+        "atrevido": "{{name}} fuera del mes. Menos compromisos, más libertad."
       }
     },
     "actions": {
@@ -253,6 +331,84 @@
       "voiceDraftIncomplete": {
         "tranqui": "Tengo el plano, pero me falta un ladrillo. ¿Lo completás?",
         "atrevido": "Me falta un ladrillo para cerrar esto. Completalo, dale."
+      },
+      "budgetUnassigned": {
+        "tranqui": "Te quedan {{amount}} sin ladrillo. ¿Los ponemos en el ahorro?",
+        "atrevido": "Sobran {{amount}} sueltos. Un ladrillo al ahorro, dale."
+      },
+      "budgetBalanced": {
+        "tranqui": "Cada peso tiene su ladrillo. Presupuesto redondo.",
+        "atrevido": "Ni un ladrillo suelto. Todo el mes tiene casa."
+      },
+      "budgetOver": {
+        "tranqui": "Asignaste {{amount}} de más. Saquemos un ladrillo y acomodamos.",
+        "atrevido": "Te pasaste {{amount}}. Esta pared no aguanta, bajá algo."
+      },
+      "budgetAssistIntro": {
+        "tranqui": "Armemos el mes juntos. Empezamos por el ahorro, que va primero.",
+        "atrevido": "Dale, armemos el mes. Primero el ahorro, después el resto."
+      },
+      "budgetAssistSavings": {
+        "tranqui": "El mes pasado apartaste {{amount}}. ¿Mantenemos ese ladrillo?",
+        "atrevido": "Apartaste {{amount}} el mes pasado. ¿Repetimos o subimos la apuesta?"
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "Todavía no tengo datos del ahorro. ¿Cuánto ponemos del primer ladrillo?",
+        "atrevido": "Sin historial de ahorro. ¿Cuánto ponemos en el primer ladrillo?"
+      },
+      "budgetAssistCategory": {
+        "tranqui": "Para {{name}} pusiste {{amount}} el mes pasado. ¿Seguimos igual?",
+        "atrevido": "{{name}}: {{amount}} el mes pasado. ¿Lo dejamos o lo achicamos?"
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "¿Cuánto ponemos de tope para {{name}}?",
+        "atrevido": "{{name}} sin tope todavía. ¿Cuánto le ponemos?"
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "Decime el monto, sin apuro. Podés escribir 300 mil o 1,5 palos.",
+        "atrevido": "Dale, decime el monto. Escribilo como 300 mil o 1,5 palos."
+      },
+      "budgetAssistMore": {
+        "tranqui": "¿Agregamos otra categoría al presupuesto o cerramos la casa?",
+        "atrevido": "¿Le ponemos ladrillos a otra categoría o cerramos?"
+      },
+      "budgetAssistDone": {
+        "tranqui": "Casa armada. Te quedan {{amount}} sin asignar, ojo con eso.",
+        "atrevido": "Casa armada. Te quedan {{amount}} sueltos, ojo."
+      },
+      "budgetNear": {
+        "tranqui": "{{name}} está cerca del tope. Mirémoslo con calma.",
+        "atrevido": "{{name}} ya pisa el borde del tope. Ojo con ese ladrillo."
+      },
+      "budgetOverCategory": {
+        "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos sin culpa.",
+        "atrevido": "Pasaste el tope de {{name}}. Esa pared se cae sola."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Los fijos del mes están pagados. Cada ladrillo en su lugar.",
+        "atrevido": "Fijos pagados, todos. Ni un ladrillo suelto. Así se construye."
+      },
+      "fixedPending": {
+        "tranqui_one": "Falta {{count}} ladrillo fijo por {{amount}}. Lo ponemos de a poco.",
+        "tranqui_other": "Faltan {{count}} ladrillos fijos por {{amount}}. Sin apuro, pero seguimos.",
+        "atrevido_one": "Te falta {{count}} ladrillo: {{amount}}. Ponelo y seguimos levantando.",
+        "atrevido_other": "Te faltan {{count}} ladrillos: {{amount}}. Pagalos y la pared sube."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo ladrillo. Lo tenemos preparado.",
+        "tranqui_one": "{{name}} cae en {{count}} día. Barro listo para ponerlo.",
+        "tranqui_other": "{{name}} cae en {{count}} días. Juntemos el barro a tiempo.",
+        "atrevido": "{{name}} es el próximo ladrillo. Que no se caiga la pared.",
+        "atrevido_one": "{{name}} cae en {{count}} día. Ojo con el andamio.",
+        "atrevido_other": "{{name}} cae en {{count}} días. Acomodá el barro ya, eh."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} guardado. Un ladrillo más en la casa.",
+        "atrevido": "{{name}} puesto en la pared. Esa casa crece."
+      },
+      "fixedStopped": {
+        "tranqui": "Saqué {{name}} de la obra. Si lo retomás, ponemos el ladrillo de nuevo.",
+        "atrevido": "{{name}} fuera de la pared. Menos ladrillos, pero bien puestos."
       }
     },
     "nest": {
@@ -370,6 +526,84 @@
       "voiceDraftIncomplete": {
         "tranqui": "Casi lo tengo, me falta un dato. Completalo tranqui.",
         "atrevido": "Me quedó un dato flotando. Completalo y seguimos."
+      },
+      "budgetUnassigned": {
+        "tranqui": "Te sobran {{amount}} flotando sin destino. ¿Los llevamos al ahorro?",
+        "atrevido": "Sobran {{amount}} flotando sin rumbo. Mandalos al ahorro, dale."
+      },
+      "budgetBalanced": {
+        "tranqui": "Todo el dinero tiene su lugar. Flotamos parejo.",
+        "atrevido": "Cada peso tiene bote. Laguna equilibrada, qué capo."
+      },
+      "budgetOver": {
+        "tranqui": "Asignaste {{amount}} de más. Saquemos algo para volver a flotar.",
+        "atrevido": "Te pasaste {{amount}}. Así te hundís, bajá algo ya."
+      },
+      "budgetAssistIntro": {
+        "tranqui": "Armemos el mes flotando tranqui. Primero el ahorro, que va arriba.",
+        "atrevido": "Arrancamos por el ahorro, así no se nos hunde el mes."
+      },
+      "budgetAssistSavings": {
+        "tranqui": "El mes pasado apartaste {{amount}}. ¿Lo mantenemos así?",
+        "atrevido": "Apartaste {{amount}} el mes pasado. ¿Lo repetimos o nadamos más?"
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "No tengo datos del ahorro anterior. ¿Cuánto apartamos este mes?",
+        "atrevido": "Sin historial de ahorro. ¿Cuánto tiramos a la laguna?"
+      },
+      "budgetAssistCategory": {
+        "tranqui": "Para {{name}} el mes pasado fueron {{amount}}. ¿Lo mantenemos a flote así?",
+        "atrevido": "{{name}} se llevó {{amount}} el mes pasado. ¿Lo dejamos o lo frenamos?"
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "¿Cuánto ponemos de tope para {{name}}? Sin apuro.",
+        "atrevido": "{{name}} todavía no tiene tope. ¿Cuánto le damos?"
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "Decime el monto tranqui. Podés escribir 300 mil o 1,5 palos.",
+        "atrevido": "Largá el monto. Podés escribir 300 mil o 1,5 palos, dale."
+      },
+      "budgetAssistMore": {
+        "tranqui": "¿Sumamos otra categoría al presupuesto o ya flotamos?",
+        "atrevido": "¿Metemos otra categoría o ya nos vamos a la orilla?"
+      },
+      "budgetAssistDone": {
+        "tranqui": "Presupuesto listo. Te quedan {{amount}} sin asignar, flotando.",
+        "atrevido": "Listo el plan. Te quedan {{amount}} sueltos en la laguna."
+      },
+      "budgetNear": {
+        "tranqui": "{{name}} se acerca al tope. Vamos con calma, todavía flota.",
+        "atrevido": "{{name}} ya roza el tope. Cuidado que la corriente es fuerte."
+      },
+      "budgetOverCategory": {
+        "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos flotando.",
+        "atrevido": "Pasaste el tope de {{name}}. Eso se fue río abajo, ojo."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Fijos pagados. La laguna queda en calma.",
+        "atrevido": "Fijos pagados. Ni un camalote suelto en la laguna."
+      },
+      "fixedPending": {
+        "tranqui_one": "Flota {{count}} fijo por {{amount}}. Lo sacamos sin apuro.",
+        "tranqui_other": "Flotan {{count}} fijos por {{amount}}. Los sacamos sin apuro, flotando.",
+        "atrevido_one": "Flota {{count}} fijo por {{amount}}. Sacalo antes de que lo lleve el río.",
+        "atrevido_other": "Flotan {{count}} fijos por {{amount}}. Sacalos antes de que los lleve el río."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo en llegar flotando. Todo a su tiempo.",
+        "tranqui_one": "{{name}} llega en {{count}} día. Lo vemos flotando.",
+        "tranqui_other": "{{name}} llega en {{count}} días. Hay tiempo, flotá tranquilo.",
+        "atrevido": "{{name}} viene por el río. Ojo, que el agua no espera.",
+        "atrevido_one": "{{name}} viene en {{count}} día. La corriente pega fuerte.",
+        "atrevido_other": "{{name}} viene en {{count}} días. Atento a la corriente, eh."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} guardado. Lo dejamos flotando en orden.",
+        "atrevido": "{{name}} en la laguna, a salvo. Así sí, carpincho."
+      },
+      "fixedStopped": {
+        "tranqui": "{{name}} sale de la laguna. Si vuelve, lo recibimos igual.",
+        "atrevido": "{{name}} se fue río abajo. Un fijo menos, qué bien."
       }
     },
     "nest": {
@@ -487,6 +721,84 @@
       "voiceDraftIncomplete": {
         "tranqui": "Me falta un dato para cebar este. ¿Lo completás?",
         "atrevido": "Falta la yerba: completá el dato que falta, dale."
+      },
+      "budgetUnassigned": {
+        "tranqui": "Te quedan {{amount}} sin destino. ¿Los sumamos al ahorro, con un mate?",
+        "atrevido": "Sobran {{amount}} sin cebar. Mandalos al ahorro y listo."
+      },
+      "budgetBalanced": {
+        "tranqui": "Cada peso tiene su mate. Presupuesto completo, qué lindo.",
+        "atrevido": "Ronda cerrada: cada peso con destino. Cebador del mes."
+      },
+      "budgetOver": {
+        "tranqui": "Asignaste {{amount}} de más. Quitemos algo, así la ronda se mantiene.",
+        "atrevido": "Te pasaste {{amount}}. No alcanza el mate para todos, bajá algo."
+      },
+      "budgetAssistIntro": {
+        "tranqui": "Armemos el mes con un mate. Primero el ahorro, después el resto.",
+        "atrevido": "Cebé el mes conmigo: arrancamos por el ahorro, que va primero."
+      },
+      "budgetAssistSavings": {
+        "tranqui": "El mes pasado apartaste {{amount}}. ¿Lo cebamos igual?",
+        "atrevido": "Apartaste {{amount}} el mes pasado. ¿Repetimos la cebada o subimos?"
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "No tengo datos del ahorro anterior. ¿Cuánto apartamos este mes?",
+        "atrevido": "Primera cebada del ahorro. ¿Cuánto ponemos?"
+      },
+      "budgetAssistCategory": {
+        "tranqui": "Para {{name}} fueron {{amount}} el mes pasado. ¿Lo mantenemos?",
+        "atrevido": "{{name}} se tomó {{amount}} el mes pasado. ¿Lo dejamos o lo cortamos?"
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "¿Cuánto le ponemos de tope a {{name}}? Con un mate, sin apuro.",
+        "atrevido": "{{name}} sin tope todavía. ¿Cuánto le damos a la ronda?"
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "Decime el monto con calma. Podés escribir 300 mil o 1,5 palos.",
+        "atrevido": "Monto, dale. Escribilo: 300 mil o 1,5 palos, no cuesta nada."
+      },
+      "budgetAssistMore": {
+        "tranqui": "¿Sumamos otra categoría a la ronda o cerramos el mate?",
+        "atrevido": "¿Metemos otra categoría o cortamos la ronda acá?"
+      },
+      "budgetAssistDone": {
+        "tranqui": "Mes armado con un mate. Te quedan {{amount}} sin asignar.",
+        "atrevido": "Ronda cerrada. Te quedan {{amount}} sueltos, ojo con eso."
+      },
+      "budgetNear": {
+        "tranqui": "{{name}} está cerca del tope. Tomemos con calma.",
+        "atrevido": "{{name}} ya casi llega al tope. Cuidado, que se acaba el mate."
+      },
+      "budgetOverCategory": {
+        "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos sin culpa, con un mate.",
+        "atrevido": "Pasaste el tope de {{name}}. Se tiró el mate encima, ojo."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Fijos pagados. Termo lleno, mate tranquilo.",
+        "atrevido": "Fijos pagados todos. La ronda cerró perfecta."
+      },
+      "fixedPending": {
+        "tranqui_one": "Queda {{count}} fijo por {{amount}}. ¿Lo cerramos con un mate?",
+        "tranqui_other": "Quedan {{count}} fijos por {{amount}}. Los cerramos de a uno, con mate.",
+        "atrevido_one": "Falta {{count}} fijo: {{amount}}. Ceba y pagalo, que se enfría.",
+        "atrevido_other": "Faltan {{count}} fijos: {{amount}}. Cebalos y no dejes que se enfríen."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es el próximo en la ronda. Lo dejamos listo con tiempo.",
+        "tranqui_one": "{{name}} vence en {{count}} día. Termo listo para pagarlo.",
+        "tranqui_other": "{{name}} vence en {{count}} días. Con tiempo, como un buen mate.",
+        "atrevido": "{{name}} es el próximo en la ronda. No lo dejes para después.",
+        "atrevido_one": "{{name}} vence en {{count}} día. Cebá la plata ya.",
+        "atrevido_other": "{{name}} vence en {{count}} días. Cebá la plata con tiempo, dale."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} guardado. Un mate más, todo en orden.",
+        "atrevido": "{{name}} anotado. Ceba parejo, que la ronda sigue."
+      },
+      "fixedStopped": {
+        "tranqui": "Sacamos {{name}} de la ronda. Si lo retomás, lo cebamos de nuevo.",
+        "atrevido": "{{name}} fuera de la ronda. Menos bombilla, menos gasto."
       }
     },
     "nest": {
@@ -604,6 +916,84 @@
       "voiceDraftIncomplete": {
         "tranqui": "Al mapa le falta una pista. ¿La completás?",
         "atrevido": "Jugada casi lista: me falta un dato. Completalo, pícaro."
+      },
+      "budgetUnassigned": {
+        "tranqui": "Quedan {{amount}} sin destino en el mapa. ¿Los guardamos para el tesoro?",
+        "atrevido": "Te sobran {{amount}} sin jugada. Mandalos al tesoro, pícaro."
+      },
+      "budgetBalanced": {
+        "tranqui": "Cada peso tiene su lugar en el mapa. Jugada redonda.",
+        "atrevido": "Todo marcado en el mapa. Jugada perfecta, pícaro."
+      },
+      "budgetOver": {
+        "tranqui": "Asignaste {{amount}} de más. Movamos una pieza para cuadrar.",
+        "atrevido": "Te pasaste {{amount}}. Esa jugada no cierra, pícaro. Bajá algo."
+      },
+      "budgetAssistIntro": {
+        "tranqui": "Armemos el mes en el mapa. Primero el tesoro del ahorro.",
+        "atrevido": "Vamos al tesoro: el ahorro va primero, pícaro. Arrancamos."
+      },
+      "budgetAssistSavings": {
+        "tranqui": "El mes pasado apartaste {{amount}} para el tesoro. ¿Seguimos igual?",
+        "atrevido": "Apartaste {{amount}} el mes pasado. ¿Repetimos la jugada o subimos?"
+      },
+      "budgetAssistSavingsNew": {
+        "tranqui": "No tengo pistas del ahorro anterior. ¿Cuánto apartamos este mes?",
+        "atrevido": "Sin pistas previas. ¿Cuánto metemos en el tesoro?"
+      },
+      "budgetAssistCategory": {
+        "tranqui": "Para {{name}} marcaste {{amount}} el mes pasado. ¿Lo dejamos igual?",
+        "atrevido": "{{name}}: {{amount}} el mes pasado. ¿Esquivamos o la achicamos?"
+      },
+      "budgetAssistCategoryNew": {
+        "tranqui": "¿Qué tope ponemos en el mapa para {{name}}?",
+        "atrevido": "{{name}} no tiene trampa todavía. ¿Cuánto le ponemos?"
+      },
+      "budgetAssistAskAmount": {
+        "tranqui": "Decime el monto, sin apuro. Podés escribir 300 mil o 1,5 palos.",
+        "atrevido": "El monto, pícaro. Escribilo: 300 mil o 1,5 palos."
+      },
+      "budgetAssistMore": {
+        "tranqui": "¿Marcamos otra categoría en el mapa o cerramos la ruta?",
+        "atrevido": "¿Otra trampa para esquivar o cerramos la jugada?"
+      },
+      "budgetAssistDone": {
+        "tranqui": "Mapa listo. Te quedan {{amount}} sin asignar, ojo con eso.",
+        "atrevido": "Jugada armada. Te quedan {{amount}} sueltos, pícaro."
+      },
+      "budgetNear": {
+        "tranqui": "{{name}} se acerca al límite del mapa. Vamos despacio.",
+        "atrevido": "{{name}} ya pisa la última trampa. Cuidado, pícaro."
+      },
+      "budgetOverCategory": {
+        "tranqui": "Te pasaste del tope en {{name}}. Lo ajustamos sin culpa.",
+        "atrevido": "Caíste en la trampa de {{name}}. Ahora la esquivamos, pícaro."
+      },
+      "fixedAllPaid": {
+        "tranqui": "Fijos pagados. Otra pieza del mapa encontrada.",
+        "atrevido": "Fijos pagados. Esquivaste todas las trampas del mes."
+      },
+      "fixedPending": {
+        "tranqui_one": "Queda {{count}} fijo por {{amount}}. Una pista más para el mapa.",
+        "tranqui_other": "Quedan {{count}} fijos por {{amount}}. Más pistas por seguir.",
+        "atrevido_one": "Te queda {{count}} trampa: {{amount}}. Desarmala y seguimos.",
+        "atrevido_other": "Te quedan {{count}} trampas: {{amount}}. Desarmalas antes de que muerdan."
+      },
+      "fixedNextDue": {
+        "tranqui": "{{name}} es la próxima pista. La ubicamos con tiempo.",
+        "tranqui_one": "{{name}} aparece en {{count}} día. La ubicamos hoy.",
+        "tranqui_other": "{{name}} aparece en {{count}} días. Hay tiempo para la jugada.",
+        "atrevido": "{{name}} es la próxima trampa. Tenela en el radar.",
+        "atrevido_one": "{{name}} salta en {{count}} día. Ojo, que muerde.",
+        "atrevido_other": "{{name}} salta en {{count}} días. Esquivala a tiempo, eh."
+      },
+      "fixedSaved": {
+        "tranqui": "{{name}} anotado en el mapa. Vamos bien.",
+        "atrevido": "{{name}} marcado en el mapa. Trampa controlada."
+      },
+      "fixedStopped": {
+        "tranqui": "Quité {{name}} del mapa. Si reaparece, lo marcamos.",
+        "atrevido": "{{name}} borrado del mapa. Una trampa menos en la ruta."
       }
     },
     "nest": {

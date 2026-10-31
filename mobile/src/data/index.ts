@@ -5,11 +5,16 @@ import type { VoiceOutcome } from "../domain";
 import { dataSource, DATA_SOURCE } from "./sources";
 import { notificationBadgeCount } from "./selectors";
 import { AppError, reportAppError, toAppError } from "./errors";
-import type { EntryKind, NewEntryInput, NewLoanInput, VoiceInput } from "./types";
+import { budgetView, previousBudgetItems } from "./budget";
+import { fixedExpensesView } from "./fixed";
+import type { BudgetItem, EntryKind, EntryPatch, NewEntryInput, NewLoanInput, VoiceInput } from "./types";
 
 export { DATA_SOURCE, VOICE_SOURCE, REQUIRES_LOGIN } from "./sources";
 export * from "./types";
 export * from "./selectors";
+export * from "./budget";
+export * from "./plan";
+export * from "./fixed";
 export { AppError, reportAppError, toAppError } from "./errors";
 export type { AppErrorCode } from "./errors";
 
@@ -24,6 +29,7 @@ if (Platform.OS !== "web") {
 
 export const queryKeys = {
   home: (period?: string) => ["home", period ?? "current"] as const,
+  plan: (period?: string) => ["plan", period ?? "current"] as const,
   pending: ["pending-payments"] as const,
   notifications: ["notifications"] as const,
   cards: (period?: string) => ["cards", period ?? "current"] as const,
@@ -35,6 +41,51 @@ export const queryKeys = {
 /** Resumen del mes para Inicio. */
 export function useHome(period?: string) {
   return useQuery({ queryKey: queryKeys.home(period), queryFn: () => dataSource.getHome(period) });
+}
+
+/** Todo lo del mes (`MonthPlan`). Inicio y el presupuesto salen de acá. */
+export function usePlan(period?: string) {
+  return useQuery({ queryKey: queryKeys.plan(period), queryFn: () => dataSource.getPlan(period) });
+}
+
+/** Presupuesto del mes listo para mostrar (`budgetView`). Comparte la query del plan: un solo pedido. */
+export function useBudget(period?: string) {
+  return useQuery({ queryKey: queryKeys.plan(period), queryFn: () => dataSource.getPlan(period), select: budgetView });
+}
+
+function useRefreshBudget() {
+  const qc = useQueryClient();
+  return useCallback(
+    () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ["plan"] }),
+        qc.invalidateQueries({ queryKey: ["home"] }),
+        qc.invalidateQueries({ queryKey: ["notifications"] }),
+      ]),
+    [qc],
+  );
+}
+
+/** Mutación: guardar una o varias líneas del presupuesto (`{ period, items }`; monto 0 quita la línea). Refresca plan, Inicio y avisos. */
+export function useSaveBudget() {
+  const refresh = useRefreshBudget();
+  return useMutation({
+    mutationFn: ({ period, items }: { period: string; items: BudgetItem[] }) => dataSource.saveBudget(period, items),
+    onSuccess: refresh,
+  });
+}
+
+/** Mutación: copiar el presupuesto del mes anterior al mes (`{ period }`). Falla si no hay nada para copiar. */
+export function useCopyPreviousBudget() {
+  const refresh = useRefreshBudget();
+  return useMutation({
+    mutationFn: async ({ period }: { period: string }) => {
+      const items = previousBudgetItems(await dataSource.getPlan(period));
+      if (items.length === 0) throw new Error("No hay presupuesto anterior para copiar.");
+      await dataSource.saveBudget(period, items);
+    },
+    onSuccess: refresh,
+  });
 }
 
 /** Pagos de Apple Pay por confirmar. */
@@ -60,6 +111,7 @@ export function useConfirmPayment() {
     () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: ["home"] }),
+        qc.invalidateQueries({ queryKey: ["plan"] }),
         qc.invalidateQueries({ queryKey: queryKeys.pending }),
         qc.invalidateQueries({ queryKey: queryKeys.notifications }),
       ]),
@@ -90,6 +142,8 @@ export function useMarkStatementPaid() {
         qc.invalidateQueries({ queryKey: ["cards"] }),
         qc.invalidateQueries({ queryKey: ["wealth"] }),
         qc.invalidateQueries({ queryKey: ["home"] }),
+        qc.invalidateQueries({ queryKey: ["plan"] }),
+        qc.invalidateQueries({ queryKey: ["notifications"] }),
       ]),
     [qc],
   );
@@ -112,6 +166,8 @@ function useRefreshDebts() {
         qc.invalidateQueries({ queryKey: ["debts"] }),
         qc.invalidateQueries({ queryKey: ["wealth"] }),
         qc.invalidateQueries({ queryKey: ["home"] }),
+        qc.invalidateQueries({ queryKey: ["plan"] }),
+        qc.invalidateQueries({ queryKey: ["notifications"] }),
       ]),
     [qc],
   );
@@ -140,13 +196,58 @@ export function useCategories(kind: EntryKind) {
   return useQuery({ queryKey: queryKeys.categories(kind), queryFn: () => dataSource.getCategories(kind) });
 }
 
+function useRefreshEntries() {
+  const qc = useQueryClient();
+  return useCallback(
+    () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ["home"] }),
+        qc.invalidateQueries({ queryKey: ["plan"] }),
+        qc.invalidateQueries({ queryKey: ["notifications"] }),
+        qc.invalidateQueries({ queryKey: ["wealth"] }),
+      ]),
+    [qc],
+  );
+}
+
 /** Mutación: agregar un ingreso o un gasto (`NewEntryInput`). Refresca Inicio y Patrimonio. */
 export function useAddEntry() {
-  const qc = useQueryClient();
+  const refresh = useRefreshEntries();
   return useMutation({
     mutationFn: (input: NewEntryInput) => dataSource.addEntry(input),
-    onSuccess: () =>
-      Promise.all([qc.invalidateQueries({ queryKey: ["home"] }), qc.invalidateQueries({ queryKey: ["wealth"] })]),
+    onSuccess: refresh,
+  });
+}
+
+/** Gastos fijos del mes listos para mostrar (`fixedExpensesView`). Comparte la query del plan: un solo pedido. */
+export function useFixedExpenses(period?: string) {
+  return useQuery({ queryKey: queryKeys.plan(period), queryFn: () => dataSource.getPlan(period), select: fixedExpensesView });
+}
+
+/** Mutación: editar un movimiento (`{ id, patch }`). Refresca plan, Inicio, avisos y patrimonio. */
+export function useUpdateEntry() {
+  const refresh = useRefreshEntries();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: EntryPatch }) => dataSource.updateEntry(id, patch),
+    onSuccess: refresh,
+  });
+}
+
+/** Mutación: quitar un movimiento (`{ id, scope }`: `month` solo este mes, `rule` además deja de repetirse). */
+export function useDeleteEntry() {
+  const refresh = useRefreshEntries();
+  return useMutation({
+    mutationFn: ({ id, scope }: { id: string; scope: "month" | "rule" }) => dataSource.deleteEntry(id, scope),
+    onSuccess: refresh,
+  });
+}
+
+/** Mutación: marcar un movimiento como pagado o no (`{ id, isDone }`); atajo de `updateEntry`. */
+export function useToggleEntryDone() {
+  const refresh = useRefreshEntries();
+  return useMutation({
+    mutationFn: ({ id, isDone }: { id: string; isDone: boolean }) => dataSource.updateEntry(id, { isDone }),
+    onSuccess: refresh,
   });
 }
 

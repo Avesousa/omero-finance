@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { HStack, IconButton, Text, VStack } from "../../components/atoms";
-import { AudioBubble, ChatBubble, MascotAvatar, QuickReplies, TypingBubble, formatClock, type QuickReply } from "../../components/molecules";
+import { AudioBubble, ChatTextBubble, MascotAvatar, QuickReplies, TypingBubble, formatClock, type QuickReply } from "../../components/molecules";
 import { ChatComposer, ChatErrorActions, ChatThread, DraftCard, type ChatThreadItem } from "../../components/organisms";
 import { useCategories } from "../../data";
 import { addDays, todayIso } from "../../domain";
@@ -23,25 +23,12 @@ const MANUAL: readonly { kind: ManualKind; ready: boolean }[] = [
 ];
 
 function UserText({ text, tail }: { text: string; tail: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <ChatBubble side="user" tail={tail}>
-      <Text selectable style={{ color: colors.onFab }}>
-        {text}
-      </Text>
-    </ChatBubble>
-  );
+  return <ChatTextBubble side="user" text={text} tail={tail} />;
 }
 
 function MascotLine({ message, tail }: { message: MascotLineMessage; tail: boolean }) {
   const text = useChatLine(message);
-  return (
-    <ChatBubble side="mascot" tail={tail}>
-      <Text variant="bodySemi" selectable>
-        {text}
-      </Text>
-    </ChatBubble>
-  );
+  return <ChatTextBubble side="mascot" text={text} tail={tail} />;
 }
 
 /** Teclado abierto: el composer no necesita el espacio de la zona segura de abajo. */

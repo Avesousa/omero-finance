@@ -4,6 +4,7 @@ export { MoneyHero, type MoneyHeroProps } from "./MoneyHero";
 export { HeroGasto, type HeroGastoProps, type HeroView } from "./HeroGasto";
 export { MascotMessage, type MascotMessageProps } from "./MascotMessage";
 export { SpendingBreakdownCard, type SpendingBreakdownCardProps, type SpendingItem } from "./SpendingBreakdownCard";
+export { FixedExpenseRow, type FixedExpenseRowProps } from "./FixedExpenseRow";
 export { FixedProgressCard, type FixedProgressCardProps } from "./FixedProgressCard";
 export { StoryTeaserCard, type StoryTeaserCardProps } from "./StoryTeaserCard";
 export { PendingConfirmCard, type PendingConfirmCardProps } from "./PendingConfirmCard";
@@ -34,3 +35,10 @@ export { ChatThread, type ChatThreadProps, type ChatThreadItem } from "./ChatThr
 export { DraftCard, type DraftCardProps } from "./DraftCard";
 export { ChatComposer, type ChatComposerProps } from "./ChatComposer";
 export { ChatErrorActions, type ChatErrorActionsProps } from "./ChatErrorActions";
+
+// — presupuesto —
+export { BudgetSummaryCard, type BudgetSummaryCardProps } from "./BudgetSummaryCard";
+export { BudgetRowCard, type BudgetRowCardProps, type BudgetRowStatus } from "./BudgetRowCard";
+export { BudgetSavingsCard, type BudgetSavingsCardProps, type BudgetSavingsGoal } from "./BudgetSavingsCard";
+export { BudgetCommittedCard, type BudgetCommittedCardProps, type CommittedItem } from "./BudgetCommittedCard";
+export { BudgetAssistSummaryCard, type BudgetAssistSummaryCardProps, type AssistSummaryLine } from "./BudgetAssistSummaryCard";

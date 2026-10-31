@@ -1,34 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Switch } from "react-native";
+import { KeyboardAvoidingView, Platform } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Button, Chip, HStack, IconButton, Spacer, Surface, Text, TextField, VStack } from "../../components/atoms";
-import { FormField, SegmentedToggle } from "../../components/molecules";
+import { HStack, IconButton, Spacer, Surface, Text } from "../../components/atoms";
 import { MascotMessage } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useAddEntry, useCategories, type EntryKind, type NewEntryInput } from "../../data";
-import { useTheme } from "../../design-system";
+import { useAddEntry, type EntryKind, type NewEntryInput } from "../../data";
 import { formatMoney } from "../../i18n/format";
 import { conversation } from "../load/conversation";
-import {
-  addDays,
-  currentPeriod,
-  daysInPeriod,
-  formatMoneyInput,
-  numberToInput,
-  parseMoney,
-  todayIso,
-  type EntryDraft,
-} from "../../domain";
-
-type Currency = NewEntryInput["currency"];
-type DateMode = "today" | "yesterday" | "other";
-type FieldKey = "name" | "amount" | "day";
+import { type EntryDraft } from "../../domain";
+import { EntryForm, type EntryFormValues } from "./EntryForm";
 
 /** Pausa para ver a la mascota festejar antes de volver a Inicio (solo si no viene del chat). */
 const CELEBRATE_MS = 1500;
-
-const digits = (text: string) => text.replace(/\D/g, "");
 
 /** Lee el borrador que manda el chat de Cargar (JSON en el parámetro `draft`); null si falta o viene roto. */
 function parseDraft(raw: string | undefined, kind: EntryKind): EntryDraft | null {
@@ -60,7 +44,6 @@ const SAVED_KIND = { INCOME: "income", EXPENSE: "expense" } as const;
  */
 export function NewEntryScreen({ kind }: { kind: EntryKind }) {
   const { t } = useTranslation("entry");
-  const { colors } = useTheme();
   const params = useLocalSearchParams<{ draft?: string; transcript?: string; draftId?: string; source?: string; chatRef?: string }>();
   const draft = useMemo(() => parseDraft(params.draft, kind), [params.draft, kind]);
   /** "Escuché: …" solo si el borrador vino de un audio. */
@@ -69,72 +52,35 @@ export function NewEntryScreen({ kind }: { kind: EntryKind }) {
   const draftId = params.draftId || null;
   const fromChat = params.chatRef === "1" || draftId != null;
 
-  const categories = useCategories(kind);
   const add = useAddEntry();
-  const today = useMemo(() => todayIso(), []);
-  const yesterday = useMemo(() => addDays(today, -1), [today]);
-
-  // Fecha: Hoy / Ayer / otro día (mes del borrador, o el actual, + día del mes).
-  const initialDate = draft?.date ?? null;
-  const [dateMode, setDateMode] = useState<DateMode>(
-    !initialDate || initialDate === today ? "today" : initialDate === yesterday ? "yesterday" : "other",
-  );
-  const [otherMonth] = useState(() => (initialDate ? initialDate.slice(0, 7) : currentPeriod()));
-  const [day, setDay] = useState(() => (initialDate && initialDate !== today && initialDate !== yesterday ? String(Number(initialDate.slice(8, 10))) : ""));
-
-  const [name, setName] = useState(draft?.name ?? "");
-  const [amount, setAmount] = useState(numberToInput(draft?.amount));
-  const [currency, setCurrency] = useState<Currency>(draft?.currency ?? "ARS");
-  const [categoryId, setCategoryId] = useState<string | null>(draft?.categoryId ?? null);
-  const [fixed, setFixed] = useState(draft?.fixed != null);
-  const [note, setNote] = useState(draft?.note ?? "");
-  const [submitted, setSubmitted] = useState(false);
   const [savedAmount, setSavedAmount] = useState<string | null>(null);
-
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
 
-  const amountValue = parseMoney(amount);
-  const maxDay = daysInPeriod(otherMonth);
-  const dayNumber = digits(day) ? Number(digits(day)) : null;
-  const date =
-    dateMode === "today" ? today : dateMode === "yesterday" ? yesterday : dayNumber ? `${otherMonth}-${String(dayNumber).padStart(2, "0")}` : null;
-
-  const errors: Partial<Record<FieldKey, string>> = {};
-  if (!name.trim()) errors.name = t("errors.name");
-  if (!(Number.isFinite(amountValue) && amountValue > 0)) errors.amount = t("errors.amount");
-  if (dateMode === "other" && !(dayNumber != null && dayNumber >= 1 && dayNumber <= maxDay)) errors.day = t("errors.day");
-
-  // Si viene de la voz, lo que falta se marca desde el principio.
-  const flag = submitted || fromVoice;
-  const shown = (key: FieldKey) => (flag ? errors[key] : undefined);
-  const hasMissing = fromVoice && Object.keys(errors).length > 0;
-
-  const onSave = () => {
-    setSubmitted(true);
-    if (Object.keys(errors).length > 0 || !date) return;
+  const onSubmit = (v: EntryFormValues) => {
+    if (!v.date) return;
     const input: NewEntryInput = {
       kind,
-      period: date.slice(0, 7),
-      name: name.trim(),
-      amount: amountValue,
-      currency,
-      categoryId,
-      date: dateMode === "today" ? null : date,
-      note: note.trim() || null,
-      fixed: fixed ? { frequency: draft?.fixed?.frequency ?? "MONTHLY" } : null,
+      period: v.date.slice(0, 7),
+      name: v.name,
+      amount: v.amount,
+      currency: v.currency,
+      categoryId: v.categoryId,
+      date: v.dateMode === "today" ? null : v.date,
+      note: v.note,
+      fixed: v.fixed,
     };
     add.mutate(input, {
       onSuccess: () => {
         if (fromChat) {
-          const amountText = formatMoney(amountValue, currency);
+          const amountText = formatMoney(v.amount, v.currency);
           conversation.dispatch(
             draftId ? { type: "draftSaved", draftId, amount: amountText } : { type: "manualSaved", kind: SAVED_KIND[kind], amount: amountText },
           );
           router.back();
           return;
         }
-        setSavedAmount(formatMoney(amountValue, currency));
+        setSavedAmount(formatMoney(v.amount, v.currency));
         timer.current = setTimeout(() => router.dismissTo("/"), CELEBRATE_MS);
       },
     });
@@ -159,113 +105,22 @@ export function NewEntryScreen({ kind }: { kind: EntryKind }) {
           <IconButton testID="new-entry-close" icon="close" accessibilityLabel={t("form.close")} onPress={() => router.back()} />
         </HStack>
 
-        {heard || hasMissing ? (
-          <Surface testID={heard ? "new-entry-heard" : "new-entry-missing"}>
-            <VStack gap={2}>
-              {heard ? <Text variant="bodySemi">{t("form.heard", { text: heard })}</Text> : null}
-              {hasMissing ? (
-                <Text variant="secondary" tone="dangerInk">
-                  {t("form.missing")}
-                </Text>
-              ) : null}
-            </VStack>
+        {heard ? (
+          <Surface testID="new-entry-heard">
+            <Text variant="bodySemi">{t("form.heard", { text: heard })}</Text>
           </Surface>
         ) : null}
 
-        <VStack gap={4}>
-          <FormField label={t("form.name")} error={shown("name")}>
-            <TextField testID="new-entry-name" accessibilityLabel={t("form.name")} placeholder={t(`form.namePlaceholder.${kind}`)} value={name} onChangeText={setName} />
-          </FormField>
-          <FormField label={t("form.amount")} error={shown("amount")}>
-            <TextField
-              testID="new-entry-amount"
-              accessibilityLabel={t("form.amount")}
-              placeholder={t("form.amountPlaceholder")}
-              keyboardType="decimal-pad"
-              value={amount}
-              onChangeText={(v) => setAmount(formatMoneyInput(v))}
-            />
-          </FormField>
-          <FormField label={t("form.currency")}>
-            <SegmentedToggle
-              testID="new-entry-currency"
-              accessibilityLabel={t("form.currency")}
-              value={currency}
-              onChange={setCurrency}
-              options={[
-                { value: "ARS", label: t("form.currencyARS") },
-                { value: "USD", label: t("form.currencyUSD") },
-              ]}
-            />
-          </FormField>
-
-          <FormField label={t("form.category")} error={categories.isError ? t("form.categoriesError") : undefined}>
-            <HStack gap={2} wrap>
-              {(categories.data ?? []).map((c) => (
-                <Chip key={c.id} label={c.name} active={categoryId === c.id} onPress={() => setCategoryId(categoryId === c.id ? null : c.id)} />
-              ))}
-            </HStack>
-          </FormField>
-
-          <FormField label={t("form.date")} error={shown("day")}>
-            <VStack gap={2}>
-              <SegmentedToggle
-                testID="new-entry-date"
-                accessibilityLabel={t("form.date")}
-                value={dateMode}
-                onChange={setDateMode}
-                options={[
-                  { value: "today", label: t("form.dateToday") },
-                  { value: "yesterday", label: t("form.dateYesterday") },
-                  { value: "other", label: t("form.dateOther") },
-                ]}
-              />
-              {dateMode === "other" ? (
-                <TextField
-                  testID="new-entry-day"
-                  accessibilityLabel={t("form.dayOfMonth")}
-                  placeholder={t("form.dayPlaceholder", { max: maxDay })}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  value={day}
-                  onChangeText={(v) => setDay(digits(v))}
-                />
-              ) : null}
-            </VStack>
-          </FormField>
-
-          <HStack gap={3}>
-            <Text variant="body" style={{ flexShrink: 1 }}>
-              {t("form.fixed")}
-            </Text>
-            <Spacer />
-            <Switch
-              testID="new-entry-fixed"
-              accessibilityLabel={t("form.fixed")}
-              value={fixed}
-              onValueChange={setFixed}
-              trackColor={{ false: colors.border, true: colors.tabActive }}
-              thumbColor={colors.surface}
-            />
-          </HStack>
-
-          <FormField label={t("form.note")}>
-            <TextField
-              testID="new-entry-note"
-              accessibilityLabel={t("form.note")}
-              placeholder={t(`form.notePlaceholder.${kind}`)}
-              value={note}
-              onChangeText={setNote}
-            />
-          </FormField>
-        </VStack>
-
-        {add.isError ? (
-          <Text variant="secondary" tone="dangerInk" accessibilityLiveRegion="polite">
-            {t(`form.saveError.${kind}`)}
-          </Text>
-        ) : null}
-        <Button testID="new-entry-save" label={add.isPending ? t("form.saving") : t(`form.save.${kind}`)} busy={add.isPending} onPress={onSave} />
+        <EntryForm
+          kind={kind}
+          testIDPrefix="new-entry"
+          initial={draft ?? undefined}
+          highlightMissing={fromVoice}
+          saveLabel={t(`form.save.${kind}`)}
+          busy={add.isPending}
+          error={add.isError ? t(`form.saveError.${kind}`) : null}
+          onSubmit={onSubmit}
+        />
       </ScreenTemplate>
     </KeyboardAvoidingView>
   );

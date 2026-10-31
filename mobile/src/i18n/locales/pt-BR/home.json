@@ -29,7 +29,8 @@
     "title": "",
     "progress": "",
     "summary": "",
-    "amounts": ""
+    "amounts": "",
+    "open": ""
   },
   "alert": {
     "pendingApplePay_one": "",

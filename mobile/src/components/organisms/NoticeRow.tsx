@@ -16,6 +16,8 @@ const NOTICE_ICON: Record<NoticeKind, IconName> = {
   due: "calendar-outline",
   weekClosed: "checkmark-circle-outline",
   debtDown: "trending-down-outline",
+  budgetNear: "alert-circle-outline",
+  budgetOverCategory: "warning-outline",
 };
 
 /** Aviso informativo: ícono según el tipo, texto con montos/fechas formateados, cuándo y marca de "sin leer". */

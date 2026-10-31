@@ -1,0 +1,75 @@
+{
+  "title": "Gastos fijos",
+  "back": "Volver",
+  "close": "Cerrar",
+  "hero": {
+    "label": "GASTOS FIJOS DEL MES",
+    "caption": "Pagaste {{paid}} · falta {{pending}}"
+  },
+  "projected": {
+    "notice": "{{month}} todavía no empezó: estos son los fijos que se repiten cada mes. Se pueden ver, no editar."
+  },
+  "group": {
+    "uncategorized": "Sin categoría"
+  },
+  "row": {
+    "dueOn": "vence el {{day}}",
+    "monthly": "todos los meses",
+    "weekly": "todos los {{weekday}}",
+    "biweekly": "cada 15 días",
+    "daily": "todos los días",
+    "perTime": "{{amount}} por vez",
+    "edit": "Editar {{name}}",
+    "markPaid": "Marcar {{name}} como pagado",
+    "markPending": "Marcar {{name}} como pendiente"
+  },
+  "weekdayLong": {
+    "0": "domingos",
+    "1": "lunes",
+    "2": "martes",
+    "3": "miércoles",
+    "4": "jueves",
+    "5": "viernes",
+    "6": "sábados"
+  },
+  "weekdayShort": {
+    "0": "Dom",
+    "1": "Lun",
+    "2": "Mar",
+    "3": "Mié",
+    "4": "Jue",
+    "5": "Vie",
+    "6": "Sáb"
+  },
+  "add": "Agregar gasto fijo",
+  "empty": {
+    "title": "Todavía no cargaste gastos fijos",
+    "body": "Alquiler, expensas, internet: lo que se repite todos los meses."
+  },
+  "state": {
+    "loading": "Cargando los gastos fijos",
+    "errorTitle": "No pudimos traer los gastos fijos",
+    "errorBody": "Revisá tu conexión y probá de nuevo."
+  },
+  "toggleError": "No pudimos actualizar el pago. Probá de nuevo.",
+  "new": {
+    "title": "Nuevo gasto fijo",
+    "save": "Agregar gasto fijo",
+    "error": "No pude guardar el gasto fijo. Probá de nuevo."
+  },
+  "edit": {
+    "title": "Editar gasto fijo",
+    "save": "Guardar cambios",
+    "error": "No pude guardar los cambios. Probá de nuevo.",
+    "removeMonth": "Quitar solo de este mes",
+    "stop": "Dejar de repetirlo",
+    "stopTitle": "¿Dejar de repetir {{name}}?",
+    "stopBody": "Se quita de este mes y no va a aparecer en los próximos.",
+    "stopConfirm": "Sí, dejar de repetirlo",
+    "cancel": "Cancelar",
+    "removeError": "No pude quitarlo. Probá de nuevo.",
+    "notFoundTitle": "No encontramos ese gasto fijo",
+    "notFoundBody": "Puede que ya lo hayas quitado.",
+    "readOnly": "Este mes todavía no empezó: no se puede editar."
+  }
+}
