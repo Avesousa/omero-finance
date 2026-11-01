@@ -2,12 +2,14 @@ import { Platform } from "react-native";
 import { getInfoAsync, readAsStringAsync } from "expo-file-system/legacy";
 import { api, API_URL, getToken } from "../../../lib/api";
 import { prefGet } from "../../../lib/storage";
-import type { InboxItemDTO, PlanData } from "../../../lib/types";
+import type { BalanceResponse, InboxItemDTO, PlanData } from "../../../lib/types";
 import type { MonthPlan, VoiceApiError, VoiceOutcome } from "../../domain";
 import { homeFromPlan } from "../plan.ts";
+import { equityRatio, nestStage, wealthTotals } from "../selectors.ts";
+import { cardsFromPlan, debtsFromPlan, wealthFromPlan } from "./apiMappers.ts";
 import { AppError, toAppError } from "../errors";
-import { NotImplementedError, type DataSource } from "./DataSource";
-import type { BudgetItem, EntryKind, EntryPatch, NewEntryInput, PendingPayment, VoiceInput } from "../types";
+import { type DataSource } from "./DataSource";
+import type { BudgetItem, EntryKind, EntryPatch, NewEntryInput, NewLoanInput, PendingPayment, VoiceInput } from "../types";
 
 const VOICE_TIMEOUT_MS = 45_000;
 
@@ -148,6 +150,20 @@ export function toMonthPlan(data: PlanData): MonthPlan {
 const fetchPlan = (period?: string) =>
   api<PlanData>("GET", period ? `/api/plan/data?period=${encodeURIComponent(period)}` : "/api/plan/data");
 
+const fetchBalance = async () => (await api<BalanceResponse>("GET", "/api/plan/balance")).items;
+
+/** Capítulo del nido según el patrimonio real; si falla leerlo, arranca en el 1 (Inicio no se rompe por eso). */
+async function storyFromBalance(plan: MonthPlan): Promise<{ chapter: 1 | 2 | 3; progress: number }> {
+  try {
+    const { items } = wealthFromPlan(plan, await fetchBalance());
+    const { assets, debts } = wealthTotals(items, plan.usdRate);
+    const { chapter, progress } = nestStage(equityRatio(assets, debts));
+    return { chapter, progress };
+  } catch {
+    return { chapter: 1, progress: 0 };
+  }
+}
+
 /** Primer nombre del usuario guardado en el login ("Avelino Sousa" → "Avelino"); vacío si no hay. */
 async function savedFirstName(): Promise<string> {
   try {
@@ -160,18 +176,19 @@ async function savedFirstName(): Promise<string> {
 }
 
 /**
- * Fuente real. Solo los pagos por confirmar existen hoy en el backend (`/api/plan/inbox`);
- * el resto lanza NotImplementedError hasta que se conecte.
+ * Fuente real: todo sale de la misma API que usa la web (`/api/plan/data`, `/balance`, `/inbox`, `/loans`…).
+ * Las metas del nido todavía no existen en el backend (Patrimonio las oculta).
  */
 export const apiSource: DataSource = {
   // Inicio se deriva del plan del mes (misma cuenta que la web). La historia del nido todavía no tiene
   // patrimonio real en api (getWealth no está), así que arranca en el capítulo 1.
   getHome: async (period?: string) => {
     const data = await fetchPlan(period);
-    return homeFromPlan(toMonthPlan(data), {
+    const plan = toMonthPlan(data);
+    return homeFromPlan(plan, {
       greetingName: await savedFirstName(),
       pendingConfirmCount: data.inboxPendingCount,
-      story: { chapter: 1, progress: 0 },
+      story: await storyFromBalance(plan),
     });
   },
   getPlan: async (period?: string) => toMonthPlan(await fetchPlan(period)),
@@ -186,26 +203,63 @@ export const apiSource: DataSource = {
     const res = await api<{ items: InboxItemDTO[] }>("GET", "/api/plan/inbox");
     return { pending: res.items.map(toPending), notices: [] };
   },
-  confirmPayment: async () => {
-    throw new NotImplementedError("confirmPayment");
+  confirmPayment: async (id: string, amount?: number) => {
+    // Se confirma con lo que la web ya sugiere (categoría, débito o tarjeta); la app solo puede completar el monto.
+    const res = await api<{ items: InboxItemDTO[] }>("GET", "/api/plan/inbox");
+    const item = res.items.find((i) => i.id === id);
+    if (!item) throw new AppError("Ese pago ya no está pendiente.", { code: "internal" });
+    const value = amount ?? item.amount;
+    if (!value || value <= 0) throw new AppError("Falta el monto del pago.", { code: "internal" });
+    const useCard = item.suggestedMethod === "CARD" && !!item.suggestedCardId;
+    await api("POST", `/api/plan/inbox/${id}/confirm`, {
+      amount: value,
+      currency: item.currency,
+      categoryId: item.suggestedCategoryId,
+      date: item.occurredAt.slice(0, 10),
+      name: item.merchant ?? undefined,
+      method: useCard ? "CARD" : "DEBIT",
+      ...(useCard ? { cardId: item.suggestedCardId } : {}),
+    });
   },
-  getCards: async () => {
-    throw new NotImplementedError("getCards");
+  getCards: async (period?: string) => cardsFromPlan(toMonthPlan(await fetchPlan(period))),
+  getWealth: async (period?: string) => {
+    const [data, balance] = await Promise.all([fetchPlan(period), fetchBalance()]);
+    return wealthFromPlan(toMonthPlan(data), balance);
   },
-  getWealth: async () => {
-    throw new NotImplementedError("getWealth");
+  markStatementPaid: async (cardId: string, period: string) => {
+    const plan = toMonthPlan(await fetchPlan(period));
+    const statement = plan.statements.find((st) => st.cardId === cardId && st.period === period);
+    if (!statement) throw new AppError("Todavía no hay un resumen cargado para ese mes.", { code: "internal" });
+    await api("PATCH", `/api/plan/card-statements/${statement.id}`, { isPaid: true });
   },
-  markStatementPaid: async () => {
-    throw new NotImplementedError("markStatementPaid");
+  getDebts: async (period?: string) => debtsFromPlan(toMonthPlan(await fetchPlan(period))),
+  markLoanPaid: async (loanId: string, period: string) => {
+    const plan = toMonthPlan(await fetchPlan(period));
+    const payment = plan.loans.find((l) => l.id === loanId)?.payments.find((p) => p.period === period);
+    if (!payment) throw new AppError("Esa cuota todavía no existe: iniciá el mes en la web.", { code: "internal" });
+    await api("PATCH", `/api/plan/entries/${payment.entryId}`, { isDone: true });
   },
-  getDebts: async () => {
-    throw new NotImplementedError("getDebts");
-  },
-  markLoanPaid: async () => {
-    throw new NotImplementedError("markLoanPaid");
-  },
-  addLoan: async () => {
-    throw new NotImplementedError("addLoan");
+  addLoan: async (input: NewLoanInput) => {
+    const created = await api<{ id: string }>("POST", "/api/plan/loans", {
+      direction: input.direction,
+      mode: input.mode,
+      name: input.name,
+      counterpart: input.counterpart,
+      currency: input.currency,
+      principal: input.principal,
+      installments: input.installments,
+      installmentAmount: input.installmentAmount,
+      interestRate: input.interestRate,
+      interestAnnual: input.interestAnnual,
+      interestTaxPct: input.interestTaxPct,
+      startPeriod: input.startPeriod,
+      dueDay: input.dueDay,
+      endDate: input.endDate,
+    });
+    const plan = toMonthPlan(await fetchPlan());
+    const loan = plan.loans.find((l) => l.id === created.id);
+    if (!loan) throw new AppError("El préstamo se guardó pero no pude leerlo; actualizá la pantalla.", { code: "internal" });
+    return loan;
   },
   interpretVoice: postVoice,
   getCategories: async (kind: EntryKind) => {

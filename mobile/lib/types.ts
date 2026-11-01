@@ -1,7 +1,7 @@
 // Contrato del backend. Se declara acá (y no se importa de src/lib/plan/server.ts) porque
 // ese archivo arrastra Next/Prisma. Mantener en sincronía con `PlanData` e `InboxItemDTO`.
 import type {
-  BudgetDTO, CardDTO, CategoryDTO, Currency, EntryDTO, LoanDTO, LoanProposalRow,
+  BalanceItemDTO, BudgetDTO, CardDTO, CategoryDTO, Currency, EntryDTO, LoanDTO, LoanProposalRow,
   ProposalRow, PurchaseDTO, RecurringDTO, StatementDTO,
 } from "./core";
 
@@ -45,4 +45,9 @@ export interface SessionUser {
   email: string;
   householdId: string;
   role: string;
+}
+
+/** `GET /api/plan/balance`. */
+export interface BalanceResponse {
+  items: BalanceItemDTO[];
 }

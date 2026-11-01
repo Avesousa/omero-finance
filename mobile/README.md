@@ -389,6 +389,16 @@ El `queryClient` tiene `staleTime` de 15 s, `retry: 1` y refresca al volver a la
 - **Cargar**: Resumen de tarjeta muestra "pronto". Por voz se cargan Ingreso y Gasto (deuda por voz es lo próximo). En `mock`, con audio se usa un texto de ejemplo; escribí `error` o `error fatal` para probar los errores.
 - **Confirmar un pago** en `mock` ignora la categoría y el monto: el flujo de categoría llega con Cargar.
 - **Presupuesto**: el asistente es solo texto (sin micrófono); lo comprometido se edita en su pantalla (fijos en Gastos fijos, cuotas en Deudas, tarjetas en Tarjetas), no en Presupuesto.
-- **Fuente `api`**: implementa pagos por confirmar, `getPlan`, `saveBudget`, `getHome` (derivado del plan), `addEntry`, `updateEntry` y `deleteEntry`; tarjetas, patrimonio y deudas siguen sin implementar.
+- **Fuente `api`**: está todo conectado (plan, presupuesto, movimientos, tarjetas, deudas y préstamos, patrimonio, pagos por confirmar y voz). Lo único que no existe en el backend son las **metas del nido** (Patrimonio las oculta). Confirmar un pago usa la categoría y la forma de pago que sugiere la web; marcar pagada una cuota requiere que el mes esté iniciado en la web.
 - **Selector de idioma** no implementado (ver sección 5).
 - **Dispositivo físico**: la app todavía no fue probada en un teléfono real, solo en Expo Go.
+
+## 9. Instalar la app en el iPhone (sin App Store)
+
+La app instalada (build Release) lleva el código adentro: no necesita tu compu ni Expo Go y anda con datos móviles. Habla con el backend de `EXPO_PUBLIC_API_URL`.
+
+**Con tu Apple ID gratis (7 días):** en `mobile/.env` poné `EXPO_PUBLIC_DATA_SOURCE=api`, `EXPO_PUBLIC_VOICE_SOURCE=api` y `EXPO_PUBLIC_API_URL=https://omero-finance.vercel.app`; con el iPhone conectado por cable (y Xcode instalado) corré `npx expo run:ios --device --configuration Release`. La primera vez, confiá en tu perfil en Ajustes → General → VPN y administración de dispositivos. A los 7 días hay que repetir el comando; los datos no se pierden porque viven en el servidor.
+
+**Con Apple Developer (USD 99/año):** `npx eas-cli build -p ios --profile preview` genera un build interno con un link de instalación (hay que registrar el iPhone una vez). No vence. Los perfiles `preview` y `production` de `eas.json` ya vienen con la fuente `api` y la URL de producción (son valores públicos, no secretos).
+
+Antes de instalar: el backend de Vercel tiene que tener el código mergeado, `npx prisma migrate deploy` corrido y `OPENAI_API_KEY` cargada (la voz).

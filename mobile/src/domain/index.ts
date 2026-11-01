@@ -22,6 +22,7 @@ export type {
   LoanState,
   ProposalRow,
   // Resumen del mes y presupuesto (misma lógica que la web).
+  BalanceItemDTO,
   BudgetDTO,
   BudgetRow,
   BudgetStatus,
