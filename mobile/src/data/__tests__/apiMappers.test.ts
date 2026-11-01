@@ -1,3 +1,4 @@
+import { AppError, isMonthNotStarted, toAppError } from "../errors.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { cardsFromPlan, debtsFromPlan, manualWealthItems, wealthFromPlan } from "../sources/apiMappers.ts";
@@ -53,4 +54,12 @@ test("patrimonio sin nada cargado: queda el mes actual en 0", async () => {
   const w = wealthFromPlan(plan, []);
   assert.equal(w.items.length, 0);
   assert.deepEqual(w.history, [{ period: plan.period, netArs: 0 }]);
+});
+
+test("errores: 'Primero iniciá el mes' (409) se reconoce y el resto no", () => {
+  const e = Object.assign(new Error("Primero iniciá el mes"), { status: 409 });
+  assert.equal(toAppError(e).code, "month_not_started");
+  assert.equal(isMonthNotStarted(e), true);
+  assert.equal(isMonthNotStarted(Object.assign(new Error("Otro conflicto"), { status: 409 })), false);
+  assert.equal(isMonthNotStarted(new AppError("x")), false);
 });

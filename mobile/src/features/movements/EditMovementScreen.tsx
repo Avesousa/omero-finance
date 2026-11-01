@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button, HStack, IconButton, Skeleton, Spacer, Surface, Text, VStack } from "../../components/atoms";
 import { EmptyState } from "../../components/molecules";
 import { ScreenTemplate } from "../../components/templates";
-import { useDeleteEntry, usePlan, useUpdateEntry, type EntryPatch } from "../../data";
+import { isMonthNotStarted, useDeleteEntry, usePlan, useUpdateEntry, type EntryPatch } from "../../data";
 import { monthlyAmount, type MonthPlan } from "../../domain";
 import { formatMoney } from "../../i18n/format";
 import { EntryForm, type EntryFormValues } from "../entry/EntryForm";
@@ -47,6 +47,7 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
  */
 export function EditMovementScreen() {
   const { t } = useTranslation("movements");
+  const { t: tc } = useTranslation("common");
   const params = useLocalSearchParams<{ entryId?: string; period?: string }>();
   const plan = usePlan(params.period || undefined);
   const update = useUpdateEntry();
@@ -137,7 +138,7 @@ export function EditMovementScreen() {
         }}
         saveLabel={t("edit.save")}
         busy={update.isPending}
-        error={update.isError ? t("edit.error") : null}
+        error={update.isError ? (isMonthNotStarted(update.error) ? tc("errors.monthNotStarted") : t("edit.error")) : null}
         onSubmit={onSubmit}
       />
 

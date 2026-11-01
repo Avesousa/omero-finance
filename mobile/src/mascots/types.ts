@@ -34,6 +34,7 @@ export type MascotMoment =
   | "voiceChat"
   | "voiceNotYet"
   | "voiceErrorRetry"
+  | "monthNotStarted"
   | "voiceErrorReported"
   | "voicePermission"
   | "voiceDraftReady"

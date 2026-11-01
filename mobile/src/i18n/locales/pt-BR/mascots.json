@@ -231,6 +231,10 @@
       "budgetSaveError": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "monthNotStarted": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "actions": {
@@ -411,6 +415,10 @@
         "atrevido": ""
       },
       "fixedStopped": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "monthNotStarted": {
         "tranqui": "",
         "atrevido": ""
       }
@@ -608,6 +616,10 @@
       "fixedStopped": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "monthNotStarted": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -803,6 +815,10 @@
       "fixedStopped": {
         "tranqui": "",
         "atrevido": ""
+      },
+      "monthNotStarted": {
+        "tranqui": "",
+        "atrevido": ""
       }
     },
     "nest": {
@@ -996,6 +1012,10 @@
         "atrevido": ""
       },
       "fixedStopped": {
+        "tranqui": "",
+        "atrevido": ""
+      },
+      "monthNotStarted": {
         "tranqui": "",
         "atrevido": ""
       }
