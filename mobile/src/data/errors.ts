@@ -12,6 +12,7 @@ export type AppErrorCode =
   | "network"
   | "timeout"
   | "unauthorized"
+  | "month_not_started"
   | "server"
   | "unknown";
 
@@ -32,6 +33,9 @@ export class AppError extends Error {
   }
 }
 
+/** ¿El guardado falló porque el mes todavía no está iniciado en la web? */
+export const isMonthNotStarted = (err: unknown): boolean => toAppError(err).code === "month_not_started";
+
 /** Convierte cualquier cosa lanzada en un `AppError`. Red, timeout, 429 y 5xx son reintentables. */
 export function toAppError(err: unknown): AppError {
   if (err instanceof AppError) return err;
@@ -42,6 +46,8 @@ export function toAppError(err: unknown): AppError {
   if (typeof status === "number") {
     if (status === 0) return new AppError(message, { code: "network", retryable: true });
     if (status === 401) return new AppError(message, { code: "unauthorized" });
+    // La web no deja cargar movimientos en un mes que no empezó ("Primero iniciá el mes").
+    if (status === 409 && /inici[aá] el mes/i.test(message)) return new AppError(message, { code: "month_not_started" });
     if (status === 429 || status >= 500) return new AppError(message, { code: "server", retryable: true });
     return new AppError(message, { code: "unknown" });
   }

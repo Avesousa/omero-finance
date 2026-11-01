@@ -3,7 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { MascotMessage } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useAddEntry, usePlan } from "../../data";
+import { isMonthNotStarted, useAddEntry, usePlan } from "../../data";
 import { EntryForm, type EntryFormValues } from "../entry/EntryForm";
 import { FixedFormShell, leaveFixedForm } from "./FixedFormShell";
 
@@ -13,6 +13,7 @@ const CELEBRATE_MS = 1200;
 /** Nuevo gasto fijo (modal): `EntryForm` en modo crear, siempre fijo. Param opcional `period`. */
 export function NewFixedScreen() {
   const { t } = useTranslation("fixed");
+  const { t: tc } = useTranslation("common");
   const params = useLocalSearchParams<{ period?: string }>();
   const plan = usePlan(params.period || undefined);
   const add = useAddEntry();
@@ -52,7 +53,7 @@ export function NewFixedScreen() {
         showNote={false}
         saveLabel={t("new.save")}
         busy={add.isPending || plan.isPending}
-        error={add.isError ? t("new.error") : null}
+        error={add.isError ? (isMonthNotStarted(add.error) ? tc("errors.monthNotStarted") : t("new.error")) : null}
         onSubmit={onSubmit}
       />
     </FixedFormShell>

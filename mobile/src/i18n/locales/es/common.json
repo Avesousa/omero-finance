@@ -59,5 +59,8 @@
   },
   "load": {
     "title": "Cargar"
+  },
+  "errors": {
+    "monthNotStarted": "Este mes todavía no empezó. Iniciálo desde la web y volvé a intentar."
   }
 }

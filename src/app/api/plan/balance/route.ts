@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { readBody, v, withSession } from "@/lib/plan/server";
+import { loadBalance, readBody, v, withSession } from "@/lib/plan/server";
 
 const TYPES = ["ASSET", "DEBT"] as const;
+
+/** GET /api/plan/balance — lo que tenés y lo que debés (activos y deudas manuales) con el saldo de cada mes. Lo usa la app. */
+export async function GET(req: NextRequest) {
+  return withSession(req, async ({ householdId }) => {
+    return NextResponse.json({ items: await loadBalance(householdId) });
+  });
+}
 
 /**
  * POST /api/plan/balance — agrega algo que tenés (ASSET) o que debés (DEBT).

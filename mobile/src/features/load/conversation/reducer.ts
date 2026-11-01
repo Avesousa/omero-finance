@@ -33,7 +33,7 @@ export type ConversationAction =
   /** Se guardó (confirmando o desde el formulario): tarjeta ✓ + frase de la mascota según el tipo. */
   | { type: "draftSaved"; at: number; draftId: string; amount: string }
   /** Falló el guardado: la tarjeta vuelve a "pendiente" con el aviso y la mascota pide reintentar. */
-  | { type: "draftFailed"; at: number; draftId: string }
+  | { type: "draftFailed"; at: number; draftId: string; /** El mes no está iniciado en la web: la mascota lo explica en vez de pedir reintentar. */ monthNotStarted?: boolean }
   /** Se cargó algo a mano desde una opción del chat (formulario abierto arriba del hilo). */
   | { type: "manualSaved"; at: number; kind: "income" | "expense" | "debt"; amount?: string; name?: string }
   | { type: "reset" };
@@ -192,7 +192,7 @@ export function conversationReducer(state: ConversationState, action: Conversati
       if (!draft || draft.status !== "saving") return state;
       const patched = patchDraft(state, action.draftId, { status: "pending", error: true });
       const n = patched.seq;
-      return push({ ...patched, seq: n + 1 }, [line(`m${n}`, action.at, "voiceErrorRetry")]);
+      return push({ ...patched, seq: n + 1 }, [line(`m${n}`, action.at, action.monthNotStarted ? "monthNotStarted" : "voiceErrorRetry")]);
     }
 
     case "manualSaved": {

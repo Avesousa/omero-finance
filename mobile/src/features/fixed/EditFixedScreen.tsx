@@ -5,7 +5,7 @@ import { Button, Skeleton, Surface, Text, VStack } from "../../components/atoms"
 import { EmptyState } from "../../components/molecules";
 import { MascotMessage } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useDeleteEntry, useFixedExpenses, usePlan, useUpdateEntry, type FixedItem } from "../../data";
+import { isMonthNotStarted, useDeleteEntry, useFixedExpenses, usePlan, useUpdateEntry, type FixedItem } from "../../data";
 import { monthlyAmount } from "../../domain";
 import { EntryForm, type EntryFormValues } from "../entry/EntryForm";
 import { FixedFormShell, leaveFixedForm } from "./FixedFormShell";
@@ -16,6 +16,7 @@ const CELEBRATE_MS = 1200;
 /** Editar un gasto fijo (modal): `EntryForm` precargado, aplicar a próximos meses y quitarlo (solo este mes o dejar de repetirlo). Params `entryId` y `period`. */
 export function EditFixedScreen() {
   const { t } = useTranslation("fixed");
+  const { t: tc } = useTranslation("common");
   const params = useLocalSearchParams<{ entryId?: string; period?: string }>();
   const period = params.period || undefined;
   const plan = usePlan(period);
@@ -111,7 +112,7 @@ export function EditFixedScreen() {
         }}
         saveLabel={t("edit.save")}
         busy={update.isPending}
-        error={update.isError ? t("edit.error") : null}
+        error={update.isError ? (isMonthNotStarted(update.error) ? tc("errors.monthNotStarted") : t("edit.error")) : null}
         onSubmit={onSubmit}
       />
 

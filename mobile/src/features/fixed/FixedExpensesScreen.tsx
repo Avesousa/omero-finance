@@ -7,7 +7,7 @@ import { Button, Divider, Skeleton, Surface, Text, VStack } from "../../componen
 import { AllocationBar, EmptyState, PeriodSwitcher, categoryColorIndex, categoryIcon, type AllocationSegment } from "../../components/molecules";
 import { FixedExpenseRow, MascotMessage, MoneyHero, ScreenHeader } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useCategoryColorOrder, useFixedExpenses, usePlan, useToggleEntryDone, type FixedGroup } from "../../data";
+import { isMonthNotStarted, useCategoryColorOrder, useFixedExpenses, usePlan, useToggleEntryDone, type FixedGroup } from "../../data";
 import { useTheme } from "../../design-system";
 import { capitalize, formatDate, formatMoney } from "../../i18n/format";
 
@@ -170,7 +170,7 @@ export function FixedExpensesScreen() {
 
       {toggle.isError ? (
         <Text variant="secondary" tone="dangerInk" accessibilityLiveRegion="polite">
-          {t("toggleError")}
+          {isMonthNotStarted(toggle.error) ? tc("errors.monthNotStarted") : t("toggleError")}
         </Text>
       ) : null}
 

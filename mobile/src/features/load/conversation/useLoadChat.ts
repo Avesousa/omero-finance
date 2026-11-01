@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { router } from "expo-router";
-import { toAppError, useAddEntry, useCategories, useInterpretVoice, type VoiceInput } from "../../../data";
+import { isMonthNotStarted, toAppError, useAddEntry, useCategories, useInterpretVoice, type VoiceInput } from "../../../data";
 import { formatMoney } from "../../../i18n/format";
 import type { MascotMoment } from "../../../mascots/types";
 import type { RecordedAudio } from "../useVoiceRecorder";
@@ -77,8 +77,8 @@ export function useLoadChat() {
       try {
         await addEntry.mutateAsync(input);
         dispatch({ type: "draftSaved", draftId, amount: formatMoney(input.amount, input.currency) });
-      } catch {
-        dispatch({ type: "draftFailed", draftId });
+      } catch (e) {
+        dispatch({ type: "draftFailed", draftId, ...(isMonthNotStarted(e) ? { monthNotStarted: true } : {}) });
       }
     },
     [addEntry, dispatch, editDraft, expenseCategories.data, incomeCategories.data],

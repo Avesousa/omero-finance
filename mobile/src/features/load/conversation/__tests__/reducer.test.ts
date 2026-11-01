@@ -181,3 +181,10 @@ test("say y reset; ids únicos", () => {
   assert.equal(new Set(s.messages.map((m) => m.id)).size, s.messages.length);
   assert.equal(reduce(s, { type: "reset" }), initialConversation);
 });
+
+test("draftFailed con el mes sin iniciar: la mascota lo explica en vez de pedir reintentar", () => {
+  const saving = reduce(textDrafted(), { type: "draftSaving", at: 3, draftId: "d1" });
+  const failed = reduce(saving, { type: "draftFailed", at: 4, draftId: "d1", monthNotStarted: true });
+  assert.equal(findDraftMsg(failed).status, "pending");
+  assert.equal(moments(failed).at(-1), "monthNotStarted");
+});

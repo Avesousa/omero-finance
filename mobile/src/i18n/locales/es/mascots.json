@@ -231,6 +231,10 @@
       "budgetSaveError": {
         "tranqui": "No pude guardar ese cambio. Dejé el monto anterior; probá de nuevo.",
         "atrevido": "Uy, no se guardó. Dejé el monto de antes: probalo otra vez."
+      },
+      "monthNotStarted": {
+        "tranqui": "El mes todavía no empezó. Iniciálo desde la web y probamos de nuevo.",
+        "atrevido": "Falta iniciar el mes en la web. Hacelo y volvé, dale."
       }
     },
     "actions": {
@@ -413,6 +417,10 @@
       "fixedStopped": {
         "tranqui": "Saqué {{name}} de la obra. Si lo retomás, ponemos el ladrillo de nuevo.",
         "atrevido": "{{name}} fuera de la pared. Menos ladrillos, pero bien puestos."
+      },
+      "monthNotStarted": {
+        "tranqui": "Falta poner la primera piedra: iniciá el mes en la web y seguimos.",
+        "atrevido": "Sin cimientos no hay muro: iniciá el mes en la web y volvé."
       }
     },
     "nest": {
@@ -608,6 +616,10 @@
       "fixedStopped": {
         "tranqui": "{{name}} sale de la laguna. Si vuelve, lo recibimos igual.",
         "atrevido": "{{name}} se fue río abajo. Un fijo menos, qué bien."
+      },
+      "monthNotStarted": {
+        "tranqui": "La laguna todavía no se llenó: iniciá el mes en la web y seguimos.",
+        "atrevido": "Laguna seca. Iniciá el mes en la web y volvé."
       }
     },
     "nest": {
@@ -803,6 +815,10 @@
       "fixedStopped": {
         "tranqui": "Sacamos {{name}} de la ronda. Si lo retomás, lo cebamos de nuevo.",
         "atrevido": "{{name}} fuera de la ronda. Menos bombilla, menos gasto."
+      },
+      "monthNotStarted": {
+        "tranqui": "Falta cebar el mate: iniciá el mes en la web y seguimos.",
+        "atrevido": "Mate sin yerba. Iniciá el mes en la web y volvé."
       }
     },
     "nest": {
@@ -998,6 +1014,10 @@
       "fixedStopped": {
         "tranqui": "Quité {{name}} del mapa. Si reaparece, lo marcamos.",
         "atrevido": "{{name}} borrado del mapa. Una trampa menos en la ruta."
+      },
+      "monthNotStarted": {
+        "tranqui": "El camino del mes no abrió: iniciálo en la web y seguimos.",
+        "atrevido": "Ruta cerrada. Iniciá el mes en la web y volvé."
       }
     },
     "nest": {

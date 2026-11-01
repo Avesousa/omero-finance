@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { HStack, IconButton, Spacer, Surface, Text } from "../../components/atoms";
 import { MascotMessage } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useAddEntry, type EntryKind, type NewEntryInput } from "../../data";
+import { isMonthNotStarted, useAddEntry, type EntryKind, type NewEntryInput } from "../../data";
 import { formatMoney } from "../../i18n/format";
 import { conversation } from "../load/conversation";
 import { type EntryDraft } from "../../domain";
@@ -44,6 +44,7 @@ const SAVED_KIND = { INCOME: "income", EXPENSE: "expense" } as const;
  */
 export function NewEntryScreen({ kind }: { kind: EntryKind }) {
   const { t } = useTranslation("entry");
+  const { t: tc } = useTranslation("common");
   const params = useLocalSearchParams<{ draft?: string; transcript?: string; draftId?: string; source?: string; chatRef?: string }>();
   const draft = useMemo(() => parseDraft(params.draft, kind), [params.draft, kind]);
   /** "Escuché: …" solo si el borrador vino de un audio. */
@@ -118,7 +119,7 @@ export function NewEntryScreen({ kind }: { kind: EntryKind }) {
           highlightMissing={fromVoice}
           saveLabel={t(`form.save.${kind}`)}
           busy={add.isPending}
-          error={add.isError ? t(`form.saveError.${kind}`) : null}
+          error={add.isError ? (isMonthNotStarted(add.error) ? tc("errors.monthNotStarted") : t(`form.saveError.${kind}`)) : null}
           onSubmit={onSubmit}
         />
       </ScreenTemplate>

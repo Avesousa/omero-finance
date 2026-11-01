@@ -17,7 +17,7 @@ export * from "./budget";
 export * from "./plan";
 export * from "./fixed";
 export * from "./movements";
-export { AppError, reportAppError, toAppError } from "./errors";
+export { AppError, isMonthNotStarted, reportAppError, toAppError } from "./errors";
 export type { AppErrorCode } from "./errors";
 
 export const queryClient = new QueryClient({
