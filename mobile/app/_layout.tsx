@@ -21,9 +21,8 @@ function Shell() {
 
   // Con todo en mock no se exige sesión; si los datos o la voz van a la api, se mantiene el login.
   const allowed = !REQUIRES_LOGIN || signedIn;
-  // Borde de 3 px con el color de la finanza (en Personal, el de Omero): se ve siempre dónde se está cargando.
   return (
-    <View style={{ flex: 1, borderWidth: 3, borderColor: allowed ? theme.colors.primary : "transparent", backgroundColor: theme.colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <StatusBar style={theme.statusBar} />
       {allowed && lostAccessTo ? (
         <Pressable accessibilityRole="button" onPress={clearLostAccess} style={{ backgroundColor: theme.colors.dangerTint, padding: theme.space[3] }}>

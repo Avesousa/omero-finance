@@ -22,9 +22,10 @@ export function FinanceSheet({ visible, onClose }: FinanceSheetProps) {
     onClose();
     await setActive(id);
   };
+  // En iOS un Modal que todavía se está cerrando descarta la navegación: se espera a que termine.
   const go = (path: string) => {
     onClose();
-    router.push(path as never);
+    setTimeout(() => router.push(path as never), 400);
   };
 
   return (
