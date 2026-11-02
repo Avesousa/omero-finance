@@ -10,7 +10,17 @@ if (typeof globalThis.WebSocket === "undefined") {
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
+function isLocalUrl(url: string | undefined): boolean {
+  return !!url && /@(localhost|127\.0\.0\.1)(:|\/)/.test(url);
+}
+
 function createClient(): PrismaClient {
+  // Desarrollo local: Postgres común (no hay proxy websocket de Neon). Nunca aplica a producción.
+  if (isLocalUrl(process.env.DATABASE_URL)) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaPg } = require("@prisma/adapter-pg");
+    return new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) } as ConstructorParameters<typeof PrismaClient>[0]);
+  }
   const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
   return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 }
