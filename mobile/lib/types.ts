@@ -5,6 +5,46 @@ import type {
   ProposalRow, PurchaseDTO, RecurringDTO, StatementDTO,
 } from "./core";
 
+export type FinanceRole = "ADMIN" | "EDITOR" | "VIEWER";
+export type FinanceKind = "PERSONAL" | "SHARED";
+
+/** Finanza del usuario (GET /api/plan/finances). Sincronizado con `FinanceDTO` de src/lib/plan/finances.ts. */
+export interface FinanceDTO {
+  id: string;
+  name: string;
+  kind: FinanceKind;
+  /** Clave de paleta (`violeta`…); null en PERSONAL = color de Omero. */
+  color: string | null;
+  role: FinanceRole;
+  ownerUserId: string | null;
+  isOwner: boolean;
+  memberCount: number;
+}
+
+/** Finanza que se está viendo (dentro de `PlanData`). Sincronizado con `PlanFinanceDTO` de src/lib/plan/server.ts. */
+export interface PlanFinance {
+  id: string;
+  name: string;
+  kind: FinanceKind;
+  color: string | null;
+  role: FinanceRole;
+}
+
+export interface FinanceMemberDTO {
+  userId: string;
+  name: string;
+  email: string;
+  role: FinanceRole;
+  isOwner: boolean;
+}
+
+export interface MoveEntriesResult {
+  moved: string[];
+  skipped: { id: string; reason: string }[];
+  from: FinanceDTO;
+  to: FinanceDTO;
+}
+
 export interface PlanData {
   period: string;
   today: string;
@@ -24,6 +64,7 @@ export interface PlanData {
   loans: LoanDTO[];
   loanProposal: LoanProposalRow[];
   inboxPendingCount: number;
+  finance: PlanFinance;
 }
 
 export interface InboxItemDTO {
