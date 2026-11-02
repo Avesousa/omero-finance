@@ -1,7 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { AppState, Platform } from "react-native";
-import { focusManager, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getActiveFinanceId } from "../../lib/api";
+import { focusManager, QueryClient, useMutation, useQuery as useRawQuery, useQueryClient, type QueryKey, type UseQueryOptions, type UseQueryResult } from "@tanstack/react-query";
+import { getActiveFinanceId, subscribeActiveFinance } from "../../lib/api";
 import type { MonthPlan, VoiceOutcome } from "../domain";
 import { dataSource, DATA_SOURCE } from "./sources";
 import { notificationBadgeCount } from "./selectors";
@@ -32,6 +32,17 @@ if (Platform.OS !== "web") {
 
 // Toda clave lleva la finanza activa: aunque se olvide limpiar el caché al cambiar, nunca se mezclan datos.
 const fin = () => getActiveFinanceId() ?? "default";
+/**
+ * `useQuery` que se vuelve a renderizar cuando cambia la finanza activa: así la clave (que lleva su id) se recalcula
+ * y se piden los datos de la nueva finanza sin borrar el caché.
+ */
+function useQuery<TQueryFnData, TData = TQueryFnData>(
+  options: UseQueryOptions<TQueryFnData, Error, TData, QueryKey>,
+): UseQueryResult<TData, Error> {
+  useSyncExternalStore(subscribeActiveFinance, getActiveFinanceId, getActiveFinanceId);
+  return useRawQuery(options);
+}
+
 export const queryKeys = {
   home: (period?: string) => ["home", period ?? "current", fin()] as const,
   plan: (period?: string) => ["plan", period ?? "current", fin()] as const,

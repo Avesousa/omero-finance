@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { api, onFinanceDenied, setActiveFinanceId } from "../../lib/api";
 import { useSession } from "../../lib/session";
 import { prefGet, prefSet } from "../../lib/storage";
@@ -35,11 +34,10 @@ interface FinancesResponse {
 
 /**
  * Finanza activa. Va dentro de SessionProvider y por FUERA de ThemeProvider (el tema depende de ella).
- * Al cambiar de finanza se limpia el caché de React Query para no mezclar datos.
+ * Al cambiar de finanza las consultas usan otra clave (llevan su id): no se mezclan datos ni hace falta limpiar el caché.
  */
 export function ActiveFinanceProvider({ children }: { children: ReactNode }) {
   const { signedIn, user } = useSession();
-  const qc = useQueryClient();
   const [ready, setReady] = useState(false);
   const [finances, setFinances] = useState<FinanceDTO[]>([]);
   const [activeId, setActiveIdState] = useState<string | null>(null);
@@ -104,9 +102,8 @@ export function ActiveFinanceProvider({ children }: { children: ReactNode }) {
     async (id: string) => {
       if (id === activeId) return;
       await apply(id);
-      qc.clear();
     },
-    [activeId, apply, qc],
+    [activeId, apply],
   );
 
   const refresh = useCallback(async () => {
@@ -118,10 +115,9 @@ export function ActiveFinanceProvider({ children }: { children: ReactNode }) {
       const res = await api<{ finance: FinanceDTO }>("POST", "/api/plan/finances", input);
       await load(undefined);
       await apply(res.finance.id);
-      qc.clear();
       return res.finance;
     },
-    [load, apply, qc],
+    [load, apply],
   );
 
   // 403 "No tenés acceso a esa finanza" en cualquier pedido: volver a Personal y avisar.
@@ -133,11 +129,10 @@ export function ActiveFinanceProvider({ children }: { children: ReactNode }) {
       if (lost) setLostAccessTo(lost.name);
       // Se sigue con la default del servidor (sin header) y se recarga la lista.
       setActiveFinanceId(personal?.id ?? null);
-      qc.clear();
       load(personal?.id ?? null).catch(() => {});
     });
     return () => onFinanceDenied(null);
-  }, [activeId, qc, load]);
+  }, [activeId, load]);
 
   const active = useMemo(() => finances.find((f) => f.id === activeId) ?? null, [finances, activeId]);
   const clearLostAccess = useCallback(() => setLostAccessTo(null), []);

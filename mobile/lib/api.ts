@@ -11,7 +11,17 @@ let financeDeniedHandler: (() => void) | null = null;
 
 /** Finanza activa: se manda como `x-finance-id`. El servidor la valida en cada pedido. */
 export function setActiveFinanceId(id: string | null): void {
+  if (id === activeFinanceId) return;
   activeFinanceId = id;
+  for (const listener of financeListeners) listener();
+}
+
+const financeListeners = new Set<() => void>();
+
+/** Avisa cuando cambia la finanza activa (para que las consultas recalculen su clave). Devuelve la baja. */
+export function subscribeActiveFinance(listener: () => void): () => void {
+  financeListeners.add(listener);
+  return () => financeListeners.delete(listener);
 }
 
 export function getActiveFinanceId(): string | null {
