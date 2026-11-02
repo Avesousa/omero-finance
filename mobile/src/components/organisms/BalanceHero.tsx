@@ -16,6 +16,7 @@ import {
 } from "../atoms";
 import { MascotAvatar } from "../molecules";
 import type { Mood } from "../../mascots";
+import { FinanceSwitcher } from "./FinanceSwitcher";
 import { maskedMoney } from "./privacy";
 
 export interface BalanceHeroProps {
@@ -68,6 +69,7 @@ export function BalanceHero({
 }: BalanceHeroProps) {
   const { t } = useTranslation("home");
   const { t: tc } = useTranslation("common");
+  const { t: tf } = useTranslation("finances");
   const { colors, gradients, radius, space, sizes } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
@@ -210,31 +212,34 @@ export function BalanceHero({
           justifyContent: "space-between",
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: space[3],
-            flexShrink: 1,
-          }}
-        >
-          <MascotAvatar size={sizes.headerAvatar} mood={mood} />
-          <View style={{ gap: 2, flexShrink: 1 }}>
-            {name ? (
-              <Text
-                variant="bodyStrong"
-                tone="heroInk"
-                numberOfLines={1}
-                style={{ lineHeight: 18 }}
-              >
-                {tc("header.greeting", { name })}
-              </Text>
-            ) : null}
-            <Text variant="secondarySemi" tone="heroInkMuted" numberOfLines={1}>
-              {monthLabel}
-            </Text>
-          </View>
-        </View>
+        <FinanceSwitcher>
+          {(financeName) => (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: space[3],
+                flexShrink: 1,
+              }}
+            >
+              <MascotAvatar size={sizes.headerAvatar} mood={mood} />
+              <View style={{ gap: 2, flexShrink: 1 }}>
+                {financeName ? (
+                  <Text variant="bodyStrong" tone="heroInk" numberOfLines={1} style={{ lineHeight: 18 }}>
+                    {financeName}
+                  </Text>
+                ) : name ? (
+                  <Text variant="bodyStrong" tone="heroInk" numberOfLines={1} style={{ lineHeight: 18 }}>
+                    {tc("header.greeting", { name })}
+                  </Text>
+                ) : null}
+                <Text variant="secondarySemi" tone="heroInkMuted" numberOfLines={1}>
+                  {financeName ? `${monthLabel} · ${tf("change")}` : monthLabel}
+                </Text>
+              </View>
+            </View>
+          )}
+        </FinanceSwitcher>
         <IconButton
           testID="bell"
           icon="notifications-outline"
