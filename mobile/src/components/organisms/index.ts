@@ -1,4 +1,6 @@
 export { AppHeader, type AppHeaderProps } from "./AppHeader";
+export { FinanceSwitcher } from "./FinanceSwitcher";
+export { FinanceSheet } from "./FinanceSheet";
 export { TabBar, ADD_ROUTE } from "./TabBar";
 export { MoneyHero, type MoneyHeroProps } from "./MoneyHero";
 export { BalanceHero, type BalanceHeroProps } from "./BalanceHero";

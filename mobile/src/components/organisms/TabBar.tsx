@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { router, type Tabs } from "expo-router";
 import { glow, useTheme } from "../../design-system";
 import { sectionByRoute, useSectionLabel, type Section } from "../../navigation";
+import { useCanWrite } from "../../providers/ActiveFinanceProvider";
 import { Icon, Text } from "../atoms";
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
@@ -58,6 +59,7 @@ function TabItem({ section, focused, onPress }: TabItemProps) {
 export function TabBar({ state, emitter, navigateToTab, insets }: TabBarProps) {
   const { t } = useTranslation("tabs");
   const { colors, space, sizes, radius, effects } = useTheme();
+  const canWrite = useCanWrite();
 
   return (
     <View
@@ -102,6 +104,7 @@ export function TabBar({ state, emitter, navigateToTab, insets }: TabBarProps) {
           return <TabItem key={route.key} section={section} focused={focused} onPress={onPress} />;
         })}
       </View>
+      {canWrite ? (
       <Pressable
         testID="fab-cargar"
         accessibilityRole="button"
@@ -121,6 +124,7 @@ export function TabBar({ state, emitter, navigateToTab, insets }: TabBarProps) {
       >
         <Icon name="add" color={colors.onFab} />
       </Pressable>
+      ) : null}
     </View>
   );
 }

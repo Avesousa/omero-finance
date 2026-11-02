@@ -4,6 +4,7 @@ import { useTheme } from "../../design-system";
 import { IconButton, Text } from "../atoms";
 import { MascotAvatar } from "../molecules";
 import type { Mood } from "../../mascots";
+import { FinanceSwitcher } from "./FinanceSwitcher";
 
 export interface AppHeaderProps {
   /** Nombre para el saludo ("Hola, {{name}}"). Sin nombre solo muestra el mes. */
@@ -20,6 +21,7 @@ export interface AppHeaderProps {
 /** Encabezado de 56px: mascota (44px) + saludo + mes a la izquierda, campana con globo a la derecha. */
 export function AppHeader({ name, monthLabel, badgeCount = 0, onBellPress, mood = "feliz" }: AppHeaderProps) {
   const { t } = useTranslation("common");
+  const { t: tf } = useTranslation("finances");
   const { space, sizes } = useTheme();
   return (
     <View
@@ -31,19 +33,27 @@ export function AppHeader({ name, monthLabel, badgeCount = 0, onBellPress, mood 
         justifyContent: "space-between",
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], flexShrink: 1 }}>
-        <MascotAvatar size={sizes.headerAvatar} mood={mood} />
-        <View style={{ gap: 2, flexShrink: 1 }}>
-          {name ? (
-            <Text variant="bodyStrong" numberOfLines={1} style={{ lineHeight: 18 }}>
-              {t("header.greeting", { name })}
-            </Text>
-          ) : null}
-          <Text variant="secondary" tone="inkMuted" numberOfLines={1}>
-            {monthLabel}
-          </Text>
-        </View>
-      </View>
+      <FinanceSwitcher>
+        {(financeName) => (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], flexShrink: 1 }}>
+            <MascotAvatar size={sizes.headerAvatar} mood={mood} />
+            <View style={{ gap: 2, flexShrink: 1 }}>
+              {financeName ? (
+                <Text variant="bodyStrong" numberOfLines={1} style={{ lineHeight: 18 }}>
+                  {financeName}
+                </Text>
+              ) : name ? (
+                <Text variant="bodyStrong" numberOfLines={1} style={{ lineHeight: 18 }}>
+                  {t("header.greeting", { name })}
+                </Text>
+              ) : null}
+              <Text variant="secondary" tone="inkMuted" numberOfLines={1}>
+                {financeName ? `${monthLabel} · ${tf("change")}` : monthLabel}
+              </Text>
+            </View>
+          </View>
+        )}
+      </FinanceSwitcher>
       <IconButton
         testID="bell"
         icon="notifications-outline"

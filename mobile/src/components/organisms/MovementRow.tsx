@@ -23,6 +23,13 @@ export interface MovementRowProps {
   /** Propuesta de un mes que no empezó: se ve atenuada y no se abre. */
   proposed?: boolean;
   onPress?: () => void;
+  /** Mantener apretado: entra al modo selección (mover a otra finanza). */
+  onLongPress?: () => void;
+  /** Modo selección activo: el ícono se reemplaza por una tilde cuando está elegida. */
+  selectionMode?: boolean;
+  selected?: boolean;
+  /** En modo selección, filas que no se pueden elegir (fijos, cuotas): se ven atenuadas. */
+  unselectable?: boolean;
   testID?: string;
 }
 
@@ -43,6 +50,10 @@ export function MovementRow({
   proposed = false,
   dueDate = null,
   onPress,
+  onLongPress,
+  selectionMode = false,
+  selected = false,
+  unselectable = false,
   testID,
 }: MovementRowProps) {
   const { t } = useTranslation("movements");
@@ -64,16 +75,18 @@ export function MovementRow({
       accessibilityRole="button"
       accessibilityLabel={`${income ? t("row.income") : t("row.expense")}: ${name}. ${subtitle}. ${shown}`}
       accessibilityHint={proposed ? undefined : installment ? t("row.installmentHint") : t("row.edit", { name })}
-      accessibilityState={{ disabled: proposed }}
+      accessibilityState={{ disabled: proposed || (selectionMode && unselectable), selected: selectionMode ? selected : undefined }}
       disabled={proposed || !onPress}
       onPress={onPress}
+      onLongPress={onLongPress}
       style={({ pressed }) => ({
         minHeight: sizes.touch,
         paddingVertical: space[3],
         flexDirection: "row",
         alignItems: "center",
         gap: space[3],
-        opacity: proposed ? 0.6 : pressed ? 0.85 : 1,
+        opacity: proposed || (selectionMode && unselectable) ? 0.5 : pressed ? 0.85 : 1,
+        backgroundColor: selected ? colors.tabActiveBg : undefined,
       })}
     >
       <View
@@ -85,10 +98,14 @@ export function MovementRow({
           justifyContent: "center",
           borderWidth: sizes.ring,
           borderColor: edgeColor,
-          backgroundColor: colors.surface,
+          backgroundColor: selected ? colors.primary : colors.surface,
         }}
       >
-        <Icon name={income ? "arrow-up" : "arrow-down"} tone={income ? "positiveInk" : "dangerInk"} />
+        {selected ? (
+          <Icon name="checkmark" color={colors.onPrimary} />
+        ) : (
+          <Icon name={income ? "arrow-up" : "arrow-down"} tone={income ? "positiveInk" : "dangerInk"} />
+        )}
       </View>
       <View style={{ flex: 1, gap: space[1] }}>
         <Text variant="bodyStrong" numberOfLines={2}>
