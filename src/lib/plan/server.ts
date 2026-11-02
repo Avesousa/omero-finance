@@ -6,6 +6,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession, unauthorized } from "@/lib/auth";
+import { ApiError } from "./api-error";
+import {
+  assertAccess, denied, resolveFinance, roleAllows,
+  type Action, type ActiveFinance, type Role,
+} from "./access";
 import {
   TDC_KEY, addMonths, buildLoanProposal, buildProposal, currentPeriod, isValidPeriod, todayIso,
   type BalanceItemDTO, type BudgetDTO, type CardDTO, type CategoryDTO, type Currency,
@@ -66,6 +71,16 @@ export interface PlanData {
   loanProposal: LoanProposalRow[];
   /** Pagos que llegaron solos (Apple Pay) y esperan confirmación. */
   inboxPendingCount: number;
+  /** Finanza que se está viendo y el rol del usuario en ella (el cliente pinta el tema y oculta acciones de Lector). */
+  finance: PlanFinanceDTO;
+}
+
+export interface PlanFinanceDTO {
+  id: string;
+  name: string;
+  kind: "PERSONAL" | "SHARED";
+  color: string | null;
+  role: Role;
 }
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
@@ -85,8 +100,13 @@ async function latestUsdRate(householdId: string, period: string): Promise<numbe
   return prevMonth ? Number(prevMonth.usdRate) : 0;
 }
 
-export async function loadPlan(householdId: string, period: string): Promise<PlanData> {
+/** `role` es el del usuario en esta finanza; quien llama ya lo autorizó (por defecto ADMIN, como antes de S1). */
+export async function loadPlan(householdId: string, period: string, role: Role = "ADMIN"): Promise<PlanData> {
   await ensurePlanDefaults(householdId);
+  const financeRow = await prisma.household.findUniqueOrThrow({
+    where: { id: householdId },
+    select: { id: true, name: true, kind: true, color: true },
+  });
 
   const [month, categories, recurrings, entries, budgets, cards, statements, purchases, statementCounts, loans, inboxPendingCount] =
     await Promise.all([
@@ -199,6 +219,7 @@ export async function loadPlan(householdId: string, period: string): Promise<Pla
     loans,
     loanProposal: month ? [] : buildLoanProposal(loans, period),
     inboxPendingCount,
+    finance: { id: financeRow.id, name: financeRow.name, kind: financeRow.kind, color: financeRow.color, role },
   };
 }
 
@@ -318,20 +339,41 @@ export async function usdRateFor(householdId: string, period: string): Promise<n
 
 // ─── Helpers de API ───────────────────────────────────────────────────────────
 
-export class ApiError extends Error {
-  constructor(message: string, public status = 400) {
-    super(message);
-  }
-}
+export { ApiError };
 
 export interface ApiContext {
-  householdId: string;
   userId: string;
+  /** Finanza ACTIVA, ya autorizada para la acción declarada. */
+  householdId: string;
+  role: Role;
+  finance: ActiveFinance;
+  /** Para ids sueltos: carga la fila (sin filtro de finanza) y autoriza contra SU finanza (404 / 403). */
+  assert: (row: { householdId: string } | null, action: Action) => Promise<void>;
 }
 
-/** Resuelve la sesión y unifica el manejo de errores de las rutas. */
+export interface UserContext {
+  userId: string;
+  /** `User.householdId`: finanza activa por defecto cuando el cliente no manda `x-finance-id`. */
+  defaultHouseholdId: string;
+  assert: ApiContext["assert"];
+}
+
+const FINANCE_COOKIE = "omero_finance";
+
+function errorResponse(req: NextRequest, err: unknown): Response {
+  if (err instanceof ApiError) return NextResponse.json({ error: err.message }, { status: err.status });
+  console.error(`[${new URL(req.url).pathname} ${req.method}]`, err);
+  return NextResponse.json({ error: "Error interno" }, { status: 500 });
+}
+
+/**
+ * Sesión + finanza activa. La acción es OBLIGATORIA: una ruta que no la declara no compila.
+ * El header `x-finance-id` (o la cookie `omero_finance` en web) nunca se confía: se valida con
+ * el rol del usuario. Sin ninguno de los dos se usa `User.householdId` (clientes viejos).
+ */
 export async function withSession(
   req: NextRequest,
+  action: Action,
   handler: (ctx: ApiContext) => Promise<Response>,
 ): Promise<Response> {
   let session;
@@ -341,13 +383,42 @@ export async function withSession(
     return unauthorized();
   }
   try {
-    return await handler({ householdId: session.user.householdId, userId: session.user.id });
+    const requested = req.headers.get("x-finance-id") || req.cookies.get(FINANCE_COOKIE)?.value || null;
+    const { householdId, role, finance } = await resolveFinance(session.user.id, requested, session.user.householdId);
+    if (!roleAllows(role, action)) throw denied(role, finance.name);
+    const user = { id: session.user.id };
+    return await handler({
+      userId: user.id,
+      householdId,
+      role,
+      finance,
+      assert: (row, a) => assertAccess(user, row, a),
+    });
   } catch (err) {
-    if (err instanceof ApiError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
-    }
-    console.error(`[${new URL(req.url).pathname} ${req.method}]`, err);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return errorResponse(req, err);
+  }
+}
+
+/** Solo sesión, sin finanza activa: para rutas que operan sobre un `[id]` explícito (finances, members). */
+export async function withUser(
+  req: NextRequest,
+  handler: (ctx: UserContext) => Promise<Response>,
+): Promise<Response> {
+  let session;
+  try {
+    session = await requireSession(req);
+  } catch {
+    return unauthorized();
+  }
+  try {
+    const user = { id: session.user.id };
+    return await handler({
+      userId: user.id,
+      defaultHouseholdId: session.user.householdId,
+      assert: (row, a) => assertAccess(user, row, a),
+    });
+  } catch (err) {
+    return errorResponse(req, err);
   }
 }
 
