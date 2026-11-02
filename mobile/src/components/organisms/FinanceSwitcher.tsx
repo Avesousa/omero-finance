@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../design-system";
 import { financeDisplayName } from "../../features/finances/financeDisplay";
 import { useActiveFinance } from "../../providers/ActiveFinanceProvider";
+import { Text, type TextTone } from "../atoms";
 import { FinanceSheet } from "./FinanceSheet";
 
 export interface FinanceSwitcherProps {
@@ -35,5 +37,18 @@ export function FinanceSwitcher({ children }: FinanceSwitcherProps) {
       </Pressable>
       <FinanceSheet visible={open} onClose={() => setOpen(false)} />
     </>
+  );
+}
+
+/** Segunda línea del encabezado: nombre de la finanza activa con una flecha hacia abajo ("Personal ⌄"). */
+export function FinanceNameLine({ name, tone }: { name: string; tone: Extract<TextTone, "inkMuted" | "heroInkMuted"> }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 2, flexShrink: 1 }}>
+      <Text variant="secondarySemi" tone={tone} numberOfLines={1} style={{ flexShrink: 1 }}>
+        {name}
+      </Text>
+      <Ionicons name="chevron-down" size={14} color={colors[tone]} accessibilityElementsHidden importantForAccessibility="no" />
+    </View>
   );
 }
