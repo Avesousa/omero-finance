@@ -12,7 +12,7 @@ import { readBody, v, withSession } from "@/lib/plan/server";
  * Si alguno de sus meses ya está iniciado, genera la cuota en ese mes.
  */
 export async function POST(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "create", async ({ householdId }) => {
     const body = await readBody(req);
     const { data, schedule } = await loanFields(householdId, body);
     const paidBefore = data.mode === "OPEN" ? 0 : v.optionalInt(body.paidBefore, "Cuotas ya pagadas", 0, 360) ?? 0;

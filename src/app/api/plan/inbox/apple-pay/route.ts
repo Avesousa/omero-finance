@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizeMerchant, parseWalletAmount } from "@/lib/plan/core";
+import { canAccess } from "@/lib/plan/access";
 import { hashToken } from "@/lib/plan/inbox";
 
 const DEDUPE_MS = 3 * 60 * 1000;
@@ -52,6 +53,10 @@ export async function POST(req: NextRequest) {
     });
     if (!token) return fail("Clave inválida", 401);
     const householdId = token.householdId;
+    // El token carga movimientos con los permisos de quien lo creó: si ya no es EDITOR+ de la finanza, no vale.
+    if (!(await canAccess({ id: token.userId }, { householdId }, "create"))) {
+      return fail("El token ya no tiene permiso en esta finanza", 403);
+    }
 
     const body = await readFields(req);
     const merchant = text(body.merchant, 120) ?? text(body.name, 120);

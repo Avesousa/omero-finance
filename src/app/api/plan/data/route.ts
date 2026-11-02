@@ -7,9 +7,9 @@ import { loadPlan, v, withSession } from "@/lib/plan/server";
  * Lo usa la app del teléfono con `Authorization: Bearer <token de sesión>`.
  */
 export async function GET(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "read", async ({ householdId, role }) => {
     const raw = new URL(req.url).searchParams.get("period");
     const period = raw ? v.nearPeriod(raw) : currentPeriod();
-    return NextResponse.json(await loadPlan(householdId, period));
+    return NextResponse.json(await loadPlan(householdId, period, role));
   });
 }

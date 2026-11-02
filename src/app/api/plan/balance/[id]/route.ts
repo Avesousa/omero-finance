@@ -1,24 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ApiError, readBody, v, withSession } from "@/lib/plan/server";
+import { readBody, v, withSession } from "@/lib/plan/server";
 
 type Params = { params: Promise<{ id: string }> };
-
-async function findItem(householdId: string, id: string) {
-  const item = await prisma.planBalanceItem.findFirst({ where: { id, householdId } });
-  if (!item) throw new ApiError("No encontrado", 404);
-  return item;
-}
 
 /**
  * PATCH /api/plan/balance/[id]
  * Body: { name?, isArchived?, period?, amount? } — con period + amount guarda el saldo de ese mes.
  */
 export async function PATCH(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
     const body = await readBody(req);
-    await findItem(householdId, id);
+    await ctx.assert(await prisma.planBalanceItem.findUnique({ where: { id } }), "update");
 
     const data: { name?: string; isArchived?: boolean } = {};
     if (body.name !== undefined) data.name = v.text(body.name, "El nombre", 60);
@@ -43,9 +37,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "delete", async (ctx) => {
     const { id } = await params;
-    await findItem(householdId, id);
+    await ctx.assert(await prisma.planBalanceItem.findUnique({ where: { id } }), "delete");
     await prisma.planBalanceItem.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   });

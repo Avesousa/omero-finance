@@ -7,7 +7,7 @@ import { categoryIdOrNull, readBody, requireCard, v, withSession } from "@/lib/p
  * Body: { cardId, description, amount, currency, installments, firstPeriod, categoryId, purchaseDate, note }
  */
 export async function POST(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "create", async ({ householdId }) => {
     const body = await readBody(req);
     const created = await prisma.planCardPurchase.create({
       data: {

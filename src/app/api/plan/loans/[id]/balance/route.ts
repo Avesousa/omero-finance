@@ -11,22 +11,26 @@ type Params = { params: Promise<{ id: string }> };
  * Pisa el saldo calculado: desde ahí la cuenta sigue con las cuotas y el interés.
  */
 export async function POST(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
+    const loan = await prisma.planLoan.findUnique({ where: { id }, select: { householdId: true } });
+    await ctx.assert(loan, "update");
     const body = await readBody(req);
     const period = v.nearPeriod(body.period);
     const amount = v.amount(body.amount, "Saldo");
-    await prisma.$transaction((tx) => setLoanBalance(tx, householdId, id, period, amount));
+    await prisma.$transaction((tx) => setLoanBalance(tx, loan!.householdId, id, period, amount));
     return NextResponse.json({ ok: true }, { status: 201 });
   });
 }
 
 /** DELETE /api/plan/loans/[id]/balance?period=YYYY-MM — quita ese saldo cargado. */
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
+    const loan = await prisma.planLoan.findUnique({ where: { id }, select: { householdId: true } });
+    await ctx.assert(loan, "update");
     const period = v.nearPeriod(new URL(req.url).searchParams.get("period"));
-    await prisma.$transaction((tx) => removeLoanBalance(tx, householdId, id, period));
+    await prisma.$transaction((tx) => removeLoanBalance(tx, loan!.householdId, id, period));
     return NextResponse.json({ ok: true });
   });
 }

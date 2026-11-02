@@ -14,7 +14,7 @@ import {
  *           movimiento del mes con el total (monto × veces en el mes).
  */
 export async function POST(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "create", async ({ householdId }) => {
     const body = await readBody(req);
     const period = v.nearPeriod(body.period);
     const kind = v.oneOf(body.kind, KINDS, "Tipo");

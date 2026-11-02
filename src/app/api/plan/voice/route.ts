@@ -38,7 +38,7 @@ async function readInput(req: NextRequest): Promise<VoiceInput> {
  * Nunca guarda nada: devuelve un borrador para confirmar.
  */
 export async function POST(req: NextRequest) {
-  return withSession(req, async ({ householdId, userId }) => {
+  return withSession(req, "create", async ({ householdId, userId }) => {
     let err: VoiceError;
     try {
       const input = await readInput(req);

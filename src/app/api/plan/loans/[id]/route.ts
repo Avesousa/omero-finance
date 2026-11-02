@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { loanFields, refreshLoanStatus, rethreadInterest } from "@/lib/plan/loans";
-import { ApiError, loadLoans, readBody, withSession } from "@/lib/plan/server";
+import { ApiError, loadLoans, readBody, withSession, type ApiContext } from "@/lib/plan/server";
 
 type Params = { params: Promise<{ id: string }> };
 
-async function findLoan(householdId: string, id: string) {
-  const [loan] = await loadLoans(householdId, { id });
+/** Autoriza contra la finanza DEL PRÉSTAMO y devuelve el préstamo cargado con sus cuotas. */
+async function findLoan(ctx: ApiContext, id: string, action: "update" | "delete") {
+  const row = await prisma.planLoan.findUnique({ where: { id }, select: { id: true, householdId: true } });
+  await ctx.assert(row, action);
+  const [loan] = await loadLoans(row!.householdId, { id });
   if (!loan) throw new ApiError("No encontrado", 404);
-  return loan;
+  return { loan, householdId: row!.householdId };
 }
 
 /**
@@ -17,9 +20,9 @@ async function findLoan(householdId: string, id: string) {
  * y su interés se recalcula con la tasa nueva.
  */
 export async function PATCH(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
-    const loan = await findLoan(householdId, id);
+    const { loan, householdId } = await findLoan(ctx, id, "update");
     const { data, schedule } = await loanFields(householdId, await readBody(req), loan);
 
     await prisma.$transaction(async (tx) => {
@@ -46,9 +49,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
  * en ese caso se borran junto con él (también las ya pagadas).
  */
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "delete", async (ctx) => {
     const { id } = await params;
-    const loan = await findLoan(householdId, id);
+    const { loan } = await findLoan(ctx, id, "delete");
     const confirmed = new URL(req.url).searchParams.get("confirm") === "1";
     const payments = loan.payments.length;
     if (payments > 0 && !confirmed) {

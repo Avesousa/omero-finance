@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ApiError, PAY_MODES, readBody, v, withSession } from "@/lib/plan/server";
+import { PAY_MODES, readBody, v, withSession } from "@/lib/plan/server";
 
 type Params = { params: Promise<{ id: string }> };
 
-async function findStatement(householdId: string, id: string) {
-  const statement = await prisma.planCardStatement.findFirst({ where: { id, householdId } });
-  if (!statement) throw new ApiError("No encontrado", 404);
-  return statement;
-}
-
 export async function PATCH(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
     const body = await readBody(req);
-    await findStatement(householdId, id);
+    await ctx.assert(await prisma.planCardStatement.findUnique({ where: { id } }), "update");
 
     const data: Record<string, unknown> = {};
     if (body.totalArs !== undefined) data.totalArs = v.amount(body.totalArs, "Monto total", { allowZero: true });
@@ -34,9 +28,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "delete", async (ctx) => {
     const { id } = await params;
-    await findStatement(householdId, id);
+    await ctx.assert(await prisma.planCardStatement.findUnique({ where: { id } }), "delete");
     await prisma.planCardStatement.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   });
