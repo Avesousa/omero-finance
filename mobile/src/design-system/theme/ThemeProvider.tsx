@@ -1,5 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { prefGet, prefSet } from "../../../lib/storage";
+import { useActiveFinanceOptional } from "../../providers/ActiveFinanceProvider";
+import { financeAccent, tintTheme } from "../tokens/financeColors";
 import { radius } from "../tokens/radius";
 import { sizes } from "../tokens/sizes";
 import { spacing } from "../tokens/spacing";
@@ -21,6 +23,8 @@ export interface Theme {
   radius: typeof radius;
   sizes: typeof sizes;
   statusBar: "dark" | "light";
+  /** Color de la finanza activa si es compartida; null = color de Omero. */
+  financeAccent: string | null;
 }
 
 export interface ThemeContextValue extends Theme {
@@ -37,6 +41,7 @@ export const ThemeContext = createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(DEFAULT_THEME_MODE);
   const [hydrated, setHydrated] = useState(false);
+  const financeColor = useActiveFinanceOptional()?.active?.color ?? null;
 
   useEffect(() => {
     let alive = true;
@@ -64,11 +69,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<ThemeContextValue>(() => {
-    const def = themes[mode];
+    const base = themes[mode];
+    // PERSONAL no hace override (color de Omero). Las compartidas pintan el tema entero con su color.
+    const accent = financeAccent(financeColor, base.statusBar);
+    const def = accent ? tintTheme(base, accent) : base;
+    const colors = def.colors;
     return {
       mode,
       bold: def.bold,
-      colors: def.colors,
+      financeAccent: accent,
+      colors,
       effects: def.effects,
       gradients: def.gradients,
       statusBar: def.statusBar,
@@ -79,7 +89,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setMode,
       toggleMode,
     };
-  }, [mode, setMode, toggleMode]);
+  }, [mode, financeColor, setMode, toggleMode]);
 
   if (!hydrated) return null;
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

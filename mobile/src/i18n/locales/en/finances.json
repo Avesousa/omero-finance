@@ -1,0 +1,71 @@
+{
+  "personal": "",
+  "role": {
+    "ADMIN": "",
+    "EDITOR": "",
+    "VIEWER": ""
+  },
+  "sheet": {
+    "title": "",
+    "createHome": "",
+    "manage": "",
+    "openLabel": "",
+    "optionLabel": ""
+  },
+  "new": {
+    "title": "",
+    "nameLabel": "",
+    "namePlaceholder": "",
+    "colorLabel": "",
+    "submit": "",
+    "errorDuplicate": ""
+  },
+  "colors": {
+    "violeta": "",
+    "azul": "",
+    "naranja": "",
+    "rosa": "",
+    "turquesa": "",
+    "rojo": ""
+  },
+  "detail": {
+    "title": "",
+    "nameLabel": "",
+    "colorLabel": "",
+    "save": "",
+    "personalNote": ""
+  },
+  "members": {
+    "title": "",
+    "owner": "",
+    "add": "",
+    "emailLabel": "",
+    "emailPlaceholder": "",
+    "roleLabel": "",
+    "addSubmit": "",
+    "empty": "",
+    "remove": "",
+    "leave": "",
+    "removeConfirm": "",
+    "leaveConfirm": "",
+    "confirm": "",
+    "cancel": ""
+  },
+  "move": {
+    "action": "",
+    "sheetTitle_one": "",
+    "sheetTitle_other": "",
+    "confirm": "",
+    "submit": "",
+    "success": "",
+    "partial": "",
+    "select": "",
+    "cancelSelect": "",
+    "selectedCount_one": "",
+    "selectedCount_other": "",
+    "noTarget": ""
+  },
+  "denied": "",
+  "viewerOnly": "",
+  "errorGeneric": ""
+}

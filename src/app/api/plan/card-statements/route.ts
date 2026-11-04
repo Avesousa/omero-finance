@@ -7,7 +7,7 @@ import { PAY_MODES, readBody, requireCard, v, withSession } from "@/lib/plan/ser
  * Body: { cardId, period, totalArs, minimumArs, usdAmount, dueDate, payMode, customAmount }
  */
 export async function POST(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "create", async ({ householdId }) => {
     const body = await readBody(req);
     const cardId = await requireCard(householdId, body.cardId);
     const period = v.nearPeriod(body.period);

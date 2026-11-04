@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ApiError, readBody, v, withSession } from "@/lib/plan/server";
+import { ApiError, readBody, v, withSession, type ApiContext } from "@/lib/plan/server";
 
 type Params = { params: Promise<{ id: string }> };
 
-async function findCategory(householdId: string, id: string) {
-  const category = await prisma.planCategory.findFirst({ where: { id, householdId } });
-  if (!category) throw new ApiError("No encontrada", 404);
-  return category;
+/** Carga la categoría sin filtro de finanza y la autoriza contra SU finanza. */
+async function loadCategory(ctx: ApiContext, id: string, action: "update" | "delete") {
+  const category = await prisma.planCategory.findUnique({ where: { id } });
+  await ctx.assert(category, action);
+  return category!;
 }
 
 /** PATCH /api/plan/categories/[id] — Body: { name?, isArchived? } */
 export async function PATCH(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
     const body = await readBody(req);
-    const category = await findCategory(householdId, id);
+    const category = await loadCategory(ctx, id, "update");
 
     const data: { name?: string; isArchived?: boolean } = {};
     if (body.name !== undefined) {
       const name = v.text(body.name, "El nombre", 40);
       const clash = await prisma.planCategory.findFirst({
-        where: { householdId, kind: category.kind, id: { not: id }, name: { equals: name, mode: "insensitive" } },
+        where: { householdId: category.householdId, kind: category.kind, id: { not: id }, name: { equals: name, mode: "insensitive" } },
       });
       if (clash) throw new ApiError("Ya existe una categoría con ese nombre", 409);
       data.name = name;
@@ -42,9 +43,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
  * si nunca se usó, se borra.
  */
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "delete", async (ctx) => {
     const { id } = await params;
-    const category = await findCategory(householdId, id);
+    const category = await loadCategory(ctx, id, "delete");
     if (category.systemKey) throw new ApiError("Esta categoría no se puede borrar");
 
     const [entries, recurrings, budgets, purchases] = await Promise.all([

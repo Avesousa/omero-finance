@@ -7,7 +7,7 @@ import { ApiError, readBody, v, withSession } from "@/lib/plan/server";
  * Body: { period, items: [{ categoryId, amount }] } · monto 0 quita la línea.
  */
 export async function PUT(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async ({ householdId }) => {
     const body = await readBody(req);
     const period = v.nearPeriod(body.period);
     if (!Array.isArray(body.items)) throw new ApiError("Faltan las líneas del presupuesto");

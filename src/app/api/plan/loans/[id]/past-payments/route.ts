@@ -12,23 +12,27 @@ type Params = { params: Promise<{ id: string }> };
  * (o a `before` si todavía no hay ninguna).
  */
 export async function POST(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
+    const loan = await prisma.planLoan.findUnique({ where: { id }, select: { householdId: true } });
+    await ctx.assert(loan, "update");
     const body = await readBody(req);
     const count = v.int(body.count, "Cantidad de cuotas", 1, 360);
     const amount = body.amount == null || body.amount === "" ? undefined : v.amount(body.amount, "Monto de la cuota");
     const before = body.before === undefined ? undefined : v.nearPeriod(body.before);
 
-    const created = await prisma.$transaction((tx) => addPastPayments(tx, householdId, id, { count, amount, before }));
+    const created = await prisma.$transaction((tx) => addPastPayments(tx, loan!.householdId, id, { count, amount, before }));
     return NextResponse.json({ ok: true, created }, { status: 201 });
   });
 }
 
 /** DELETE /api/plan/loans/[id]/past-payments — quita la cuota anterior más antigua. */
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
-    await prisma.$transaction((tx) => removeOldestPastPayment(tx, householdId, id));
+    const loan = await prisma.planLoan.findUnique({ where: { id }, select: { householdId: true } });
+    await ctx.assert(loan, "update");
+    await prisma.$transaction((tx) => removeOldestPastPayment(tx, loan!.householdId, id));
     return NextResponse.json({ ok: true });
   });
 }

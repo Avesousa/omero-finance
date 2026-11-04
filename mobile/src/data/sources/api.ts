@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { getInfoAsync, readAsStringAsync } from "expo-file-system/legacy";
-import { api, API_URL, getToken } from "../../../lib/api";
+import { api, API_URL, getActiveFinanceId, getToken } from "../../../lib/api";
 import { prefGet } from "../../../lib/storage";
 import type { BalanceResponse, InboxItemDTO, PlanData } from "../../../lib/types";
 import type { MonthPlan, VoiceApiError, VoiceOutcome } from "../../domain";
@@ -68,6 +68,9 @@ async function postVoiceInner(
   const headers: Record<string, string> = { Accept: "application/json", "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
+  // El borrador se arma con las categorías de la finanza activa (igual que el resto de los pedidos).
+  const financeId = getActiveFinanceId();
+  if (financeId) headers["x-finance-id"] = financeId;
 
   let body: string;
   if ("text" in input) {

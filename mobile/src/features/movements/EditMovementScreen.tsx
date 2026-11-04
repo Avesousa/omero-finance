@@ -9,6 +9,7 @@ import { isMonthNotStarted, useDeleteEntry, usePlan, useUpdateEntry, type EntryP
 import { monthlyAmount, type MonthPlan } from "../../domain";
 import { formatMoney } from "../../i18n/format";
 import { EntryForm, type EntryFormValues } from "../entry/EntryForm";
+import { MoveToFinanceSheet, useMoveTargets } from "../finances/MoveToFinanceSheet";
 
 /** Vuelve a la lista; si se abrió directo (sin historial), va a Movimientos. */
 function leave() {
@@ -53,6 +54,9 @@ export function EditMovementScreen() {
   const update = useUpdateEntry();
   const remove = useDeleteEntry();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const { t: tf } = useTranslation("finances");
+  const canMove = useMoveTargets().length > 0;
 
   if (plan.isPending) {
     return (
@@ -141,6 +145,13 @@ export function EditMovementScreen() {
         error={update.isError ? (isMonthNotStarted(update.error) ? tc("errors.monthNotStarted") : t("edit.error")) : null}
         onSubmit={onSubmit}
       />
+
+      {canMove && !isFixed ? (
+        <>
+          <Button testID="movement-move" variant="secondary" label={tf("move.action")} disabled={busy} onPress={() => setMoveOpen(true)} />
+          <MoveToFinanceSheet visible={moveOpen} entryIds={[entry.id]} onClose={() => setMoveOpen(false)} onMoved={leave} />
+        </>
+      ) : null}
 
       <VStack gap={2}>
         {remove.isError ? (

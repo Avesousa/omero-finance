@@ -4,7 +4,7 @@ import { ApiError, KINDS, readBody, v, withSession } from "@/lib/plan/server";
 
 /** POST /api/plan/categories — Body: { kind, name } */
 export async function POST(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "create", async ({ householdId }) => {
     const body = await readBody(req);
     const kind = v.oneOf(body.kind, KINDS, "Tipo");
     const name = v.text(body.name, "El nombre", 40);

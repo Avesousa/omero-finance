@@ -6,6 +6,34 @@ export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/+$/, "
 const TOKEN_KEY = "omero_token";
 let token: string | null = null;
 let unauthorizedHandler: (() => void) | null = null;
+let activeFinanceId: string | null = null;
+let financeDeniedHandler: (() => void) | null = null;
+
+/** Finanza activa: se manda como `x-finance-id`. El servidor la valida en cada pedido. */
+export function setActiveFinanceId(id: string | null): void {
+  if (id === activeFinanceId) return;
+  activeFinanceId = id;
+  for (const listener of financeListeners) listener();
+}
+
+const financeListeners = new Set<() => void>();
+
+/** Avisa cuando cambia la finanza activa (para que las consultas recalculen su clave). Devuelve la baja. */
+export function subscribeActiveFinance(listener: () => void): () => void {
+  financeListeners.add(listener);
+  return () => financeListeners.delete(listener);
+}
+
+export function getActiveFinanceId(): string | null {
+  return activeFinanceId;
+}
+
+/** Lo llama el proveedor de finanzas para volver a Personal cuando el servidor responde "No tenés acceso a esa finanza". */
+export function onFinanceDenied(handler: (() => void) | null): void {
+  financeDeniedHandler = handler;
+}
+
+const FINANCE_DENIED = "No tenés acceso a esa finanza";
 
 export async function loadToken(): Promise<string | null> {
   token = await secureGet(TOKEN_KEY);
@@ -44,6 +72,7 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
         Accept: "application/json",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(activeFinanceId ? { "x-finance-id": activeFinanceId } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -65,6 +94,7 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
       await setToken(null);
       unauthorizedHandler?.();
     }
+    if (res.status === 403 && message.startsWith(FINANCE_DENIED)) financeDeniedHandler?.();
     throw new ApiError(message, res.status);
   }
   return json as T;

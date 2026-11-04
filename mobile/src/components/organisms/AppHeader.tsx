@@ -4,6 +4,7 @@ import { useTheme } from "../../design-system";
 import { IconButton, Text } from "../atoms";
 import { MascotAvatar } from "../molecules";
 import type { Mood } from "../../mascots";
+import { FinanceNameLine, FinanceSwitcher } from "./FinanceSwitcher";
 
 export interface AppHeaderProps {
   /** Nombre para el saludo ("Hola, {{name}}"). Sin nombre solo muestra el mes. */
@@ -31,19 +32,27 @@ export function AppHeader({ name, monthLabel, badgeCount = 0, onBellPress, mood 
         justifyContent: "space-between",
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], flexShrink: 1 }}>
-        <MascotAvatar size={sizes.headerAvatar} mood={mood} />
-        <View style={{ gap: 2, flexShrink: 1 }}>
-          {name ? (
-            <Text variant="bodyStrong" numberOfLines={1} style={{ lineHeight: 18 }}>
-              {t("header.greeting", { name })}
-            </Text>
-          ) : null}
-          <Text variant="secondary" tone="inkMuted" numberOfLines={1}>
-            {monthLabel}
-          </Text>
-        </View>
-      </View>
+      <FinanceSwitcher>
+        {(financeName) => (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space[3], flexShrink: 1 }}>
+            <MascotAvatar size={sizes.headerAvatar} mood={mood} />
+            <View style={{ gap: 2, flexShrink: 1 }}>
+              {name ? (
+                <Text variant="bodyStrong" numberOfLines={1} style={{ lineHeight: 18 }}>
+                  {t("header.greeting", { name })}
+                </Text>
+              ) : null}
+              {financeName ? (
+                <FinanceNameLine name={financeName} tone="inkMuted" />
+              ) : (
+                <Text variant="secondary" tone="inkMuted" numberOfLines={1}>
+                  {monthLabel}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+      </FinanceSwitcher>
       <IconButton
         testID="bell"
         icon="notifications-outline"

@@ -3,15 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { occurrencesInPeriod, round2, type Frequency } from "@/lib/plan/core";
 import { refreshLoanStatus } from "@/lib/plan/loans";
 import {
-  ApiError, FREQUENCIES, categoryIdOrNull, readBody, v, withSession,
+  FREQUENCIES, categoryIdOrNull, readBody, v, withSession, type ApiContext,
 } from "@/lib/plan/server";
 
 type Params = { params: Promise<{ id: string }> };
 
-async function findEntry(householdId: string, id: string) {
-  const entry = await prisma.planEntry.findFirst({ where: { id, householdId } });
-  if (!entry) throw new ApiError("No encontrado", 404);
-  return entry;
+/** Carga el movimiento sin filtro de finanza y lo autoriza contra SU finanza. */
+async function loadEntry(ctx: ApiContext, id: string, action: "update" | "delete") {
+  const entry = await prisma.planEntry.findUnique({ where: { id } });
+  await ctx.assert(entry, action);
+  return entry!;
 }
 
 /**
@@ -22,10 +23,12 @@ async function findEntry(householdId: string, id: string) {
  * (próximos meses) y permite cambiar `frequency`, `weekday` y `dueDay`.
  */
 export async function PATCH(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
     const body = await readBody(req);
-    const entry = await findEntry(householdId, id);
+    const entry = await loadEntry(ctx, id, "update");
+    // Categorías y cuota se resuelven en la finanza DEL MOVIMIENTO, no en la activa.
+    const householdId = entry.householdId;
 
     const data: Record<string, unknown> = {};
     if (body.name !== undefined) data.name = v.text(body.name, "El nombre");
@@ -86,9 +89,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
  * `?scope=rule` además desactiva la regla: el fijo no vuelve en los próximos meses.
  */
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "delete", async (ctx) => {
     const { id } = await params;
-    const entry = await findEntry(householdId, id);
+    const entry = await loadEntry(ctx, id, "delete");
+    const householdId = entry.householdId;
     const scope = new URL(req.url).searchParams.get("scope");
 
     await prisma.$transaction(async (tx) => {

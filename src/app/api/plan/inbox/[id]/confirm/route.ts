@@ -15,10 +15,13 @@ type Params = { params: Promise<{ id: string }> };
  * entra en el resumen del mes de `date`. Aprende comercio -> categoría y tarjeta de Wallet -> cómo se pagó.
  */
 export async function POST(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "create", async (ctx) => {
     const { id } = await params;
-    const item = await prisma.planInboxItem.findFirst({ where: { id, householdId } });
+    const item = await prisma.planInboxItem.findUnique({ where: { id } });
+    await ctx.assert(item, "create");
     if (!item) throw new ApiError("No encontrado", 404);
+    // El movimiento y las reglas se crean en la finanza DEL PAGO, no en la activa.
+    const householdId = item.householdId;
     if (item.status !== "PENDING") throw new ApiError("Este pago ya fue resuelto", 409);
 
     const body = await readBody(req);

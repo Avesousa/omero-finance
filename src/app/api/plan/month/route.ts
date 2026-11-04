@@ -11,7 +11,7 @@ import { ApiError, loadLoans, readBody, v, withSession } from "@/lib/plan/server
  *         budgets: [{ categoryId, amount }], updateRules }
  */
 export async function POST(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "create", async ({ householdId }) => {
     const body = await readBody(req);
     const period = v.nearPeriod(body.period);
     const usdRate = v.amount(body.usdRate ?? 0, "Tipo de cambio", { allowZero: true });
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
 /** PATCH /api/plan/month — cambia el tipo de cambio del mes. Body: { period, usdRate } */
 export async function PATCH(req: NextRequest) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async ({ householdId }) => {
     const body = await readBody(req);
     const period = v.period(body.period);
     const usdRate = v.amount(body.usdRate, "Tipo de cambio");

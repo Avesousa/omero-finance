@@ -2,13 +2,18 @@ import { useCallback, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { HStack, IconButton, Skeleton, Surface, Text, TextField, VStack } from "../../components/atoms";
+import { Button, HStack, IconButton, Skeleton, Surface, Text, TextField, VStack } from "../../components/atoms";
 import { EmptyState, PeriodSwitcher, SegmentedToggle } from "../../components/molecules";
 import { MovementRow, ScreenHeader } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
 import { useMovements, type MovementsKind, type MovementsView } from "../../data";
 import { formatMoney, formatWeekdayDate } from "../../i18n/format";
 import { addDays } from "../../domain";
+import { MoveToFinanceSheet, useMoveTargets } from "../finances/MoveToFinanceSheet";
+import { useCanWrite } from "../../providers/ActiveFinanceProvider";
+
+/** Solo se mueven los movimientos reales: no los fijos, las cuotas de préstamo ni las propuestas de un mes sin iniciar. */
+const movable = (m: { fixed: boolean; installment: boolean; projected: boolean }) => !m.fixed && !m.installment && !m.projected;
 
 const MIN_PERIOD = "2026-06";
 const MAX_PERIOD = "2027-04";
@@ -29,6 +34,20 @@ export function MovementsScreen() {
   const { data, isPending, isError, refetch } = useMovements(selected ?? undefined, { kind, query });
   const [refreshing, setRefreshing] = useState(false);
   const period = selected ?? data?.period ?? null;
+  const { t: tf } = useTranslation("finances");
+  // Modo selección para mover a otra finanza: solo si hay otra finanza donde cargar y mi rol lo permite.
+  const canMove = useMoveTargets().length > 0;
+  const canWrite = useCanWrite();
+  const [picked, setPicked] = useState<Set<string> | null>(null);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const selecting = picked !== null;
+  const toggle = (id: string) =>
+    setPicked((prev) => {
+      const next = new Set(prev ?? []);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next.size === 0 ? null : next;
+    });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -72,7 +91,7 @@ export function MovementsScreen() {
         <EmptyState
           title={t("state.emptyTitle")}
           description={t("state.emptyBody")}
-          action={{ label: t("state.emptyAction"), onPress: () => router.push("/cargar") }}
+          action={canWrite ? { label: t("state.emptyAction"), onPress: () => router.push("/cargar") } : undefined}
         />
       ) : (
         <>
@@ -103,15 +122,56 @@ export function MovementsScreen() {
           {data.count === 0 ? (
             <EmptyState mascot={false} title={t("state.noResultsTitle")} description={t("state.noResultsBody")} />
           ) : (
-            <MovementsList view={data} kind={kind} onOpen={edit} />
+            <MovementsList
+              view={data}
+              kind={kind}
+              onOpen={edit}
+              selection={canMove ? { picked, toggle } : null}
+              readOnly={!canWrite}
+            />
           )}
         </>
       )}
+      {selecting ? (
+        <Surface testID="movements-selection-bar">
+          <VStack gap={2}>
+            <Text variant="bodyStrong" accessibilityLiveRegion="polite">{tf("move.selectedCount", { count: picked.size })}</Text>
+            <HStack gap={2}>
+              <Button testID="movements-move" label={tf("move.action")} onPress={() => setMoveOpen(true)} fullWidth={false} />
+              <Button variant="text" label={tf("move.cancelSelect")} onPress={() => setPicked(null)} />
+            </HStack>
+          </VStack>
+        </Surface>
+      ) : null}
+      <MoveToFinanceSheet
+        visible={moveOpen}
+        entryIds={picked ? [...picked] : []}
+        onClose={() => setMoveOpen(false)}
+        onMoved={() => setPicked(null)}
+      />
     </ScreenTemplate>
   );
 }
 
-function MovementsList({ view, kind, onOpen }: { view: MovementsView; kind: MovementsKind; onOpen: (id: string, period: string) => void }) {
+interface Selection {
+  picked: Set<string> | null;
+  toggle: (id: string) => void;
+}
+
+function MovementsList({
+  view,
+  kind,
+  onOpen,
+  selection,
+  readOnly,
+}: {
+  view: MovementsView;
+  kind: MovementsKind;
+  onOpen: (id: string, period: string) => void;
+  selection: Selection | null;
+  /** Lector: las filas no se abren para editar. */
+  readOnly: boolean;
+}) {
   const { t } = useTranslation("movements");
   const dayLabel = (date: string) =>
     date === view.today
@@ -140,7 +200,15 @@ function MovementsList({ view, kind, onOpen }: { view: MovementsView; kind: Move
             isDone={m.isDone}
             dueDate={id === "upcoming" ? m.date : null}
             proposed={m.projected}
-            onPress={() => onOpen(m.id, view.period)}
+            selectionMode={selection?.picked != null}
+            selected={selection?.picked?.has(m.id) ?? false}
+            unselectable={!movable(m)}
+            onLongPress={selection && movable(m) ? () => selection.toggle(m.id) : undefined}
+            onPress={
+              readOnly
+                ? undefined
+                : () => (selection?.picked != null ? (movable(m) ? selection.toggle(m.id) : undefined) : onOpen(m.id, view.period))
+            }
           />
         ))}
       </Surface>

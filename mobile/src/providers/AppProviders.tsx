@@ -5,18 +5,21 @@ import { SessionProvider } from "../../lib/session";
 import { queryClient } from "../data";
 import { ThemeProvider } from "../design-system";
 import { MascotProvider } from "../mascots";
+import { ActiveFinanceProvider } from "./ActiveFinanceProvider";
 import { PrivacyProvider } from "./PrivacyProvider";
 
-/** Todos los providers de la app: i18n (efecto de import), React Query, sesión, tema, mascota y privacidad (ojito). */
+/** Todos los providers de la app: i18n (efecto de import), React Query, sesión, finanza activa, tema, mascota y privacidad (ojito). */
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        <ThemeProvider>
-          <MascotProvider>
-            <PrivacyProvider>{children}</PrivacyProvider>
-          </MascotProvider>
-        </ThemeProvider>
+        <ActiveFinanceProvider>
+          <ThemeProvider>
+            <MascotProvider>
+              <PrivacyProvider>{children}</PrivacyProvider>
+            </MascotProvider>
+          </ThemeProvider>
+        </ActiveFinanceProvider>
       </SessionProvider>
     </QueryClientProvider>
   );

@@ -16,6 +16,7 @@ import {
 } from "../atoms";
 import { MascotAvatar } from "../molecules";
 import type { Mood } from "../../mascots";
+import { FinanceNameLine, FinanceSwitcher } from "./FinanceSwitcher";
 import { maskedMoney } from "./privacy";
 
 export interface BalanceHeroProps {
@@ -210,31 +211,34 @@ export function BalanceHero({
           justifyContent: "space-between",
         }}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: space[3],
-            flexShrink: 1,
-          }}
-        >
-          <MascotAvatar size={sizes.headerAvatar} mood={mood} />
-          <View style={{ gap: 2, flexShrink: 1 }}>
-            {name ? (
-              <Text
-                variant="bodyStrong"
-                tone="heroInk"
-                numberOfLines={1}
-                style={{ lineHeight: 18 }}
-              >
-                {tc("header.greeting", { name })}
-              </Text>
-            ) : null}
-            <Text variant="secondarySemi" tone="heroInkMuted" numberOfLines={1}>
-              {monthLabel}
-            </Text>
-          </View>
-        </View>
+        <FinanceSwitcher>
+          {(financeName) => (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: space[3],
+                flexShrink: 1,
+              }}
+            >
+              <MascotAvatar size={sizes.headerAvatar} mood={mood} />
+              <View style={{ gap: 2, flexShrink: 1 }}>
+                {name ? (
+                  <Text variant="bodyStrong" tone="heroInk" numberOfLines={1} style={{ lineHeight: 18 }}>
+                    {tc("header.greeting", { name })}
+                  </Text>
+                ) : null}
+                {financeName ? (
+                  <FinanceNameLine name={financeName} tone="heroInkMuted" />
+                ) : (
+                  <Text variant="secondarySemi" tone="heroInkMuted" numberOfLines={1}>
+                    {monthLabel}
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+        </FinanceSwitcher>
         <IconButton
           testID="bell"
           icon="notifications-outline"

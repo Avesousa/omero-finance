@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { AppState, Platform } from "react-native";
-import { focusManager, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { focusManager, QueryClient, useMutation, useQuery as useRawQuery, useQueryClient, type QueryKey, type UseQueryOptions, type UseQueryResult } from "@tanstack/react-query";
+import { getActiveFinanceId, subscribeActiveFinance } from "../../lib/api";
 import type { MonthPlan, VoiceOutcome } from "../domain";
 import { dataSource, DATA_SOURCE } from "./sources";
 import { notificationBadgeCount } from "./selectors";
@@ -29,15 +30,28 @@ if (Platform.OS !== "web") {
   AppState.addEventListener("change", (status) => focusManager.setFocused(status === "active"));
 }
 
+// Toda clave lleva la finanza activa: aunque se olvide limpiar el caché al cambiar, nunca se mezclan datos.
+const fin = () => getActiveFinanceId() ?? "default";
+/**
+ * `useQuery` que se vuelve a renderizar cuando cambia la finanza activa: así la clave (que lleva su id) se recalcula
+ * y se piden los datos de la nueva finanza sin borrar el caché.
+ */
+function useQuery<TQueryFnData, TData = TQueryFnData>(
+  options: UseQueryOptions<TQueryFnData, Error, TData, QueryKey>,
+): UseQueryResult<TData, Error> {
+  useSyncExternalStore(subscribeActiveFinance, getActiveFinanceId, getActiveFinanceId);
+  return useRawQuery(options);
+}
+
 export const queryKeys = {
-  home: (period?: string) => ["home", period ?? "current"] as const,
-  plan: (period?: string) => ["plan", period ?? "current"] as const,
-  pending: ["pending-payments"] as const,
-  notifications: ["notifications"] as const,
-  cards: (period?: string) => ["cards", period ?? "current"] as const,
-  wealth: (period?: string) => ["wealth", period ?? "current"] as const,
-  debts: (period?: string) => ["debts", period ?? "current"] as const,
-  categories: (kind: EntryKind) => ["categories", kind] as const,
+  home: (period?: string) => ["home", period ?? "current", fin()] as const,
+  plan: (period?: string) => ["plan", period ?? "current", fin()] as const,
+  pending: () => ["pending-payments", fin()] as const,
+  notifications: () => ["notifications", fin()] as const,
+  cards: (period?: string) => ["cards", period ?? "current", fin()] as const,
+  wealth: (period?: string) => ["wealth", period ?? "current", fin()] as const,
+  debts: (period?: string) => ["debts", period ?? "current", fin()] as const,
+  categories: (kind: EntryKind) => ["categories", kind, fin()] as const,
 };
 
 /** Resumen del mes para Inicio. */
@@ -125,12 +139,12 @@ export function useCopyPreviousBudget() {
 
 /** Pagos de Apple Pay por confirmar. */
 export function usePendingPayments() {
-  return useQuery({ queryKey: queryKeys.pending, queryFn: () => dataSource.getPendingPayments() });
+  return useQuery({ queryKey: queryKeys.pending(), queryFn: () => dataSource.getPendingPayments() });
 }
 
 /** `{ pending, notices }` para la pantalla Notificaciones. */
 export function useNotifications() {
-  return useQuery({ queryKey: queryKeys.notifications, queryFn: () => dataSource.getNotifications() });
+  return useQuery({ queryKey: queryKeys.notifications(), queryFn: () => dataSource.getNotifications() });
 }
 
 /** Número del globo de la campana (pendientes + avisos sin leer). 0 mientras carga. */
@@ -147,8 +161,8 @@ export function useConfirmPayment() {
       Promise.all([
         qc.invalidateQueries({ queryKey: ["home"] }),
         qc.invalidateQueries({ queryKey: ["plan"] }),
-        qc.invalidateQueries({ queryKey: queryKeys.pending }),
-        qc.invalidateQueries({ queryKey: queryKeys.notifications }),
+        qc.invalidateQueries({ queryKey: queryKeys.pending() }),
+        qc.invalidateQueries({ queryKey: queryKeys.notifications() }),
       ]),
     [qc],
   );

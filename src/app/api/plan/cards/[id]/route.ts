@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ApiError, readBody, withSession } from "@/lib/plan/server";
+import { readBody, withSession } from "@/lib/plan/server";
 import { cardFields } from "@/lib/plan/cards";
 
 type Params = { params: Promise<{ id: string }> };
 
-async function findCard(householdId: string, id: string) {
-  const card = await prisma.card.findFirst({ where: { id, householdId } });
-  if (!card) throw new ApiError("No encontrada", 404);
-  return card;
-}
-
 /** PATCH /api/plan/cards/[id] — Body: { entity, cardType, ownerName } */
 export async function PATCH(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "update", async (ctx) => {
     const { id } = await params;
-    await findCard(householdId, id);
+    await ctx.assert(await prisma.card.findUnique({ where: { id } }), "update");
     await prisma.card.update({ where: { id }, data: cardFields(await readBody(req)) });
     return NextResponse.json({ ok: true });
   });
@@ -27,9 +21,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
  * salvo que venga `?confirm=1`; en ese caso se borran junto con ella.
  */
 export async function DELETE(req: NextRequest, { params }: Params) {
-  return withSession(req, async ({ householdId }) => {
+  return withSession(req, "delete", async (ctx) => {
     const { id } = await params;
-    await findCard(householdId, id);
+    await ctx.assert(await prisma.card.findUnique({ where: { id } }), "delete");
     const confirmed = new URL(req.url).searchParams.get("confirm") === "1";
 
     const [purchases, statements] = await Promise.all([

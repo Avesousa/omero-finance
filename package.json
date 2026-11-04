@@ -11,7 +11,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "voice:try": "tsx scripts/voice-try.ts"
+    "voice:try": "tsx scripts/voice-try.ts",
+    "test:int": "INTEGRATION=1 jest --runInBand --testPathPatterns \"\\\\.int\\\\.test\\\\.ts$\""
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
+    "@prisma/adapter-pg": "^7.10.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -54,6 +56,7 @@
     "eslint-config-next": "16.2.2",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "pg": "^8.23.1",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.9",
     "tsx": "^4.21.0",

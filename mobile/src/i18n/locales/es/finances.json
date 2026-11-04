@@ -1,0 +1,71 @@
+{
+  "personal": "Personal",
+  "role": {
+    "ADMIN": "Administrador",
+    "EDITOR": "Editor",
+    "VIEWER": "Lector"
+  },
+  "sheet": {
+    "title": "¿En qué finanza estás?",
+    "createHome": "Crear un Hogar",
+    "manage": "Ver detalle",
+    "openLabel": "Cambiar de finanza, estás en {{name}}",
+    "optionLabel": "{{name}}, {{role}}"
+  },
+  "new": {
+    "title": "Nuevo Hogar",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "Ej: Casa",
+    "colorLabel": "Color",
+    "submit": "Crear Hogar",
+    "errorDuplicate": "Ya tenés una finanza con ese nombre"
+  },
+  "colors": {
+    "violeta": "Violeta",
+    "azul": "Azul",
+    "naranja": "Naranja",
+    "rosa": "Rosa",
+    "turquesa": "Turquesa",
+    "rojo": "Rojo"
+  },
+  "detail": {
+    "title": "Hogar",
+    "nameLabel": "Nombre",
+    "colorLabel": "Color",
+    "save": "Guardar cambios",
+    "personalNote": "La finanza personal usa el color de Omero y no se comparte."
+  },
+  "members": {
+    "title": "Miembros",
+    "owner": "Dueño",
+    "add": "Agregar por correo",
+    "emailLabel": "Correo de la persona",
+    "emailPlaceholder": "nombre@correo.com",
+    "roleLabel": "Rol",
+    "addSubmit": "Agregar",
+    "empty": "Todavía sos el único miembro.",
+    "remove": "Quitar",
+    "leave": "Salirme",
+    "removeConfirm": "¿Quitar a {{name}} de {{finance}}?",
+    "leaveConfirm": "¿Salirte de {{finance}}?",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  },
+  "move": {
+    "action": "Mover a finanza",
+    "sheetTitle_one": "Mover {{count}} movimiento a…",
+    "sheetTitle_other": "Mover {{count}} movimientos a…",
+    "confirm": "Se mueven con su categoría (si existe igual en {{name}}). Los totales de ambas finanzas se recalculan.",
+    "submit": "Mover",
+    "success": "Movidos {{count}} a {{name}}",
+    "partial": "Movidos {{moved}}. {{skipped}} no se pudieron mover",
+    "select": "Seleccionar",
+    "cancelSelect": "Cancelar",
+    "selectedCount_one": "{{count}} seleccionado",
+    "selectedCount_other": "{{count}} seleccionados",
+    "noTarget": "No tenés otra finanza donde mover. Creá un Hogar primero."
+  },
+  "denied": "Ya no tenés acceso a {{name}}. Volviste a Personal.",
+  "viewerOnly": "Tu rol en {{name}} es Lector: solo podés ver.",
+  "errorGeneric": "No se pudo guardar. Intentá de nuevo."
+}
