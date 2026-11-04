@@ -1,4 +1,5 @@
 import { secureGet, secureSet } from "./storage";
+import { isCurrentFinanceRequest } from "./finance-selection";
 
 /** URL de la web de Omero (el backend), sin barra final. Se define en mobile/.env. */
 export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
@@ -64,6 +65,7 @@ export class ApiError extends Error {
 
 export async function api<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
   if (!API_URL) throw new ApiError("Falta configurar EXPO_PUBLIC_API_URL (mirá mobile/.env.example).", 0);
+  const requestedFinanceId = activeFinanceId;
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -72,7 +74,7 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
         Accept: "application/json",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(activeFinanceId ? { "x-finance-id": activeFinanceId } : {}),
+        ...(requestedFinanceId ? { "x-finance-id": requestedFinanceId } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -94,7 +96,9 @@ export async function api<T = unknown>(method: string, path: string, body?: unkn
       await setToken(null);
       unauthorizedHandler?.();
     }
-    if (res.status === 403 && message.startsWith(FINANCE_DENIED)) financeDeniedHandler?.();
+    if (res.status === 403 && message.startsWith(FINANCE_DENIED) && isCurrentFinanceRequest(requestedFinanceId, activeFinanceId)) {
+      financeDeniedHandler?.();
+    }
     throw new ApiError(message, res.status);
   }
   return json as T;

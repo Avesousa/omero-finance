@@ -6,7 +6,7 @@ El plan vigente sigue el [contrato compartido](00-contrato.md). `docs/plan.md` c
 
 | Etapa | Estado en el repositorio |
 |---|---|
-| S1 — Dueño y finanzas | Implementada; pendiente validar despliegue, backfill y E2E en iPhone. |
+| S1 — Dueño y finanzas | Backend desplegado y backfill aplicado; usuario confirmó prueba en iPhone de login, estabilidad, creación de Hogar y selector Personal/Hogar. Release EAS y resto de la matriz E2E pendientes de verificación. |
 | S2 — Cuentas y tarjetas | Especificada; pendiente implementación y respuestas de la sección 9. |
 | S3 — Vínculos | Especificada; pendiente implementación. |
 | S4 — Contactos y deudas | Especificada; pendiente implementación. |
@@ -26,3 +26,12 @@ Publicar S1 requiere integrar `feat/finanzas-s1-duenio-finanzas` en la rama de p
 6. Completar E2E en iPhone y release EAS.
 
 El merge y el deployment no confirman por sí solos la aplicación de migraciones ni la ejecución del backfill.
+
+## Verificación del 4 de noviembre de 2026
+
+- Se aplicó el backfill de producción con autorización explícita: un hogar recibió dueño, se crearon dos membresías y una Personal adicional, y se actualizó la finanza predeterminada de un usuario.
+- Se compararon los registros de las finanzas existentes antes/después: meses, categorías, recurrencias, movimientos, presupuestos, compras, resúmenes, patrimonio, préstamos y tarjetas sin cambios. La segunda simulación no dejó tareas pendientes.
+- Avelino tiene acceso a su Personal (Casa Figueira) y FigueHome. María tiene su Personal independiente.
+- Se corrigió en mobile la recuperación de acceso previa al backfill: no seleccionar explícitamente un hogar que solo funciona como predeterminado; ignorar rechazos de pedidos de una selección anterior. Evita el ciclo de respuestas 200/403 y recargas de Home.
+- Validación del fix: 142 tests de mobile y 47 de integración; TypeScript de mobile y lint de los archivos modificados pasan. El usuario confirmó la prueba en iPhone.
+- Expo local apunta a producción; las variables de entorno permanecen fuera de Git.
