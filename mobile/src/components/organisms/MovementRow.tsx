@@ -20,6 +20,7 @@ export interface MovementRowProps {
   isDone?: boolean;
   /** En "Próximos": 'YYYY-MM-DD' de vencimiento, se muestra como "vence el 08/11". */
   dueDate?: string | null;
+  overdue?: boolean;
   /** Propuesta de un mes que no empezó: se ve atenuada y no se abre. */
   proposed?: boolean;
   onPress?: () => void;
@@ -49,6 +50,7 @@ export function MovementRow({
   isDone = false,
   proposed = false,
   dueDate = null,
+  overdue = false,
   onPress,
   onLongPress,
   selectionMode = false,
@@ -64,7 +66,7 @@ export function MovementRow({
       ? isDone ? t("row.collected") : t("row.toCollect")
       : isDone ? t("row.paid") : t("row.pending")
     : null;
-  const parts = [categoryName ?? t("row.uncategorized"), dueDate ? t("row.due", { date: formatDate(dueDate, "short") }) : null, fixed ? t("row.fixed") : installment ? t("row.installment") : null, proposed ? t("row.proposed") : status];
+  const parts = [categoryName ?? t("row.uncategorized"), dueDate ? t(overdue ? "row.overdue" : "row.due", { date: formatDate(dueDate, "short") }) : null, fixed ? t("row.fixed") : installment ? t("row.installment") : null, proposed ? t("row.proposed") : status];
   const subtitle = parts.filter(Boolean).join(" · ");
   const money = formatMoney(amount, currency);
   const shown = income ? `+${money}` : money;

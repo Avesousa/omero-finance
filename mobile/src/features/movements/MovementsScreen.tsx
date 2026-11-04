@@ -13,7 +13,7 @@ import { MoveToFinanceSheet, useMoveTargets } from "../finances/MoveToFinanceShe
 import { useCanWrite } from "../../providers/ActiveFinanceProvider";
 
 /** Solo se mueven los movimientos reales: no los fijos, las cuotas de préstamo ni las propuestas de un mes sin iniciar. */
-const movable = (m: { fixed: boolean; installment: boolean; projected: boolean }) => !m.fixed && !m.installment && !m.projected;
+const movable = (m: { fixed: boolean; installment: boolean; projected: boolean; statement?: boolean }) => !m.statement && !m.fixed && !m.installment && !m.projected;
 
 const MIN_PERIOD = "2026-06";
 const MAX_PERIOD = "2027-04";
@@ -87,50 +87,40 @@ export function MovementsScreen() {
   return (
     <ScreenTemplate header={header} edges={["top", "bottom"]} testID="movements" refreshing={refreshing} onRefresh={onRefresh}>
       {switcher}
-      {data.totalCount === 0 ? (
-        <EmptyState
-          title={t("state.emptyTitle")}
-          description={t("state.emptyBody")}
-          action={canWrite ? { label: t("state.emptyAction"), onPress: () => router.push("/cargar") } : undefined}
+      <SegmentedToggle<MovementsKind>
+        testID="movements-filter"
+        accessibilityLabel={t("filter.label")}
+        value={kind}
+        onChange={setKind}
+        options={[
+          { value: "all", label: t("filter.all") },
+          { value: "income", label: t("filter.income") },
+          { value: "expense", label: t("filter.expense") },
+        ]}
+      />
+      <HStack>
+        <TextField
+          testID="movements-search"
+          accessibilityLabel={t("search.label")}
+          placeholder={t("search.placeholder")}
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="search"
+          autoCorrect={false}
+          style={{ flex: 1 }}
         />
+        {query ? <IconButton testID="movements-search-clear" icon="close" accessibilityLabel={t("search.clear")} onPress={() => setQuery("")} /> : null}
+      </HStack>
+      {data.count === 0 && !data.overdue ? (
+        <EmptyState mascot={false} title={t(data.totalCount === 0 ? "state.emptyTitle" : "state.noResultsTitle")} description={t(data.totalCount === 0 ? "state.emptyBody" : "state.noResultsBody")} />
       ) : (
-        <>
-          <SegmentedToggle<MovementsKind>
-            testID="movements-filter"
-            accessibilityLabel={t("filter.label")}
-            value={kind}
-            onChange={setKind}
-            options={[
-              { value: "all", label: t("filter.all") },
-              { value: "income", label: t("filter.income") },
-              { value: "expense", label: t("filter.expense") },
-            ]}
-          />
-          <HStack>
-            <TextField
-              testID="movements-search"
-              accessibilityLabel={t("search.label")}
-              placeholder={t("search.placeholder")}
-              value={query}
-              onChangeText={setQuery}
-              returnKeyType="search"
-              autoCorrect={false}
-              style={{ flex: 1 }}
-            />
-            {query ? <IconButton testID="movements-search-clear" icon="close" accessibilityLabel={t("search.clear")} onPress={() => setQuery("")} /> : null}
-          </HStack>
-          {data.count === 0 ? (
-            <EmptyState mascot={false} title={t("state.noResultsTitle")} description={t("state.noResultsBody")} />
-          ) : (
-            <MovementsList
-              view={data}
-              kind={kind}
-              onOpen={edit}
-              selection={canMove ? { picked, toggle } : null}
-              readOnly={!canWrite}
-            />
-          )}
-        </>
+        <MovementsList
+          view={data}
+          kind={kind}
+          onOpen={edit}
+          selection={canMove ? { picked, toggle } : null}
+          readOnly={!canWrite}
+        />
       )}
       {selecting ? (
         <Surface testID="movements-selection-bar">
@@ -179,9 +169,17 @@ function MovementsList({
         : date === addDays(view.today, -1)
           ? t("day.yesterday")
           : formatWeekdayDate(date);
+  const openMovement = (m: MovementsView["days"][number]["items"][number], overdue: boolean) => {
+    if (selection?.picked != null) {
+      if (movable(m)) selection.toggle(m.id);
+    } else if (m.statement) router.push("/tarjetas");
+    else if (m.installment) router.push("/deudas");
+    else if (overdue && m.fixed) router.push("/gastos-fijos");
+    else onOpen(m.id, view.period);
+  };
   const section = (id: string, label: string, items: MovementsView["days"][number]["items"]) => (
     <VStack key={id} gap={2} testID={`movements-day-${id}`}>
-      <Text variant="secondaryStrong" tone="inkMuted" accessibilityRole="header">
+      <Text variant="secondaryStrong" tone={id === "overdue" ? "dangerInk" : "inkMuted"} accessibilityRole="header">
         {label}
       </Text>
       <Surface>
@@ -198,7 +196,8 @@ function MovementsList({
             installment={m.installment}
             hasStatus={m.hasStatus}
             isDone={m.isDone}
-            dueDate={id === "upcoming" ? m.date : null}
+            dueDate={id === "overdue" ? m.date : null}
+            overdue={id === "overdue"}
             proposed={m.projected}
             selectionMode={selection?.picked != null}
             selected={selection?.picked?.has(m.id) ?? false}
@@ -207,7 +206,7 @@ function MovementsList({
             onPress={
               readOnly
                 ? undefined
-                : () => (selection?.picked != null ? (movable(m) ? selection.toggle(m.id) : undefined) : onOpen(m.id, view.period))
+                : () => openMovement(m, id === "overdue")
             }
           />
         ))}
@@ -219,6 +218,7 @@ function MovementsList({
   const totals = kind === "income" ? t("totals.income", { income }) : kind === "expense" ? t("totals.expense", { expenses }) : t("totals.all", { income, expenses });
   return (
     <VStack gap={4}>
+      {view.overdue ? section("overdue", t("day.overdue"), view.overdue.items) : null}
       <VStack gap={1} testID="movements-totals" accessibilityLiveRegion="polite">
         <Text variant="bodyStrong">{totals}</Text>
         <Text variant="secondary" tone="inkMuted">
@@ -226,7 +226,6 @@ function MovementsList({
         </Text>
       </VStack>
       {view.days.map((day) => section(day.date, dayLabel(day.date), day.items))}
-      {view.upcoming ? section("upcoming", t("day.upcoming"), view.upcoming.items) : null}
       {view.undated ? section("undated", t("day.undated"), view.undated.items) : null}
     </VStack>
   );

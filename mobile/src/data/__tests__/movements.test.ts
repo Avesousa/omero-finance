@@ -1,95 +1,75 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { movementsView, normalizeSearch } from "../movements.ts";
-import { homeFromPlan } from "../plan.ts";
+import { movementsView } from "../movements.ts";
 import { mockSource } from "../sources/mock.ts";
 
-const extras = { greetingName: "Avelino", pendingConfirmCount: 0, story: { chapter: 1, progress: 0 } };
-
-test("movementsView todos: días pasados desc, Próximos asc, Sin fecha al final", async () => {
+test("Movimientos muestra realizados y omite pendientes y propuestas", async () => {
   const plan = await mockSource.getPlan();
-  const v = movementsView(plan);
-  assert.equal(v.count, v.totalCount);
-  const dates = v.days.map((d) => d.date);
-  assert.deepEqual(dates, [...dates].sort().reverse());
-  // Los fijos sin pagar con vencimiento futuro van a Próximos, ordenados por fecha ascendente.
-  const up = v.upcoming!.items;
-  assert.ok(up.length > 0);
-  assert.ok(up.every((m) => m.date! > v.today && !m.isDone));
-  const upDates = up.map((m) => m.date!);
-  assert.deepEqual(upDates, [...upDates].sort());
-  assert.ok(up.some((m) => m.name === "Prepaga") && up[0].date! <= "2026-11-08");
-  // Ningún día pasado contiene algo futuro sin pagar.
-  assert.ok(v.days.flatMap((d) => d.items).every((m) => !(m.date! > v.today && !m.isDone)));
-  const n = v.days.reduce((acc, d) => acc + d.items.length, 0) + up.length + (v.undated?.items.length ?? 0);
-  assert.equal(n, v.count);
-  // Dentro del día, el ingreso va primero.
-  assert.equal(v.days.find((d) => d.date === "2026-11-01")!.items[0].kind, "INCOME");
+  const view = movementsView(plan);
+  const items = [...view.days.flatMap((d) => d.items), ...(view.undated?.items ?? [])];
+  assert.ok(items.length > 0);
+  assert.ok(items.every((m) => !m.projected && (m.isDone || !m.hasStatus)));
+  assert.equal(view.overdue, null);
+  assert.equal(movementsView({ ...plan, entries: [], statements: [], started: false }).count, 0);
 });
 
-test("movementsView: un fijo futuro ya pagado queda en su día, no en Próximos", async () => {
-  await mockSource.updateEntry("e-expensas", { isDone: true });
-  const v = movementsView(await mockSource.getPlan());
-  assert.ok(!v.upcoming!.items.some((m) => m.name === "Expensas"));
-  assert.ok(v.days.find((d) => d.date === "2026-11-10")!.items.some((m) => m.name === "Expensas"));
-  await mockSource.updateEntry("e-expensas", { isDone: false });
-});
-
-test("movementsView: filtro por tipo y totales coherentes con Inicio", async () => {
+test("Solo Gastos avisa vencidos sin incluirlos en los totales ni el historial", async () => {
   const plan = await mockSource.getPlan();
-  const all = movementsView(plan);
-  const inc = movementsView(plan, { kind: "income" });
-  const exp = movementsView(plan, { kind: "expense" });
-  assert.ok(inc.days.flatMap((d) => d.items).every((m) => m.kind === "INCOME"));
-  assert.ok(exp.days.flatMap((d) => d.items).every((m) => m.kind === "EXPENSE"));
-  assert.equal(inc.count + exp.count, all.count);
-  assert.equal(inc.totals.income, 3_500_000);
-  assert.equal(inc.totals.expenses, 0);
-  assert.equal(all.totals.balance, all.totals.income - all.totals.expenses);
-  assert.equal(inc.totalCount, all.totalCount);
-  assert.equal(homeFromPlan(plan, extras).income, all.totals.income);
+  const entry = { ...plan.entries[0], id: "cuota", kind: "EXPENSE" as const, loanId: "loan", recurringId: null, date: "2026-11-01", isDone: false, amount: 100 };
+  const source = { ...plan, today: "2026-11-04", entries: [entry], statements: [] };
+  const view = movementsView(source, { kind: "expense" });
+  assert.equal(view.overdue?.items[0].id, "cuota");
+  assert.equal(view.count, 0);
+  assert.equal(view.totals.expenses, 0);
+  assert.equal(movementsView(source).overdue, null);
+  assert.equal(movementsView(source, { kind: "income" }).overdue, null);
+  assert.equal(movementsView({ ...source, today: "2026-11-01" }, { kind: "expense" }).overdue, null);
+  const paid = movementsView({ ...source, entries: [{ ...entry, isDone: true }] }, { kind: "expense" });
+  assert.equal(paid.overdue, null);
+  assert.equal(paid.count, 1);
+  assert.equal(paid.totals.expenses, 100);
 });
 
-test("movementsView: búsqueda sin tildes ni mayúsculas, por nombre y categoría", async () => {
+test("Pago de tarjeta aparece una vez; sin fecha de pago no inventa vencimiento como pago", async () => {
   const plan = await mockSource.getPlan();
-  assert.equal(normalizeSearch("  Súper "), "super");
-  const byName = movementsView(plan, { query: "SUPERMERCADO" });
-  assert.equal(byName.count, 1);
-  assert.equal(byName.days[0].items[0].name, "Supermercado");
-  const byCategory = movementsView(plan, { query: "servicios" });
-  const flat = (v: ReturnType<typeof movementsView>) => [...v.days.flatMap((d) => d.items), ...(v.upcoming?.items ?? [])];
-  assert.deepEqual(flat(byCategory).map((m) => m.name).sort(), ["Gas", "Internet", "Luz"]);
-  const none = movementsView(plan, { query: "zzz" });
-  assert.equal(none.count, 0);
-  assert.equal(none.days.length, 0);
-  assert.equal(none.upcoming, null);
-  assert.equal(none.totalCount, byName.totalCount);
+  const statement = { id: "st", cardId: plan.cards[0].id, period: plan.period, dueDate: "2026-11-01", totalArs: 100, minimumArs: null, usdAmount: null, payMode: "TOTAL" as const, customAmount: null, isPaid: true, paidAt: null };
+  const source = { ...plan, entries: [], statements: [statement] };
+  const view = movementsView(source);
+  assert.equal(view.count, 1);
+  assert.equal(view.undated?.items[0].statement, true);
+  assert.equal(view.totals.expenses, 100);
+  const dated = movementsView({ ...source, statements: [{ ...statement, paidAt: "2026-11-03T12:00:00Z" }] });
+  assert.equal(dated.days[0].date, "2026-11-03");
+  assert.equal(movementsView(source, { kind: "income" }).count, 0);
+  assert.equal(movementsView(source, { query: "zzzzz" }).count, 0);
 });
 
-test("movementsView: fijos y cuotas llevan estado; los demás no", async () => {
+
+test("Fecha del pago de tarjeta usa Buenos Aires, no el día UTC", async () => {
+  const plan = await mockSource.getPlan();
+  const view = movementsView({ ...plan, entries: [], statements: [{ id: "st", cardId: plan.cards[0].id, period: plan.period, dueDate: null, totalArs: 100, minimumArs: null, usdAmount: null, payMode: "TOTAL", customAmount: null, isPaid: true, paidAt: "2026-11-04T01:00:00Z" }] });
+  assert.equal(view.days[0].date, "2026-11-03");
+});
+
+test("Filtros suman el historial completo y búsqueda ignora tildes", async () => {
   const plan = await mockSource.getPlan();
   const all = movementsView(plan);
-  const items = [...all.days.flatMap((d) => d.items), ...(all.upcoming?.items ?? [])];
-  const alquiler = items.find((m) => m.name === "Alquiler")!;
-  assert.equal(alquiler.fixed, true);
-  assert.equal(alquiler.hasStatus, true);
-  const sup = items.find((m) => m.name === "Supermercado")!;
-  assert.equal(sup.hasStatus, false);
-  assert.equal(sup.fixed, false);
-  assert.ok(items.filter((m) => m.installment).every((m) => m.hasStatus && !m.fixed));
+  const income = movementsView(plan, { kind: "income" });
+  const expense = movementsView(plan, { kind: "expense" });
+  assert.equal(income.count + expense.count, all.count);
+  assert.equal(all.totals.expenses, expense.totals.expenses);
+  assert.equal(all.totals.income, income.totals.income);
+  const entry = { ...plan.entries[0], id: "search", recurringId: null, loanId: null, name: "Café", isDone: true };
+  assert.equal(movementsView({ ...plan, entries: [entry], statements: [] }, { query: "CAFE" }).count, 1);
 });
 
-test("movementsView mes que no empezó: propuestas sin abrir", async () => {
-  const v = movementsView(await mockSource.getPlan("2026-12"));
-  assert.ok(v.count > 0);
-  const items = [...v.days.flatMap((d) => d.items), ...(v.upcoming?.items ?? []), ...(v.undated?.items ?? [])];
-  assert.ok(items.every((m) => m.projected && !m.isDone));
-});
 
-test("updateEntry con fecha mueve el movimiento de día", async () => {
-  await mockSource.updateEntry("e-compras", { date: "2026-11-09" });
-  const v = movementsView(await mockSource.getPlan());
-  assert.ok(v.days.find((d) => d.date === "2026-11-09")?.items.some((m) => m.name === "Compras") || v.upcoming!.items.some((m) => m.name === "Compras"));
-  await mockSource.updateEntry("e-compras", { date: null });
-  assert.ok(movementsView(await mockSource.getPlan()).undated!.items.some((m) => m.name === "Compras"));
+test("Fijo sin fecha de entrada usa su vencimiento configurado para el aviso", async () => {
+  const plan = await mockSource.getPlan();
+  const rule = { ...plan.recurrings[0], id: "fixed", dueDay: 2, frequency: "MONTHLY" as const };
+  const entry = { ...plan.entries[0], id: "fixed-entry", kind: "EXPENSE" as const, recurringId: rule.id, loanId: null, date: null, isDone: false };
+  const source = { ...plan, today: "2026-11-04", entries: [entry], recurrings: [rule], statements: [] };
+  const view = movementsView(source, { kind: "expense" });
+  assert.equal(view.overdue?.items[0].date, "2026-11-02");
+  assert.equal(view.count, 0);
 });

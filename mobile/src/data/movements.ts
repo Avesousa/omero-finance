@@ -1,5 +1,6 @@
-import { isReceivable, round2, toArs, type MonthPlan } from "../domain/index.ts";
-import { projectedPlan } from "./plan.ts";
+import { isReceivable, round2, toArs, todayIso, type MonthPlan } from "../domain/index.ts";
+import { fixedExpensesView } from "./fixed.ts";
+import { statementToPay } from "../../../src/lib/plan/core.ts";
 
 export type MovementsKind = "all" | "income" | "expense";
 
@@ -11,6 +12,7 @@ export interface MovementsFilter {
 
 export interface MovementItem {
   id: string;
+  statement?: boolean;
   kind: "INCOME" | "EXPENSE";
   name: string;
   categoryId: string | null;
@@ -27,11 +29,11 @@ export interface MovementItem {
   fixed: boolean;
   /** Cuota de un préstamo o deuda: solo lectura (se gestiona en Deudas). */
   installment: boolean;
-  /** Cuota que me deben y todavía no cobré: se ve en la lista pero no suma a los ingresos (igual que `buildSummary`). */
+  /** Cuota por cobrar; las no cobradas quedan fuera del historial. */
   receivable: boolean;
   /** Propuesta de un mes que no empezó (`proj-…`, `proposal-…`): no existe todavía, no se abre. */
   projected: boolean;
-  /** Solo los fijos y las cuotas tienen estado pagado / pendiente. */
+  /** Fijos, cuotas y resúmenes tienen estado pagado / pendiente. */
   hasStatus: boolean;
   note: string | null;
 }
@@ -45,7 +47,7 @@ export interface MovementDay {
   expenses: number;
 }
 
-/** Grupo sin día propio ("Próximos", "Sin fecha"). */
+/** Grupo de avisos o movimientos sin fecha. */
 export interface MovementGroup {
   items: MovementItem[];
   income: number;
@@ -61,8 +63,8 @@ export interface MovementsView {
   count: number;
   /** Días con fecha hasta hoy (o ya pagados), del más reciente al más viejo. */
   days: MovementDay[];
-  /** "Próximos": fecha posterior a hoy y sin pagar, el que vence antes primero. Va después de `days`. null si no hay. */
-  upcoming: MovementGroup | null;
+  /** Aviso exclusivo de Gastos, excluido de los totales realizados. */
+  overdue: MovementGroup | null;
   /** "Sin fecha". Va al final. null si no hay. */
   undated: MovementGroup | null;
   /** Totales del filtro, en ARS: `balance` = ingresos − gastos. */
@@ -74,19 +76,16 @@ export function normalizeSearch(text: string): string {
   return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-/**
- * Movimientos del mes (ingresos y gastos, incluidos fijos y cuotas) listos para mostrar, sobre `projectedPlan`.
- * Orden: días pasados (desc), luego "Próximos" (fecha futura y sin pagar, asc) y al final "Sin fecha"; dentro del día, ingresos primero y luego por nombre.
- * Agrupa por día; los totales (en ARS) son los del filtro y, como Inicio, no cuentan lo que me deben y todavía no cobré.
- */
+/** Historial real del mes y aviso de vencidos en Gastos; no genera proyecciones. */
 export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): MovementsView {
-  const plan = projectedPlan(source);
+  const plan = source;
+  const fixedDates = new Map(fixedExpensesView(source).groups.flatMap((g) => g.items).map((i) => [i.entryId, i.dueDate]));
   const kind = filter.kind ?? "all";
   const q = normalizeSearch(filter.query ?? "");
   const categories = new Map(plan.categories.map((c) => [c.id, c.name]));
 
   const all: MovementItem[] = plan.entries
-    .filter((e) => e.period === plan.period)
+    .filter((e) => e.period === plan.period && !e.id.startsWith("proj-") && !e.id.startsWith("proposal-"))
     .map((e) => ({
       id: e.id,
       kind: e.kind,
@@ -96,7 +95,7 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
       amount: e.amount,
       currency: e.currency,
       amountArs: toArs(e.amount, e.currency, plan.usdRate),
-      date: e.date,
+      date: e.isDone ? e.date : (fixedDates.get(e.id) ?? e.date),
       isDone: e.isDone,
       fixed: e.recurringId != null && e.loanId == null,
       installment: e.loanId != null,
@@ -106,28 +105,35 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
       note: e.note,
     }));
 
-  const items = all
-    .filter((m) => kind === "all" || (kind === "income" ? m.kind === "INCOME" : m.kind === "EXPENSE"))
-    .filter((m) => !q || [m.name, m.categoryName ?? "", m.note ?? ""].some((s) => normalizeSearch(s).includes(q)))
-    .sort(
-      (a, b) =>
-        (b.date ?? "").localeCompare(a.date ?? "") ||
-        Number(a.date == null) - Number(b.date == null) ||
-        Number(b.kind === "INCOME") - Number(a.kind === "INCOME") ||
-        a.name.localeCompare(b.name),
-    );
+  for (const st of plan.statements.filter((s) => s.period === plan.period)) {
+    const card = plan.cards.find((c) => c.id === st.cardId);
+    all.push({
+      id: `statement-${st.id}`, statement: true, kind: "EXPENSE",
+      name: card?.name ?? "Tarjeta", categoryId: null, categoryName: "Pago de tarjeta",
+      amount: statementToPay(st, plan.usdRate), currency: "ARS",
+      amountArs: statementToPay(st, plan.usdRate),
+      date: st.isPaid ? (st.paidAt ? todayIso(new Date(st.paidAt)) : null) : st.dueDate,
+      isDone: st.isPaid, fixed: false, installment: false, receivable: false,
+      projected: false, hasStatus: true, note: null,
+    });
+  }
+  const matches = (m: MovementItem) =>
+    (kind === "all" || (kind === "income" ? m.kind === "INCOME" : m.kind === "EXPENSE")) &&
+    (!q || [m.name, m.categoryName ?? "", m.note ?? ""].some((s) => normalizeSearch(s).includes(q)));
+  const realized = all.filter((m) => m.isDone || !m.hasStatus);
+  const items = realized.filter(matches).sort((a, b) =>
+    (b.date ?? "").localeCompare(a.date ?? "") || Number(b.kind === "INCOME") - Number(a.kind === "INCOME") || a.name.localeCompare(b.name));
+  const overdueItems = kind === "expense" ? all.filter((m) =>
+    m.kind === "EXPENSE" && m.hasStatus && !m.isDone && m.date != null && m.date < plan.today && matches(m)
+  ).sort((a, b) => a.date!.localeCompare(b.date!) || a.name.localeCompare(b.name)) : [];
 
   const sum = (list: MovementItem[], k: MovementItem["kind"]) =>
     round2(list.filter((m) => m.kind === k && !m.receivable).reduce((acc, m) => acc + m.amountArs, 0));
   const group = (list: MovementItem[]): MovementGroup | null =>
     list.length === 0 ? null : { items: list, income: sum(list, "INCOME"), expenses: sum(list, "EXPENSE") };
 
-  const isUpcoming = (m: MovementItem) => m.date != null && m.date > plan.today && !m.isDone;
-  const upcomingItems = items
-    .filter(isUpcoming)
-    .sort((a, b) => a.date!.localeCompare(b.date!) || Number(b.kind === "INCOME") - Number(a.kind === "INCOME") || a.name.localeCompare(b.name));
   const byDay = new Map<string, MovementItem[]>();
-  for (const m of items) if (m.date != null && !isUpcoming(m)) byDay.set(m.date, [...(byDay.get(m.date) ?? []), m]);
+  for (const m of items) if (m.date != null) byDay.set(m.date, [...(byDay.get(m.date) ?? []), m]);
   const days: MovementDay[] = [...byDay.entries()]
     .map(([date, list]) => ({ date, items: list, income: sum(list, "INCOME"), expenses: sum(list, "EXPENSE") }))
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -137,10 +143,10 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
   return {
     period: plan.period,
     today: plan.today,
-    totalCount: all.length,
+    totalCount: realized.length,
     count: items.length,
     days,
-    upcoming: group(upcomingItems),
+    overdue: group(overdueItems),
     undated: group(items.filter((m) => m.date == null)),
     totals: { income, expenses, balance: round2(income - expenses) },
   };

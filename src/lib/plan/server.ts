@@ -242,6 +242,7 @@ function statementToDto(s: StatementRow): StatementDTO {
     payMode: s.payMode as PayMode,
     customAmount: num(s.customAmount),
     isPaid: s.isPaid,
+    paidAt: s.paidAt?.toISOString() ?? null,
   };
 }
 

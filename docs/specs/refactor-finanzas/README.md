@@ -7,7 +7,8 @@ El plan vigente sigue el [contrato compartido](00-contrato.md). `docs/plan.md` c
 | Etapa | Estado en el repositorio |
 |---|---|
 | S1 — Dueño y finanzas | Backend desplegado y backfill aplicado; usuario confirmó prueba en iPhone de login, estabilidad, creación de Hogar y selector Personal/Hogar. Release EAS y resto de la matriz E2E pendientes de verificación. |
-| S2 — Cuentas y tarjetas | Especificada; pendiente implementación y respuestas de la sección 9. |
+| [S1.1 — Movimientos](01-1-movimientos.md) | Implementada en mobile en rama S1.1; prueba en iPhone y adaptación web pendientes. Movimientos reales y aviso de vencidos solo en Gastos. |
+| S2 — Cuentas y tarjetas | Especificada; pendiente implementación y respuestas de la sección 9. Se aborda después de S1.1. |
 | S3 — Vínculos | Especificada; pendiente implementación. |
 | S4 — Contactos y deudas | Especificada; pendiente implementación. |
 | S5–6 — Grupos | Especificada; pendiente implementación. |
