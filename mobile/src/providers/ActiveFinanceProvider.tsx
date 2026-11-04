@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api, onFinanceDenied, setActiveFinanceId } from "../../lib/api";
 import { useSession } from "../../lib/session";
 import { prefGet, prefSet } from "../../lib/storage";
+import { selectableFinanceId } from "../../lib/finance-selection";
 import type { FinanceDTO } from "../../lib/types";
 
 export interface NewHomeInput {
@@ -47,17 +48,17 @@ export function ActiveFinanceProvider({ children }: { children: ReactNode }) {
   const userId = user?.id ?? null;
 
   const apply = useCallback(
-    async (id: string) => {
+    async (id: string | null) => {
       setActiveFinanceId(id);
       setActiveIdState(id);
-      if (userId) await prefSet(prefKey(userId), id);
+      if (userId) await prefSet(prefKey(userId), id ?? "");
     },
     [userId],
   );
 
   const load = useCallback(
     async (preferred?: string | null) => {
-      if (preferred !== undefined) setActiveFinanceId(preferred);
+      if (preferred !== undefined) setActiveFinanceId(preferred || null);
       const res = await api<FinancesResponse>("GET", "/api/plan/finances");
       setFinances(res.finances);
       // El servidor valida el header: si la guardada ya no sirve, devuelve la de por defecto.
@@ -65,7 +66,7 @@ export function ActiveFinanceProvider({ children }: { children: ReactNode }) {
         const lost = financesRef.current.find((f) => f.id === preferred);
         setLostAccessTo(lost?.name ?? "esa finanza");
       }
-      await apply(res.activeId);
+      await apply(selectableFinanceId(res));
       return res;
     },
     [apply],

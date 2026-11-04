@@ -563,6 +563,20 @@ describe("inbox/apple-pay", () => {
 // ─── 7. Backfill ──────────────────────────────────────────────────────────────
 
 describe("backfill", () => {
+  it("antes del backfill el hogar default funciona sin header, pero no es una selección explícita", async () => {
+    const legacyUser = await makeUser("LegacySelection");
+    await prisma.financeMember.deleteMany({ where: { householdId: legacyUser.personalId } });
+    await prisma.household.update({ where: { id: legacyUser.personalId }, data: { ownerUserId: null } });
+
+    const listing = await call(route("finances").GET, legacyUser);
+    expect(listing.status).toBe(200);
+    expect(listing.json.activeId).toBe(legacyUser.personalId);
+    expect(listing.json.finances).toEqual([]);
+    expect((await call(route("data").GET, legacyUser)).status).toBe(200);
+    expect((await call(route("data").GET, legacyUser, { finance: listing.json.activeId })).status).toBe(403);
+    expect((await call(route("data").GET, legacyUser)).status).toBe(200);
+  });
+
   it("hogar con 2 usuarios: dueño ADMIN, el otro recibe su Personal y se reapunta; 2ª corrida sin cambios", async () => {
     const legacy = await prisma.household.create({ data: { name: `Legacy ${owner.name}`, type: "SHARED" } });
     const a = await prisma.user.create({ data: { name: `Aa-${owner.name}`, email: `aa-${owner.name}@int.test`, passwordHash: "x", householdId: legacy.id, role: "ADMIN" } });
