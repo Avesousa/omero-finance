@@ -106,6 +106,7 @@ export interface StatementDTO {
   payMode: PayMode;
   customAmount: number | null;
   isPaid: boolean;
+  paidAt?: string | null;
 }
 
 export interface BalanceItemDTO {

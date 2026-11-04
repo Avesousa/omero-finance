@@ -4,7 +4,7 @@
   "close": "Cerrar",
   "filter": {
     "label": "Tipo de movimiento",
-    "all": "Todos",
+    "all": "Todas",
     "income": "Ingresos",
     "expense": "Gastos"
   },
@@ -17,7 +17,8 @@
     "today": "Hoy",
     "yesterday": "Ayer",
     "undated": "Sin fecha",
-    "upcoming": "Próximos"
+    "upcoming": "Próximos",
+    "overdue": "Pagos vencidos · falta pagar"
   },
   "row": {
     "uncategorized": "Sin categoría",
@@ -32,7 +33,8 @@
     "edit": "Editar {{name}}",
     "installmentHint": "Es una cuota: se gestiona en Deudas",
     "proposed": "todavía no cargado",
-    "due": "vence el {{date}}"
+    "due": "vence el {{date}}",
+    "overdue": "venció el {{date}}"
   },
   "totals": {
     "all": "Ingresos {{income}} · Gastos {{expenses}}",
