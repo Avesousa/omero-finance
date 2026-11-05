@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { monthlyAmount } from "@/lib/plan/core";
+import { incomeCollection } from "@/lib/plan/income-collection";
+import { monthlyAmount, todayIso } from "@/lib/plan/core";
 import {
   FREQUENCIES, KINDS, categoryIdOrNull, readBody, requireStartedMonth, v, withSession,
 } from "@/lib/plan/server";
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
       const weekday = frequency === "WEEKLY" ? v.optionalInt(fixed.weekday, "Día de la semana", 0, 6) : null;
       const dueDay = v.optionalInt(fixed.dueDay, "Día del mes", 1, 31);
 
+      const collection = kind === "INCOME" ? incomeCollection(body, { isDone: false, collectedAt: null }, todayIso()) : {};
       const entry = await prisma.$transaction(async (tx) => {
         const rule = await tx.planRecurring.create({
           data: { householdId, kind, name, categoryId, targetCategoryId, currency, amount, frequency, weekday, dueDay },
@@ -45,6 +47,7 @@ export async function POST(req: NextRequest) {
           data: {
             householdId, period, kind, recurringId: rule.id, name, categoryId, targetCategoryId, currency,
             amount: monthlyAmount(amount, frequency, period, weekday),
+            ...collection,
           },
         });
       });

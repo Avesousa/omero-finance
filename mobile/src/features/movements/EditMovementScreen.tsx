@@ -107,6 +107,10 @@ export function EditMovementScreen() {
 
   const onSubmit = (v: EntryFormValues) => {
     const patch: EntryPatch = { name: v.name, currency: v.currency, categoryId: v.categoryId, note: v.note };
+    if (v.isDone !== undefined) {
+      patch.isDone = v.isDone;
+      patch.collectedAt = v.collectedAt;
+    }
     if (v.fixed) {
       // `amount` del patch es el total del mes: monto por vez × veces en el mes.
       patch.amount = monthlyAmount(v.amount, v.fixed.frequency, entry.period, v.fixed.weekday);
@@ -130,13 +134,14 @@ export function EditMovementScreen() {
         testIDPrefix="movement-form"
         mode="edit"
         fixedMode="never"
-        showDate={!isFixed}
+        showDate={!isFixed || entry.kind === "INCOME"}
         initial={{
           name: entry.name,
           amount: rule ? rule.amount : entry.amount,
           currency: entry.currency,
           categoryId: entry.categoryId,
-          date: entry.date,
+          date: entry.kind === "INCOME" && isFixed ? entry.collectedAt : entry.date,
+          isDone: entry.isDone,
           note: entry.note,
           fixed: rule ? { frequency: rule.frequency, weekday: rule.weekday, dueDay: rule.dueDay } : null,
         }}

@@ -192,6 +192,7 @@ export async function loadPlan(householdId: string, period: string, role: Role =
       currency: e.currency as Currency,
       amount: Number(e.amount),
       date: iso(e.date),
+      collectedAt: iso(e.collectedAt),
       isDone: e.isDone,
       note: e.note,
       loanId: e.loanId,

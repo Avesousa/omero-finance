@@ -28,6 +28,7 @@ const digits = (text: string) => text.replace(/\D/g, "");
 
 /** Valores de arranque del formulario (un borrador de la mascota o un gasto fijo existente). */
 export interface EntryFormInitial {
+  isDone?: boolean;
   name?: string | null;
   /** Monto por vez si es fijo. */
   amount?: number | null;
@@ -40,6 +41,8 @@ export interface EntryFormInitial {
 }
 
 export interface EntryFormValues {
+  isDone?: boolean;
+  collectedAt?: string | null;
   name: string;
   /** Monto por vez si es fijo. */
   amount: number;
@@ -115,11 +118,14 @@ export function EntryForm({
   const [currency, setCurrency] = useState<Currency>(initial?.currency ?? "ARS");
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null);
   const [isFixed, setIsFixed] = useState(fixedMode === "always" || initial?.fixed != null);
+  const incomeFixed = kind === "INCOME" && isFixed;
+  const [isDone, setIsDone] = useState(initial?.isDone ?? mode === "create");
+  const needsDate = showDate && (!incomeFixed || isDone);
   const [note, setNote] = useState(initial?.note ?? "");
   const [frequency, setFrequency] = useState<Frequency>(initial?.fixed?.frequency ?? "MONTHLY");
   const [weekday, setWeekday] = useState<number | null>(initial?.fixed?.weekday ?? null);
   const [dueDay, setDueDay] = useState(initial?.fixed?.dueDay ? String(initial.fixed.dueDay) : "");
-  const [applyToRule, setApplyToRule] = useState(true);
+  const [applyToRule, setApplyToRule] = useState(!(kind === "INCOME" && mode === "edit"));
   const [submitted, setSubmitted] = useState(false);
 
   // Al editar sin aplicar a la regla, la frecuencia y los días no cambian: se usan los de siempre.
@@ -132,16 +138,18 @@ export function EntryForm({
   const amountValue = parseMoney(amount);
   const maxDay = daysInPeriod(otherMonth);
   const dayNumber = digits(day) ? Number(digits(day)) : null;
-  const date = !showDate
-    ? null
+  const date = !needsDate
+    ? (showDate ? today : null)
     : dateMode === "today" ? today : dateMode === "yesterday" ? yesterday : dayNumber ? `${otherMonth}-${String(dayNumber).padStart(2, "0")}` : null;
 
   const errors: Partial<Record<FieldKey, string>> = {};
   if (!name.trim()) errors.name = t("errors.name");
   if (!(Number.isFinite(amountValue) && amountValue > 0)) errors.amount = t("errors.amount");
-  if (showDate && dateMode === "other" && !(dayNumber != null && dayNumber >= 1 && dayNumber <= maxDay)) errors.day = t("errors.day");
+  if (needsDate && dateMode === "other" && !(dayNumber != null && dayNumber >= 1 && dayNumber <= maxDay)) errors.day = t("errors.day");
   if (ruleFieldsOpen && frequency === "MONTHLY" && effDueDay != null && (effDueDay < 1 || effDueDay > 31)) errors.dueDay = t("errors.dueDay");
   if (ruleFieldsOpen && frequency === "WEEKLY" && weekday == null) errors.weekday = t("errors.weekday");
+
+  if (incomeFixed && isDone && date && date > today) errors.day = t("errors.collectionDate");
 
   const flag = submitted || highlightMissing;
   const shown = (key: FieldKey) => (flag ? errors[key] : undefined);
@@ -151,6 +159,7 @@ export function EntryForm({
     setSubmitted(true);
     if (Object.keys(errors).length > 0 || (showDate && !date)) return;
     onSubmit({
+      ...(incomeFixed ? { isDone, collectedAt: isDone ? date : null } : {}),
       name: name.trim(),
       amount: amountValue,
       currency,
@@ -216,8 +225,16 @@ export function EntryForm({
         </HStack>
       </FormField>
 
-      {showDate ? (
-        <FormField label={t("form.date")} error={shown("day")}>
+      {incomeFixed ? (
+        <HStack gap={3}>
+          <Text variant="body" style={{ flexShrink: 1 }}>{t("form.collected")}</Text>
+          <Spacer />
+          <Switch testID={`${id}-collected`} accessibilityLabel={t("form.collected")} value={isDone} onValueChange={setIsDone} trackColor={{ false: colors.border, true: colors.tabActive }} thumbColor={colors.surface} />
+        </HStack>
+      ) : null}
+
+      {needsDate ? (
+        <FormField label={t(incomeFixed ? "form.collectionDate" : "form.date")} error={shown("day")}>
           <VStack gap={2}>
             <SegmentedToggle
               testID={`${id}-date`}

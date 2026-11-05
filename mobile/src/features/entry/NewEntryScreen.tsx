@@ -70,6 +70,7 @@ export function NewEntryScreen({ kind }: { kind: EntryKind }) {
       date: v.dateMode === "today" ? null : v.date,
       note: v.note,
       fixed: v.fixed,
+      ...(v.isDone !== undefined ? { isDone: v.isDone, collectedAt: v.collectedAt } : {}),
     };
     add.mutate(input, {
       onSuccess: () => {

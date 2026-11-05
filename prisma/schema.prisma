@@ -278,6 +278,8 @@ model PlanEntry {
   currency         Currency  @default(ARS)
   amount           Decimal   @db.Decimal(14, 2)
   date             DateTime? @db.Date
+  /// Fecha real de cobro del ingreso; independiente del vencimiento.
+  collectedAt      DateTime? @db.Date
   /// Fijos: cobrado / pagado.
   isDone           Boolean   @default(false)
   note             String?

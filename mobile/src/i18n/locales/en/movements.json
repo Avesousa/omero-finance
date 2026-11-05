@@ -71,5 +71,13 @@
     "deleteRuleBody": "",
     "cancel": "",
     "deleteError": ""
+  },
+  "collection": {
+    "action": "Confirm income ({{count}})",
+    "title": "Confirm income",
+    "body": "Choose an income entry to confirm receipt and save the date. You do not need to create it again.",
+    "empty": "No income to confirm",
+    "emptyBody": "Received income appears in Movements.",
+    "retry": "Retry"
   }
 }

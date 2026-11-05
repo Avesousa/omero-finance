@@ -95,7 +95,7 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
       amount: e.amount,
       currency: e.currency,
       amountArs: toArs(e.amount, e.currency, plan.usdRate),
-      date: e.isDone ? e.date : (fixedDates.get(e.id) ?? e.date),
+      date: e.isDone ? (e.collectedAt ?? e.date) : (fixedDates.get(e.id) ?? e.date),
       isDone: e.isDone,
       fixed: e.recurringId != null && e.loanId == null,
       installment: e.loanId != null,
@@ -150,4 +150,9 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
     undated: group(items.filter((m) => m.date == null)),
     totals: { income, expenses, balance: round2(income - expenses) },
   };
+}
+
+/** Ingresos recurrentes persistidos por confirmar; excluye propuestas y cobros de préstamos. */
+export function pendingIncomes(plan: MonthPlan) {
+  return plan.entries.filter((e) => e.period === plan.period && e.kind === "INCOME" && e.recurringId != null && e.loanId == null && !e.isDone && !e.id.startsWith("proj-") && !e.id.startsWith("proposal-"));
 }

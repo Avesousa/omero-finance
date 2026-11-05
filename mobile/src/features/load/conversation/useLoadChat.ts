@@ -69,7 +69,8 @@ export function useLoadChat() {
       if (!msg) return;
       const categories = msg.intent === "income" ? incomeCategories.data : expenseCategories.data;
       const input = draftToEntryInput(msg.draft, categories?.find((c) => c.id === msg.draft.categoryId)?.name);
-      if (!input) {
+      // El ingreso recurrente necesita confirmar cobro y fecha en el formulario.
+      if (!input || (input.kind === "INCOME" && input.fixed)) {
         editDraft(draftId);
         return;
       }
