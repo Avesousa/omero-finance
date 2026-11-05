@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { occurrencesInPeriod, round2, type Frequency } from "@/lib/plan/core";
+import { incomeCollection } from "@/lib/plan/income-collection";
+import { todayIso, occurrencesInPeriod, round2, type Frequency } from "@/lib/plan/core";
 import { refreshLoanStatus } from "@/lib/plan/loans";
 import {
   FREQUENCIES, categoryIdOrNull, readBody, v, withSession, type ApiContext,
@@ -43,6 +44,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (body.date !== undefined) data.date = v.optionalDate(body.date);
     if (body.note !== undefined) data.note = v.optionalText(body.note);
     if (body.isDone !== undefined) data.isDone = body.isDone === true;
+    if (entry.kind === "INCOME" && (body.isDone !== undefined || body.collectedAt !== undefined)) {
+      Object.assign(data, incomeCollection(body, entry, todayIso()));
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.planEntry.update({ where: { id }, data });

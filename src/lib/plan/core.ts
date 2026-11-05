@@ -59,6 +59,8 @@ export interface EntryDTO {
   amount: number;
   date: string | null;
   isDone: boolean;
+  /** Fecha real de cobro; null en pendientes e históricos sin fecha confirmada. */
+  collectedAt?: string | null;
   note: string | null;
   /** Cuota de un préstamo o deuda. */
   loanId: string | null;

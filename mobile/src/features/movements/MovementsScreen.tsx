@@ -6,7 +6,7 @@ import { Button, HStack, IconButton, Skeleton, Surface, Text, TextField, VStack 
 import { EmptyState, PeriodSwitcher, SegmentedToggle } from "../../components/molecules";
 import { MovementRow, ScreenHeader } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
-import { useMovements, type MovementsKind, type MovementsView } from "../../data";
+import { pendingIncomes, usePlan, useMovements, type MovementsKind, type MovementsView } from "../../data";
 import { formatMoney, formatWeekdayDate } from "../../i18n/format";
 import { addDays } from "../../domain";
 import { MoveToFinanceSheet, useMoveTargets } from "../finances/MoveToFinanceSheet";
@@ -34,6 +34,8 @@ export function MovementsScreen() {
   const { data, isPending, isError, refetch } = useMovements(selected ?? undefined, { kind, query });
   const [refreshing, setRefreshing] = useState(false);
   const period = selected ?? data?.period ?? null;
+  const plan = usePlan(selected ?? undefined);
+  const toCollect = plan.data ? pendingIncomes(plan.data).length : 0;
   const { t: tf } = useTranslation("finances");
   // Modo selección para mover a otra finanza: solo si hay otra finanza donde cargar y mi rol lo permite.
   const canMove = useMoveTargets().length > 0;
@@ -98,6 +100,9 @@ export function MovementsScreen() {
           { value: "expense", label: t("filter.expense") },
         ]}
       />
+      {kind === "income" && canWrite && toCollect > 0 ? (
+        <Button testID="movements-confirm-income" variant="secondary" label={t("collection.action", { count: toCollect })} onPress={() => router.push({ pathname: "/ingresos/pendientes", params: { period } })} />
+      ) : null}
       <HStack>
         <TextField
           testID="movements-search"

@@ -73,3 +73,39 @@ test("Fijo sin fecha de entrada usa su vencimiento configurado para el aviso", a
   assert.equal(view.overdue?.items[0].date, "2026-11-02");
   assert.equal(view.count, 0);
 });
+
+test("Sueldo confirmado se agrupa por fecha de cobro sin alterar su vencimiento", async () => {
+  const plan = await mockSource.getPlan();
+  const salary = { ...plan.entries[0], id: "salary", kind: "INCOME" as const, recurringId: "salary-rule", loanId: null, isDone: true, date: "2026-11-01", collectedAt: "2026-11-03" };
+  const view = movementsView({ ...plan, entries: [salary], statements: [] }, { kind: "income" });
+  assert.equal(view.count, 1);
+  assert.equal(view.days[0].date, "2026-11-03");
+  assert.equal(salary.date, "2026-11-01");
+});
+
+test("Confirmar ingresos lista sueldos existentes sin propuestas ni duplicar los cobrados", async () => {
+  const { pendingIncomes } = await import("../movements.ts");
+  const plan = await mockSource.getPlan();
+  const salary = { ...plan.entries[0], id: "salary", kind: "INCOME" as const, recurringId: "salary-rule", loanId: null, isDone: false };
+  const source = { ...plan, entries: [salary, { ...salary, id: "paid", isDone: true }, { ...salary, id: "proj-salary" }, { ...salary, id: "proposal-salary" }, { ...salary, id: "loan", loanId: "loan" }, { ...salary, id: "expense", kind: "EXPENSE" as const }], statements: [] };
+  assert.deepEqual(pendingIncomes(source).map((e) => e.id), ["salary"]);
+  assert.equal(movementsView(source, { kind: "income" }).count, 1);
+});
+
+test("Crear y confirmar un ingreso recurrente en mock conserva el mismo registro", async () => {
+  const plan = await mockSource.getPlan();
+  const input = { kind: "INCOME" as const, period: plan.period, name: "Sueldo por confirmar", amount: 100, currency: "ARS" as const, categoryId: null, date: null, note: null, fixed: { frequency: "MONTHLY" as const }, isDone: false, collectedAt: null };
+  await mockSource.addEntry(input);
+  const before = await mockSource.getPlan();
+  const entry = before.entries.find((e) => e.name === input.name)!;
+  assert.ok(entry.recurringId);
+  assert.equal(entry.isDone, false);
+  await mockSource.updateEntry(entry.id, { isDone: true, collectedAt: "2026-11-03" });
+  const after = await mockSource.getPlan();
+  assert.equal(after.entries.length, before.entries.length);
+  assert.equal(after.entries.find((e) => e.id === entry.id)?.collectedAt, "2026-11-03");
+  assert.equal(movementsView(after, { query: input.name }).count, 1);
+  await mockSource.addEntry({ ...input, name: "Sueldo ya cobrado", isDone: true, collectedAt: "2026-11-04" });
+  const created = await mockSource.getPlan();
+  assert.equal(movementsView(created, { query: "Sueldo ya cobrado" }).count, 1);
+});

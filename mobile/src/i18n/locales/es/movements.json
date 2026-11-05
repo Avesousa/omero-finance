@@ -71,5 +71,13 @@
     "deleteRuleBody": "Es un movimiento fijo: podés borrarlo solo de este mes o dejar de repetirlo en los próximos.",
     "cancel": "Cancelar",
     "deleteError": "No pude borrarlo. Probá de nuevo."
+  },
+  "collection": {
+    "action": "Confirmar ingresos ({{count}})",
+    "title": "Confirmar ingresos",
+    "body": "Elegí un ingreso para confirmar si ya lo cobraste y guardar la fecha de cobro. No hace falta volver a cargarlo.",
+    "empty": "No hay ingresos por confirmar",
+    "emptyBody": "Los ingresos cobrados aparecen en Movimientos.",
+    "retry": "Reintentar"
   }
 }

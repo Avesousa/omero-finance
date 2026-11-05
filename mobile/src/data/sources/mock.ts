@@ -7,7 +7,6 @@ import {
   round2,
   proposeLoanPayment,
   TDC_KEY,
-  toArs,
   type BudgetDTO,
   type CardDTO,
   type CategoryDTO,
@@ -399,7 +398,8 @@ export const mockSource: DataSource = {
       id: `e-new-${planSeq}`, period: CURRENT_PERIOD, kind: input.kind, recurringId, name: input.name, categoryId: input.categoryId,
       targetCategoryId: null, currency: input.currency,
       amount: rule ? monthlyAmount(rule.amount, rule.frequency, CURRENT_PERIOD, rule.weekday) : input.amount,
-      date: rule ? null : (input.date ?? TODAY), isDone: !rule,
+      date: rule ? null : (input.date ?? TODAY), isDone: rule ? (input.isDone ?? false) : true,
+      collectedAt: input.kind === "INCOME" && input.isDone ? (input.collectedAt ?? TODAY) : null,
       note: input.note, loanId: null, interestAmount: null,
     });
     await wait(undefined);
@@ -415,6 +415,8 @@ export const mockSource: DataSource = {
     if (patch.note !== undefined) e.note = patch.note;
     if (patch.date !== undefined) e.date = patch.date;
     if (patch.isDone !== undefined) e.isDone = patch.isDone;
+    if (patch.collectedAt !== undefined) e.collectedAt = patch.collectedAt;
+    if (patch.isDone === false) e.collectedAt = null;
     const rule = patch.applyToRule === true && e.recurringId ? recurrings.find((r) => r.id === e.recurringId) : undefined;
     if (rule) {
       const frequency = patch.frequency ?? rule.frequency;

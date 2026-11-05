@@ -281,6 +281,8 @@ export type IncomeCategory = Category;
 
 /** Lo que carga el formulario de ingreso o gasto. Igual al body de `POST /api/plan/entries`. */
 export interface NewEntryInput {
+  isDone?: boolean;
+  collectedAt?: string | null;
   kind: EntryKind;
   /** Mes al que pertenece, 'YYYY-MM'. */
   period: string;
@@ -301,6 +303,7 @@ export interface NewEntryInput {
  * `applyToRule` guarda también en la regla (próximos meses) y es lo único que habilita `frequency`, `weekday` y `dueDay`.
  */
 export type EntryPatch = Partial<{
+  collectedAt: string | null;
   name: string;
   amount: number;
   currency: Currency;

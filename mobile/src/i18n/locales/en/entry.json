@@ -50,14 +50,17 @@
     "dueDayPlaceholder": "",
     "weekday": "",
     "applyToRule": "",
-    "applyToRuleHint": ""
+    "applyToRuleHint": "",
+    "collected": "Already received",
+    "collectionDate": "Date received"
   },
   "errors": {
     "name": "",
     "amount": "",
     "day": "",
     "dueDay": "",
-    "weekday": ""
+    "weekday": "",
+    "collectionDate": "The collection date cannot be in the future."
   },
   "saved": {
     "done": {

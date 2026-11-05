@@ -59,3 +59,24 @@ Una compra con tarjeta no es un pago de resumen: no se agrega como otra salida d
 - Los resúmenes exponen `paidAt` desde el backend y se agrupan por día de Buenos Aires. Si falta la fecha histórica de pago, aparecen en «Sin fecha».
 - Fijos y cuotas conservan la fecha disponible en la entrada; el modelo actual no guarda una fecha de pago separada. No se introducen migraciones en S1.1.
 - Tocar un resumen lleva a Tarjetas; una cuota, a Deudas; un fijo vencido, a Gastos fijos. Se conservan los permisos de lectura de S1.
+
+## Ampliación — Cobro de ingresos recurrentes
+
+Rama: `fix/ingresos-recurrentes-cobrados`.
+
+- Confirmar un ingreso recurrente desde el chat abre el formulario para revisar cobro y fecha.
+- Crear un ingreso recurrente permite indicar «Ya lo cobré» (activado por defecto) y fecha de cobro. Desactivarlo conserva el ingreso por confirmar, fuera del historial realizado.
+- En Movimientos → Ingresos, «Confirmar ingresos» permite abrir ingresos recurrentes existentes del mes y confirmar el cobro sin crear otro registro. Editar estos ingresos no aplica cambios a la regla futura por defecto.
+- `PlanEntry.collectedAt` (DATE nullable) guarda la fecha real del cobro sin reutilizar el vencimiento. El historial usa esa fecha cuando existe. No se infieren ni completan fechas históricas automáticamente.
+- La API acepta `isDone` y `collectedAt` al crear un ingreso fijo y al actualizar un ingreso. Deshacer un cobro borra `collectedAt`; fechas imposibles o futuras se rechazan. Clientes anteriores sin estos campos conservan el comportamiento al crear fijos pendientes.
+- La regla recurrente no almacena el estado de cobro: iniciar el siguiente mes genera el ingreso pendiente y sin fecha de cobro.
+- Migración: `20261104170000_income_collection_date`. Debe aplicarse antes de desplegar el backend que lee la columna. Este cambio no requiere ejecutar el backfill de S2 ni modificar su esquema.
+- Verificación: tests de mobile, validación de cobros y endpoints sobre PostgreSQL temporal local. Prueba manual en iPhone pendiente.
+
+### Prueba manual
+
+1. Con la migración y backend nuevos disponibles, crear un sueldo recurrente con «Ya lo cobré» activado; verificar fecha y monto en Movimientos → Ingresos.
+2. Crear otro con la opción desactivada: no aparece en el historial; sí en «Confirmar ingresos».
+3. Abrir uno de los sueldos existentes desde «Confirmar ingresos», activar «Ya lo cobré», elegir fecha y guardar. Verificar que aparece una sola vez y sale de la lista por confirmar.
+4. Editar el sueldo cobrado y desactivar el cobro: vuelve a confirmación y no cuenta como movimiento realizado.
+5. Iniciar el siguiente mes: el sueldo recurrente vuelve a generarse pendiente, sin copiar la fecha ni el estado de cobro anterior.
