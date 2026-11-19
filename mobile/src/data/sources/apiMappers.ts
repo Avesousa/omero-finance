@@ -20,7 +20,7 @@ import type {
  * Tarjetas, deudas y patrimonio salen de la misma fuente que la web: `GET /api/plan/data` y `GET /api/plan/balance`.
  */
 
-const BRANDS: CardBrand[] = ["VISA", "MC", "AMEX"];
+const BRANDS: CardBrand[] = ["VISA", "MC", "AMEX", "CABAL", "DINERS", "OTHER"];
 const toBrand = (v: string | null): CardBrand | null => (v && (BRANDS as string[]).includes(v) ? (v as CardBrand) : null);
 
 export function cardsFromPlan(plan: MonthPlan): CardsOverview {

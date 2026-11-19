@@ -4,7 +4,8 @@ import { config } from "dotenv";
 import { defineConfig } from "prisma/config";
 
 // Load .env.local first (takes priority), then fall back to .env
-config({ path: ".env.local", override: true });
+// `npm run dev:all` impone el entorno local (.env.dev) por variables de proceso: no se pisa con .env.local.
+if (!process.env.OMERO_DEV_ENV) config({ path: ".env.local", override: true });
 config();
 
 export default defineConfig({

@@ -6,6 +6,7 @@ import { FINANCE_PALETTE, isPaletteKey, mapCategoriesByName, moveEntries } from 
 type Row = Record<string, unknown>;
 function makeTx(opts: { entries: Row[]; cats?: Row[]; fromMonths?: Row[]; toMonths?: Row[]; updateCount?: (id: string) => number }) {
   const tx = {
+    household: { findUniqueOrThrow: jest.fn().mockResolvedValue({ name: "Origen A" }) },
     planEntry: {
       findMany: jest.fn().mockResolvedValue(opts.entries),
       updateMany: jest.fn().mockImplementation(({ where }: { where: { id: string } }) =>
@@ -89,7 +90,7 @@ describe("moveEntries", () => {
     await moveEntries(tx, { entryIds: ["e1"], fromId: "A", toId: "B" });
     expect(tx.planEntry.updateMany).toHaveBeenCalledWith({
       where: { id: "e1", householdId: "A" },
-      data: { householdId: "B", categoryId: "b1", targetCategoryId: "b1" },
+      data: { householdId: "B", categoryId: "b1", targetCategoryId: "b1", accountId: null, originFinanceName: "Origen A" },
     });
   });
   it("mes de destino sin iniciar → se crea con el mismo usdRate del origen", async () => {

@@ -109,3 +109,19 @@ test("Crear y confirmar un ingreso recurrente en mock conserva el mismo registro
   const created = await mockSource.getPlan();
   assert.equal(movementsView(created, { query: "Sueldo ya cobrado" }).count, 1);
 });
+
+
+test("Pagos de tarjeta se ven por movimiento efectivo, sin duplicar resumen ni mezclar monedas", async () => {
+ const plan = await mockSource.getPlan();
+ const payments = [
+  { id: "ars", statementId: "st", householdId: "home", accountId: "bank", accountName: "Banco", currency: "ARS" as const, amount: 100, paidAt: "2026-11-03T12:00:00Z", originFinanceName: "Personal" },
+  { id: "usd", statementId: "st", householdId: "home", accountId: "usd-bank", accountName: "Dólares", currency: "USD" as const, amount: 2, paidAt: "2026-11-03T12:00:00Z", originFinanceName: "Personal" },
+ ];
+ const st = { id: "st", cardId: plan.cards[0].id, period: plan.period, dueDate: null, totalArs: 100, minimumArs: null, usdAmount: 2, payMode: "TOTAL" as const, customAmount: null, isPaid: true, payments };
+ const view = movementsView({ ...plan, entries: [], statements: [st], cardPayments: payments }, { kind: "expense" });
+ assert.equal(view.count, 2);
+ const items = view.days.flatMap((d) => d.items);
+ assert.deepEqual(items.map((m) => m.currency), ["ARS", "USD"]);
+ assert.equal(items[0].accountName, "Banco"); assert.equal(items[0].originFinanceName, "Personal");
+ assert.equal(movementsView({ ...plan, entries: [], statements: [st], cardPayments: [] }).count, 0);
+});

@@ -396,7 +396,7 @@ export const mockSource: DataSource = {
     const rule = recurringId ? recurrings.find((r) => r.id === recurringId) : undefined;
     planEntries.push({
       id: `e-new-${planSeq}`, period: CURRENT_PERIOD, kind: input.kind, recurringId, name: input.name, categoryId: input.categoryId,
-      targetCategoryId: null, currency: input.currency,
+      targetCategoryId: null, accountId: input.accountId ?? null, currency: input.currency,
       amount: rule ? monthlyAmount(rule.amount, rule.frequency, CURRENT_PERIOD, rule.weekday) : input.amount,
       date: rule ? null : (input.date ?? TODAY), isDone: rule ? (input.isDone ?? false) : true,
       collectedAt: input.kind === "INCOME" && input.isDone ? (input.collectedAt ?? TODAY) : null,
@@ -408,6 +408,7 @@ export const mockSource: DataSource = {
     // Como la web: solo los movimientos cargados (no las propuestas ni las cuotas de préstamos).
     const e = planEntries.find((x) => x.id === id);
     if (!e) throw new AppError("No encontrado", { code: "unknown" });
+    if (patch.accountId !== undefined) e.accountId = patch.accountId;
     if (patch.name !== undefined) e.name = patch.name;
     if (patch.amount !== undefined) e.amount = patch.amount;
     if (patch.currency !== undefined) e.currency = patch.currency;

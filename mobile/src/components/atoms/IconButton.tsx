@@ -25,6 +25,7 @@ export function IconButton({ icon, accessibilityLabel, onPress, badge = 0, disab
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       disabled={disabled}
+      hitSlop={8}
       onPress={onPress}
       style={({ pressed }) => ({
         width: sizes.touch,

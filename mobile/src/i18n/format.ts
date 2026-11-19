@@ -117,7 +117,7 @@ export function formatPercent(fraction: number, fractionDigits = 0): string {
   }
 }
 
-export type DateStyle = "short" | "long" | "month" | "monthYear" | "time" | "dateTime";
+export type DateStyle = "monthYearShort" | "full" | "short" | "long" | "month" | "monthYear" | "time" | "dateTime";
 
 /** Parsea 'YYYY-MM-DD', 'YYYY-MM' o 'YYYY-MM-DDTHH:mm' como hora local (sin corrimiento de zona). */
 export function parseLocal(input: string | Date): Date {
@@ -128,6 +128,8 @@ export function parseLocal(input: string | Date): Date {
 }
 
 const DATE_OPTIONS: Record<DateStyle, Intl.DateTimeFormatOptions> = {
+  full: { day: "numeric", month: "short", year: "numeric" }, // 12 nov 2026
+  monthYearShort: { month: "short", year: "numeric" }, // nov 2026
   short: { day: "2-digit", month: "2-digit" }, // 10/11
   long: { day: "numeric", month: "long" }, // 10 de noviembre
   month: { month: "long" }, // noviembre

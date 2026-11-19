@@ -62,6 +62,7 @@ export function NewEntryScreen({ kind }: { kind: EntryKind }) {
     if (!v.date) return;
     const input: NewEntryInput = {
       kind,
+      accountId: v.accountId,
       period: v.date.slice(0, 7),
       name: v.name,
       amount: v.amount,

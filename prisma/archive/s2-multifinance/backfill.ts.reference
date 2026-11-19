@@ -1,0 +1,135 @@
+import type { Prisma, PrismaClient } from "@prisma/client";
+
+type Candidate = { id: string; name: string };
+const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+/** Ambiguous names deliberately fall back to the finance owner. */
+export function assignCardOwner(
+  card: { name: string; ownerName: string | null }, users: Candidate[], fallback: string,
+): { userId: string; rule: "ownerName" | "cardName" | "financeOwner" } {
+  const ownerName = normalize(card.ownerName ?? "");
+  const byOwner = users.filter((u) => ownerName && [normalize(u.name), normalize(u.name).split(/\s+/)[0]].includes(ownerName));
+  if (byOwner.length === 1) return { userId: byOwner[0].id, rule: "ownerName" };
+  if (byOwner.length > 1) return { userId: fallback, rule: "financeOwner" };
+  const words = normalize(card.name).split(/[^\p{L}\p{N}]+/u);
+  const byName = users.filter((u) => words.includes(normalize(u.name).split(/\s+/)[0]));
+  return byName.length === 1
+    ? { userId: byName[0].id, rule: "cardName" }
+    : { userId: fallback, rule: "financeOwner" };
+}
+
+export interface S2BackfillSummary {
+  accountsCreated: number;
+  accountLinksCreated: number;
+  entriesAssigned: number;
+  cardsAssigned: number;
+  cardLinksCreated: number;
+}
+
+async function execute(tx: Prisma.TransactionClient, log: (message: string) => void) {
+  const summary: S2BackfillSummary = { accountsCreated: 0, accountLinksCreated: 0, entriesAssigned: 0, cardsAssigned: 0, cardLinksCreated: 0 };
+  const users = await tx.user.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+  const finances = await tx.household.findMany({ include: { members: true, users: true } });
+  const ownerByFinance = new Map(finances.map((f) => [f.id, f.ownerUserId]));
+  const accounts = await tx.planAccount.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+
+  async function ensureAccount(ownerUserId: string, currency: "ARS" | "USD") {
+    // Reuse an existing account in the right currency; never reset its opening balance.
+    let account = accounts.find((a) => a.ownerUserId === ownerUserId && a.currency === currency && !a.isArchived);
+    if (!account) {
+      account = await tx.planAccount.create({ data: {
+        ownerUserId, currency, name: currency === "ARS" ? "Cuenta principal" : "Dólares", type: "BANK",
+      } });
+      accounts.push(account);
+      summary.accountsCreated++;
+    }
+    return account;
+  }
+
+  async function linkAccount(accountId: string, householdId: string) {
+    const result = await tx.accountFinance.createMany({ data: [{ accountId, householdId }], skipDuplicates: true });
+    summary.accountLinksCreated += result.count;
+  }
+
+  for (const user of users) {
+    const account = await ensureAccount(user.id, "ARS");
+    for (const finance of finances) {
+      if (finance.ownerUserId === user.id || finance.members.some((m) => m.userId === user.id)) {
+        await linkAccount(account.id, finance.id);
+      }
+    }
+  }
+
+  const missing = await tx.planEntry.findMany({ where: { isDone: true, accountId: null }, select: { id: true, householdId: true, currency: true } });
+  for (const entry of missing) {
+    const owner = ownerByFinance.get(entry.householdId);
+    if (!owner) throw new Error(`S1 incompleta: finanza ${entry.householdId} con movimientos hechos sin dueño`);
+    const account = await ensureAccount(owner, entry.currency);
+    // A default USD account is usable in the same finances as the ARS default.
+    for (const finance of finances) {
+      if (finance.ownerUserId === owner || finance.members.some((m) => m.userId === owner)) await linkAccount(account.id, finance.id);
+    }
+    await tx.planEntry.update({ where: { id: entry.id }, data: { accountId: account.id } });
+    summary.entriesAssigned++;
+  }
+
+  const cards = await tx.card.findMany({ include: { planPurchases: { select: { householdId: true } } } });
+  for (const card of cards) {
+    if (!card.ownerUserId) {
+      const finance = finances.find((f) => f.id === card.householdId);
+      if (!finance?.ownerUserId) throw new Error(`S1 incompleta: tarjeta ${card.id} sin dueño de finanza`);
+      const candidates = users.filter((u) => u.id === finance.ownerUserId || finance.users.some((x) => x.id === u.id) || finance.members.some((m) => m.userId === u.id));
+      const assignment = assignCardOwner(card, candidates, finance.ownerUserId);
+      log(`Tarjeta ${card.id} (${card.name}): dueño ${assignment.userId} por ${assignment.rule}`);
+      await tx.card.update({ where: { id: card.id }, data: { ownerUserId: assignment.userId } });
+      summary.cardsAssigned++;
+    }
+    const financeIds = [...new Set([card.householdId, ...card.planPurchases.map((p) => p.householdId)])];
+    const result = await tx.cardFinance.createMany({ data: financeIds.map((householdId) => ({ cardId: card.id, householdId })), skipDuplicates: true });
+    summary.cardLinksCreated += result.count;
+  }
+
+  const unassigned = await tx.planEntry.count({ where: { isDone: true, accountId: null } });
+  const ownerless = await tx.card.count({ where: { ownerUserId: null } });
+  if (unassigned || ownerless) throw new Error(`Verificación S2 falló: ${unassigned} movimientos sin cuenta, ${ownerless} tarjetas sin dueño`);
+  // Includes preexisting assignments: reject currency/link mismatches too.
+  const invalid = await tx.$queryRaw<{ id: string }[]>`
+    SELECT e.id FROM "PlanEntry" e
+    JOIN "PlanAccount" a ON a.id = e."accountId"
+    WHERE e.currency <> a.currency OR NOT EXISTS (
+      SELECT 1 FROM "AccountFinance" af WHERE af."accountId" = a.id AND af."householdId" = e."householdId"
+    ) LIMIT 1`;
+  if (invalid.length) throw new Error(`Verificación S2 falló: cuenta incompatible en movimiento ${invalid[0].id}`);
+  return summary;
+}
+
+/** Serializable, atomic, and repeatable. Dry runs execute validation and roll back every write. */
+export async function runS2Backfill(prisma: PrismaClient, options: { dryRun?: boolean; log?: (message: string) => void } = {}): Promise<S2BackfillSummary> {
+  const rollback = new Error("S2_DRY_RUN_ROLLBACK");
+  let summary: S2BackfillSummary | undefined;
+  try {
+    await prisma.$transaction(async (tx) => {
+      summary = await execute(tx, options.log ?? (() => {}));
+      if (options.dryRun) throw rollback;
+    }, { isolationLevel: "Serializable", timeout: 120_000 });
+  } catch (error) {
+    if (error !== rollback) throw error;
+  }
+  return summary!;
+}
+
+async function main() {
+  const { config } = await import("dotenv");
+  config({ path: ".env.local", override: true, quiet: true });
+  config({ quiet: true });
+  const dryRun = process.argv.includes("--dry-run");
+  const { prisma } = await import("../../src/lib/prisma");
+  try {
+    console.log(`Backfill S2 ${dryRun ? "(DRY RUN; rollback)" : "(APLICAR)"} → ${new URL(process.env.DATABASE_URL!).hostname}`);
+    console.log(await runS2Backfill(prisma, { dryRun, log: console.log }));
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; });

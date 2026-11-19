@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAccount } from "@/lib/plan/accounts";
 import { prisma } from "@/lib/prisma";
 import { addMonths, normalizeMerchant, normalizeWalletCard } from "@/lib/plan/core";
 import { RULE_MERCHANT, RULE_WALLET_CARD } from "@/lib/plan/inbox";
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const walletKey = item.walletCard ? normalizeWalletCard(item.walletCard) : "";
 
     await prisma.$transaction(async (tx) => {
+      const accountId = method === "DEBIT" ? await requireAccount(body.accountId, householdId, currency, true, tx) : null;
       // Tomar el pago primero: si otro pedido lo confirmó en paralelo, este corta acá.
       const claimed = await tx.planInboxItem.updateMany({
         where: { id, householdId, status: "PENDING" },
@@ -63,7 +65,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         const entry = await tx.planEntry.create({
           data: {
             householdId, period, kind: "EXPENSE", name, amount, currency, categoryId,
-            date, note: "Apple Pay", isDone: true,
+            date, paidAt: date, note: "Apple Pay", isDone: true, accountId,
           },
         });
         entryId = entry.id;
@@ -92,7 +94,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           update: { cardId },
         });
       }
-    });
+    }, { isolationLevel: "Serializable" });
 
     return NextResponse.json({ ok: true }, { status: 200 });
   });

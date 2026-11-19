@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
 import { router } from "expo-router";
-import { isMonthNotStarted, toAppError, useAddEntry, useCategories, useInterpretVoice, type VoiceInput } from "../../../data";
-import { formatMoney } from "../../../i18n/format";
+import { toAppError, useInterpretVoice, type VoiceInput } from "../../../data";
 import type { MascotMoment } from "../../../mascots/types";
 import type { RecordedAudio } from "../useVoiceRecorder";
 import { conversation, useLoadConversation } from "./store";
-import { draftToEntryInput } from "./draft";
 import type { ManualKind } from "./types";
 
 const MANUAL_ROUTES: Partial<Record<ManualKind, string>> = {
@@ -34,14 +32,12 @@ export function useLoadChat() {
   const interpret = useInterpretVoice();
   const busy = useRef(false);
   const inputs = useRef(new Map<string, VoiceInput>());
-  const addEntry = useAddEntry();
-  const incomeCategories = useCategories("INCOME");
-  const expenseCategories = useCategories("EXPENSE");
 
   useEffect(() => {
     dispatch({ type: "start" });
+    const pendingInputs = inputs.current;
     return () => {
-      inputs.current.clear();
+      pendingInputs.clear();
       dispatch({ type: "reset" });
     };
   }, [dispatch]);
@@ -62,27 +58,15 @@ export function useLoadChat() {
     });
   }, []);
 
-  /** Confirmar: guarda directo si la información está completa; si falta algo, abre el formulario. */
+  /** Confirmar: abre el formulario para revisar la cuenta antes de guardar. */
   const confirmDraft = useCallback(
     async (draftId: string) => {
       const msg = findPending(draftId);
       if (!msg) return;
-      const categories = msg.intent === "income" ? incomeCategories.data : expenseCategories.data;
-      const input = draftToEntryInput(msg.draft, categories?.find((c) => c.id === msg.draft.categoryId)?.name);
-      // El ingreso recurrente necesita confirmar cobro y fecha en el formulario.
-      if (!input || (input.kind === "INCOME" && input.fixed)) {
-        editDraft(draftId);
-        return;
-      }
-      dispatch({ type: "draftSaving", draftId });
-      try {
-        await addEntry.mutateAsync(input);
-        dispatch({ type: "draftSaved", draftId, amount: formatMoney(input.amount, input.currency) });
-      } catch (e) {
-        dispatch({ type: "draftFailed", draftId, ...(isMonthNotStarted(e) ? { monthNotStarted: true } : {}) });
-      }
+      // Toda operación necesita revisar la cuenta antes de guardarse.
+      editDraft(draftId);
     },
-    [addEntry, dispatch, editDraft, expenseCategories.data, incomeCategories.data],
+    [editDraft],
   );
 
   const run = useCallback(

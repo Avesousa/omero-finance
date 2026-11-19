@@ -8,7 +8,7 @@ export interface PendingConfirmCardProps {
   payment: PendingPayment;
   /** Fecha 'YYYY-MM-DD' de referencia para "hoy" / "ayer". */
   today: string;
-  onConfirm: (payment: PendingPayment) => void;
+  onConfirm?: (payment: PendingPayment) => void;
   /** Bloquea el botón mientras se confirma. */
   busy?: boolean;
 }
@@ -47,7 +47,8 @@ export function PendingConfirmCard({ payment, today, onConfirm, busy }: PendingC
           label={t("pending.confirm")}
           accessibilityLabel={t("pending.confirmLabel", { merchant })}
           busy={busy}
-          onPress={() => onConfirm(payment)}
+          disabled={!onConfirm}
+          onPress={() => onConfirm?.(payment)}
         />
       </VStack>
     </Surface>

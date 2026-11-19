@@ -135,3 +135,16 @@ describe("resolveFinance", () => {
     expect(db.household.create).toHaveBeenCalledTimes(1);
   });
 });
+
+
+describe("recursos propios en otra finanza", () => {
+ it("el dueño conserva lectura y administración del recurso desde Personal", async () => {
+   expect(await canAccess({ id: "owner" }, { householdId: "other", ownerUserId: "owner" }, "read")).toBe(true);
+   await expect(assertAccess({ id: "owner" }, { householdId: "other", ownerUserId: "owner" }, "update")).resolves.toBeUndefined();
+   expect(db.financeMember.findUnique).not.toHaveBeenCalled();
+ });
+ it("la propiedad ajena no concede acceso sin membresía", async () => {
+   db.household.findUnique.mockResolvedValue(fin()); db.financeMember.findUnique.mockResolvedValue(null);
+   expect(await canAccess({ id: "stranger" }, { householdId: "other", ownerUserId: "owner" }, "read")).toBe(false);
+ });
+});

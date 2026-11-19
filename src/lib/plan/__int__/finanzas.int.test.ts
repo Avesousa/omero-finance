@@ -304,8 +304,21 @@ describe("aislamiento", () => {
 
 // ─── 4. Matriz de rutas × perfiles ────────────────────────────────────────────
 
-type Row = { name: string; path: string; method: string; action: "read" | "create" | "update" | "delete" | "manage"; id?: string };
+type Row = { name: string; path: string; method: string; action: "read" | "create" | "update" | "delete" | "manage"; id?: string; ownerOnly?: boolean };
 const MATRIX = (): Row[] => [
+  { name: "accounts GET", path: "accounts", method: "GET", action: "read" },
+  { name: "accounts POST", path: "accounts", method: "POST", action: "create" },
+  { name: "accounts/[id] GET", path: "accounts/[id]", method: "GET", action: "read", id: ids.account },
+  { name: "accounts/[id] PATCH", path: "accounts/[id]", method: "PATCH", action: "update", id: ids.account, ownerOnly: true },
+  { name: "accounts/[id] DELETE", path: "accounts/[id]", method: "DELETE", action: "delete", id: ids.account },
+  { name: "accounts/[id]/move POST", path: "accounts/[id]/move", method: "POST", action: "update", id: ids.account, ownerOnly: true },
+  { name: "account-transfers GET", path: "account-transfers", method: "GET", action: "read" },
+  { name: "account-transfers POST", path: "account-transfers", method: "POST", action: "create" },
+  { name: "account-transfers/[id] DELETE", path: "account-transfers/[id]", method: "DELETE", action: "delete", id: ids.transfer },
+  { name: "cards GET", path: "cards", method: "GET", action: "read" },
+  { name: "cards/[id]/move POST", path: "cards/[id]/move", method: "POST", action: "update", id: ids.card },
+  { name: "card-statements/[id]/pay POST", path: "card-statements/[id]/pay", method: "POST", action: "update", id: ids.statement },
+  { name: "card-statements/[id]/unpay POST", path: "card-statements/[id]/unpay", method: "POST", action: "update", id: ids.statement },
   { name: "balance GET", path: "balance", method: "GET", action: "read" },
   { name: "balance POST", path: "balance", method: "POST", action: "create" },
   { name: "balance/[id] PATCH", path: "balance/[id]", method: "PATCH", action: "update", id: ids.balance },
@@ -348,6 +361,12 @@ const MATRIX = (): Row[] => [
 ];
 
 describe("matriz de rutas × perfiles", () => {
+  beforeAll(async () => {
+    const a = await prisma.planAccount.create({ data: { householdId: casa, ownerUserId: owner.id, name: "Cuenta matriz" } });
+    const b = await prisma.planAccount.create({ data: { householdId: casa, ownerUserId: owner.id, name: "Destino matriz" } });
+    ids.account = a.id;
+    ids.transfer = (await prisma.planAccountTransfer.create({ data: { householdId: casa, createdByUserId: owner.id, kind: "TRANSFER", fromAccountId: a.id, toAccountId: b.id, amountFrom: 1, amountTo: 1, date: new Date() } })).id;
+  });
   const run = (row: Row, user: TestUser | null, finance?: string) =>
     call(route(row.path)[row.method], user, {
       method: row.method,
@@ -416,7 +435,7 @@ describe("matriz de rutas × perfiles", () => {
     for (const row of MATRIX()) {
       if (row.method === "DELETE" || row.path === "voice" || row.id === "x") continue;
       const { status } = await run(row, editor, casa);
-      const expected = row.action === "manage" ? 403 : null;
+      const expected = row.action === "manage" || row.ownerOnly ? 403 : null;
       if (expected) expect([row.name, status]).toEqual([row.name, expected]);
       else expect([row.name, status !== 401 && status !== 403 && status < 500]).toEqual([row.name, true]);
     }

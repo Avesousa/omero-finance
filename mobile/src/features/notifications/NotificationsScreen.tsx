@@ -1,3 +1,5 @@
+import { useCanWrite } from "../../providers/ActiveFinanceProvider";
+import { AccountPaymentSheet } from "../accounts/AccountPaymentSheet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
@@ -25,7 +27,9 @@ export function NotificationsScreen() {
   const { data, isPending, isError, refetch } = useNotifications();
   const { data: home } = useHome();
   const confirm = useConfirmPayment();
+  const canWrite = useCanWrite();
   const [toast, setToast] = useState<string | null>(null);
+  const [payment, setPayment] = useState<PendingPayment | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const today = home?.today ?? localToday();
@@ -40,12 +44,13 @@ export function NotificationsScreen() {
 
   // Confirmar con la categoría por defecto de la fuente de datos (la elección de categoría llega con Cargar).
   const onConfirm = useCallback(
-    (payment: PendingPayment) => {
+    (payment: PendingPayment, accountId?: string) => {
+      if (!accountId && payment.suggestedMethod !== "CARD") { setPayment(payment); return; }
       setBusyId(payment.id);
       confirm.mutate(
-        { id: payment.id },
+        { id: payment.id, accountId },
         {
-          onSuccess: () => show(t("pending.confirmed")),
+          onSuccess: () => { setPayment(null); show(t("pending.confirmed")); },
           onError: () => show(t("pending.confirmError")),
           onSettled: () => setBusyId(null),
         },
@@ -66,6 +71,7 @@ export function NotificationsScreen() {
   return (
     <ScreenTemplate edges={["top", "bottom"]} testID="notifications">
       {back}
+      {payment ? <AccountPaymentSheet currency={payment.currency === "USD" ? "USD" : "ARS"} busy={confirm.isPending} error={confirm.error?.message} onClose={() => setPayment(null)} onConfirm={(accountId) => onConfirm(payment, accountId)} /> : null}
 
       {toast ? (
         <View
@@ -101,7 +107,7 @@ export function NotificationsScreen() {
                 <EmptyState title={t("pending.empty")} description={t("pending.emptyHint")} />
               </Surface>
             ) : (
-              data.pending.map((p) => <PendingConfirmCard key={p.id} payment={p} today={today} busy={busyId === p.id} onConfirm={onConfirm} />)
+              data.pending.map((p) => <PendingConfirmCard key={p.id} payment={p} today={today} busy={busyId === p.id} onConfirm={canWrite ? onConfirm : undefined} />)
             )}
           </VStack>
 

@@ -1,14 +1,14 @@
 # Estado de ejecución del refactor
 
-Revisión: 4 de noviembre de 2026.
+Revisión: 5 de noviembre de 2026.
 
 El plan vigente sigue el [contrato compartido](00-contrato.md). `docs/plan.md` corresponde a la app clásica eliminada.
 
 | Etapa | Estado en el repositorio |
 |---|---|
 | S1 — Dueño y finanzas | Backend desplegado y backfill aplicado; usuario confirmó prueba en iPhone de login, estabilidad, creación de Hogar y selector Personal/Hogar. Release EAS y resto de la matriz E2E pendientes de verificación. |
-| [S1.1 — Movimientos](01-1-movimientos.md) | Implementada en mobile en rama S1.1; prueba en iPhone y adaptación web pendientes. Movimientos reales y aviso de vencidos solo en Gastos. |
-| S2 — Cuentas y tarjetas | Especificada; pendiente implementación y respuestas de la sección 9. Se aborda después de S1.1. |
+| [S1.1 — Movimientos](01-1-movimientos.md) | Mobile integrado; web incorporada en la rama de S2. Movimientos reales y aviso de vencidos solo en Gastos. Pendiente completar prueba manual en iPhone. |
+| S2 — Cuentas y tarjetas | Implementada localmente en `feat/finanzas-s2-finanza-unica`: cuentas, saldos, pagos, transferencias y traslados con historial/origen; vista de recursos propios en Personal. Pendientes prueba en iPhone y despliegue/backfill de producción. |
 | S3 — Vínculos | Especificada; pendiente implementación. |
 | S4 — Contactos y deudas | Especificada; pendiente implementación. |
 | S5–6 — Grupos | Especificada; pendiente implementación. |

@@ -10,6 +10,9 @@ export default async function Page({ searchParams }: { searchParams: PlanSearchP
   const query = period === currentPeriod() ? "" : `?period=${period}`;
 
   const items = [
+    { href: `/plan/movimientos${query}`, icon: Share2, label: "Movimientos", desc: "Ingresos y gastos realizados, con sus cuentas" },
+    { href: "/plan/cuentas", icon: PiggyBank, label: "Cuentas", desc: "Saldos, movimientos y transferencias" },
+    { href: "/plan/recursos-tarjetas", icon: UserRound, label: "Mis tarjetas y finanzas", desc: "Tus tarjetas y su finanza actual" },
     { href: `/plan/presupuesto${query}`, icon: PiggyBank, label: "Presupuesto", desc: "Cuánto pensás gastar por categoría y cómo venís" },
     { href: `/plan/prestamos${query}`, icon: HandCoins, label: "Préstamos y deudas", desc: "Lo que debés y lo que te deben, con sus cuotas e intereses" },
     { href: `/plan/patrimonio${query}`, icon: Scale, label: "Patrimonio y deudas", desc: "Lo que tenés, lo que debés y si el neto sube mes a mes" },

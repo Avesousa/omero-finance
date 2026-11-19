@@ -13,6 +13,8 @@ export interface MovementsFilter {
 export interface MovementItem {
   id: string;
   statement?: boolean;
+  accountName?: string | null;
+  originFinanceName?: string | null;
   kind: "INCOME" | "EXPENSE";
   name: string;
   categoryId: string | null;
@@ -89,13 +91,14 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
     .map((e) => ({
       id: e.id,
       kind: e.kind,
+      accountName: e.accountName, originFinanceName: e.originFinanceName,
       name: e.name,
       categoryId: e.categoryId,
       categoryName: e.categoryId ? (categories.get(e.categoryId) ?? null) : null,
       amount: e.amount,
       currency: e.currency,
       amountArs: toArs(e.amount, e.currency, plan.usdRate),
-      date: e.isDone ? (e.collectedAt ?? e.date) : (fixedDates.get(e.id) ?? e.date),
+      date: e.isDone ? (e.collectedAt ?? e.paidAt ?? e.date) : (fixedDates.get(e.id) ?? e.date),
       isDone: e.isDone,
       fixed: e.recurringId != null && e.loanId == null,
       installment: e.loanId != null,
@@ -105,10 +108,10 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
       note: e.note,
     }));
 
-  for (const st of plan.statements.filter((s) => s.period === plan.period)) {
+  for (const st of plan.statements.filter((s) => s.period === plan.period && !(s.isPaid && s.payments?.length))) {
     const card = plan.cards.find((c) => c.id === st.cardId);
     all.push({
-      id: `statement-${st.id}`, statement: true, kind: "EXPENSE",
+      id: `statement-${st.id}`, statement: true, accountName: st.payments?.map((p) => p.accountName).join(" / "), originFinanceName: st.originFinanceName, kind: "EXPENSE",
       name: card?.name ?? "Tarjeta", categoryId: null, categoryName: "Pago de tarjeta",
       amount: statementToPay(st, plan.usdRate), currency: "ARS",
       amountArs: statementToPay(st, plan.usdRate),
@@ -116,6 +119,9 @@ export function movementsView(source: MonthPlan, filter: MovementsFilter = {}): 
       isDone: st.isPaid, fixed: false, installment: false, receivable: false,
       projected: false, hasStatus: true, note: null,
     });
+  }
+  for (const p of plan.cardPayments ?? []) {
+    all.push({ id: `payment-${p.id}`, statement: true, accountName: p.accountName, originFinanceName: p.originFinanceName, kind: "EXPENSE", name: "Pago de tarjeta", categoryId: null, categoryName: "Pago de tarjeta", amount: p.amount, currency: p.currency, amountArs: toArs(p.amount, p.currency, plan.usdRate), date: todayIso(new Date(p.paidAt)), isDone: true, fixed: false, installment: false, receivable: false, projected: false, hasStatus: true, note: null });
   }
   const matches = (m: MovementItem) =>
     (kind === "all" || (kind === "income" ? m.kind === "INCOME" : m.kind === "EXPENSE")) &&

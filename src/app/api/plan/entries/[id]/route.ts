@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAccount } from "@/lib/plan/accounts";
 import { prisma } from "@/lib/prisma";
 import { incomeCollection } from "@/lib/plan/income-collection";
 import { todayIso, occurrencesInPeriod, round2, type Frequency } from "@/lib/plan/core";
 import { refreshLoanStatus } from "@/lib/plan/loans";
 import {
-  FREQUENCIES, categoryIdOrNull, readBody, v, withSession, type ApiContext,
+  ApiError, FREQUENCIES, categoryIdOrNull, readBody, v, withSession, type ApiContext,
 } from "@/lib/plan/server";
 
 type Params = { params: Promise<{ id: string }> };
@@ -41,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (body.targetCategoryId !== undefined && entry.kind === "INCOME") {
       data.targetCategoryId = await categoryIdOrNull(householdId, body.targetCategoryId, "EXPENSE");
     }
-    if (body.date !== undefined) data.date = v.optionalDate(body.date);
+    if (body.date !== undefined) { data.date = v.optionalDate(body.date); if (entry.kind === "EXPENSE" && !entry.recurringId && !entry.loanId) data.paidAt = data.date; }
     if (body.note !== undefined) data.note = v.optionalText(body.note);
     if (body.isDone !== undefined) data.isDone = body.isDone === true;
     if (entry.kind === "INCOME" && (body.isDone !== undefined || body.collectedAt !== undefined)) {
@@ -49,6 +50,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
 
     await prisma.$transaction(async (tx) => {
+      const fresh = await tx.planEntry.findUniqueOrThrow({ where: { id } });
+      if (fresh.householdId !== entry.householdId) throw new ApiError("El movimiento cambió; recargá la pantalla", 409);
+      if (entry.kind === "EXPENSE" && body.isDone !== undefined) data.paidAt = body.isDone === true ? fresh.paidAt ?? new Date(`${todayIso()}T00:00:00Z`) : null;
+      const effectiveDone = data.isDone === undefined ? fresh.isDone : data.isDone === true;
+      const unchangedArchived = fresh.isDone && effectiveDone && (body.accountId === undefined || body.accountId === fresh.accountId) && (body.currency === undefined || body.currency === fresh.currency);
+      if (!unchangedArchived || !fresh.accountId) data.accountId = await requireAccount(body.accountId === undefined ? fresh.accountId : body.accountId, householdId, (data.currency ?? fresh.currency) as "ARS" | "USD", effectiveDone, tx);
       await tx.planEntry.update({ where: { id }, data });
       // Cuota de un préstamo: al pagar la última se cierra; al destildarla se reabre.
       if (entry.loanId) await refreshLoanStatus(tx, householdId, entry.loanId);
@@ -82,7 +89,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           });
         }
       }
-    });
+    }, { isolationLevel: "Serializable" });
 
     return NextResponse.json({ ok: true });
   });

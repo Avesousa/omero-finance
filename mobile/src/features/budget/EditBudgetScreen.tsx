@@ -3,10 +3,10 @@ import { KeyboardAvoidingView, Platform } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Button, Chip, HStack, IconButton, Skeleton, Spacer, Text, TextField, VStack } from "../../components/atoms";
-import { EmptyState, FormField } from "../../components/molecules";
+import { BigAmountField, EmptyState, FormField, KeyboardDoneBar } from "../../components/molecules";
 import { ScreenTemplate } from "../../components/templates";
 import { suggestedBudget, usePlan, useSaveBudget } from "../../data";
-import { formatMoneyInput, numberToInput, parseMoney } from "../../domain";
+import { numberToInput, parseMoney } from "../../domain";
 import { useTheme } from "../../design-system";
 import { formatDate, formatMoney } from "../../i18n/format";
 
@@ -86,15 +86,7 @@ export function EditBudgetScreen() {
           {t("edit.subtitle", { month })}
         </Text>
         <FormField label={t("edit.amount")} error={amount !== null && !valid ? t("edit.invalid") : undefined}>
-          <TextField
-            testID="budget-edit-amount"
-            accessibilityLabel={t("edit.amount")}
-            placeholder={t("edit.amountPlaceholder")}
-            keyboardType="decimal-pad"
-            autoFocus
-            value={text}
-            onChangeText={(v) => setAmount(formatMoneyInput(v))}
-          />
+          <BigAmountField testID="budget-edit-amount" accessibilityLabel={t("edit.amount")} autoFocus value={text} onChange={setAmount} />
         </FormField>
         {chips.length > 0 ? (
           <VStack gap={2}>
@@ -121,6 +113,7 @@ export function EditBudgetScreen() {
           />
           {current > 0 ? <Button testID="budget-edit-remove" variant="secondary" label={t("edit.remove")} disabled={save.isPending} onPress={() => persist(0)} /> : null}
         </VStack>
+        <KeyboardDoneBar />
       </ScreenTemplate>
     </KeyboardAvoidingView>
   );

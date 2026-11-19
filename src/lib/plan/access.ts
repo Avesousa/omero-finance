@@ -58,9 +58,10 @@ export async function roleIn(userId: string, finance: FinanceRef): Promise<Role 
 /** LA regla de acceso. `resource` es cualquier fila que tenga `householdId`. */
 export async function canAccess(
   user: { id: string },
-  resource: { householdId: string },
+  resource: { householdId: string; ownerUserId?: string | null },
   action: Action,
 ): Promise<boolean> {
+  if (resource.ownerUserId === user.id) return true;
   const finance = await prisma.household.findUnique({
     where: { id: resource.householdId },
     select: { id: true, ownerUserId: true },
@@ -75,10 +76,11 @@ export async function canAccess(
  */
 export async function assertAccess(
   user: { id: string },
-  row: { householdId: string } | null,
+  row: { householdId: string; ownerUserId?: string | null } | null,
   action: Action,
 ): Promise<void> {
   if (!row) throw new ApiError("No encontrado", 404);
+  if (row.ownerUserId === user.id) return;
   const finance = await prisma.household.findUnique({
     where: { id: row.householdId },
     select: { id: true, ownerUserId: true, name: true },

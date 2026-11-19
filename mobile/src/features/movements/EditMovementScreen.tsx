@@ -1,3 +1,5 @@
+import { AccountPicker } from "../accounts/AccountPicker";
+import { useCanWrite } from "../../providers/ActiveFinanceProvider";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -54,6 +56,8 @@ export function EditMovementScreen() {
   const update = useUpdateEntry();
   const remove = useDeleteEntry();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const canWrite = useCanWrite();
+  const [loanAccountId, setLoanAccountId] = useState<string | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
   const { t: tf } = useTranslation("finances");
   const canMove = useMoveTargets().length > 0;
@@ -96,6 +100,7 @@ export function EditMovementScreen() {
             </Text>
           </VStack>
         </Surface>
+        {entry.isDone && canWrite ? <VStack gap={3}><AccountPicker currency={entry.currency} value={loanAccountId ?? entry.accountId ?? null} onChange={setLoanAccountId} /><Button label="Guardar cuenta de la cuota" busy={update.isPending} disabled={!(loanAccountId ?? entry.accountId)} onPress={() => update.mutate({ id: entry.id, patch: { accountId: loanAccountId ?? entry.accountId ?? null } }, { onSuccess: leave })} />{update.error ? <Text variant="secondary" tone="dangerInk">{update.error.message}</Text> : null}</VStack> : null}
         <Button testID="movement-go-debts" label={t("edit.goToDebts")} onPress={goToDebts} />
       </Shell>
     );
@@ -106,7 +111,7 @@ export function EditMovementScreen() {
   const busy = update.isPending || remove.isPending;
 
   const onSubmit = (v: EntryFormValues) => {
-    const patch: EntryPatch = { name: v.name, currency: v.currency, categoryId: v.categoryId, note: v.note };
+    const patch: EntryPatch = { accountId: v.accountId, name: v.name, currency: v.currency, categoryId: v.categoryId, note: v.note };
     if (v.isDone !== undefined) {
       patch.isDone = v.isDone;
       patch.collectedAt = v.collectedAt;
@@ -136,6 +141,7 @@ export function EditMovementScreen() {
         fixedMode="never"
         showDate={!isFixed || entry.kind === "INCOME"}
         initial={{
+          accountId: entry.accountId,
           name: entry.name,
           amount: rule ? rule.amount : entry.amount,
           currency: entry.currency,
@@ -154,7 +160,7 @@ export function EditMovementScreen() {
       {canMove && !isFixed ? (
         <>
           <Button testID="movement-move" variant="secondary" label={tf("move.action")} disabled={busy} onPress={() => setMoveOpen(true)} />
-          <MoveToFinanceSheet visible={moveOpen} entryIds={[entry.id]} onClose={() => setMoveOpen(false)} onMoved={leave} />
+          <MoveToFinanceSheet visible={moveOpen} period={entry.period} entryIds={[entry.id]} onClose={() => setMoveOpen(false)} onMoved={leave} />
         </>
       ) : null}
 

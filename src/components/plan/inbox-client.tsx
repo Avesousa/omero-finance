@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountPicker } from "./account-picker";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -112,11 +113,13 @@ function ConfirmSheet({ item, categories, cards, today, onClose }: {
 
   const expenseCategories = categories.filter((c) => c.kind === "EXPENSE" && !c.systemKey && !c.isArchived);
   const isCard = how != null && how !== DEBIT;
+  const [accountId, setAccountId] = useState("");
   const parsed = parseMoney(amount);
 
   const firstPeriod = firstPeriodText ?? (date ? addMonths(date.slice(0, 7), 1) : "");
 
   function confirm() {
+    if (!isCard && !accountId) return action.setError("Elegí una cuenta");
     if (!(parsed > 0)) return action.setError("Ingresá el monto");
     if (!categoryId) return action.setError("Elegí una categoría");
     if (!how) return action.setError("Elegí cómo pagaste");
@@ -124,6 +127,7 @@ function ConfirmSheet({ item, categories, cards, today, onClose }: {
     const count = Math.max(1, Math.floor(Number(installments)) || 1);
     return action.run(
       () => api("POST", `/api/plan/inbox/${item.id}/confirm`, {
+        accountId,
         amount: parsed,
         currency,
         categoryId,
@@ -184,6 +188,7 @@ function ConfirmSheet({ item, categories, cards, today, onClose }: {
       <Field label="Fecha">
         <TextInput type="date" aria-label="Fecha" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
+      {!isCard ? <AccountPicker currency={currency} value={accountId} onChange={setAccountId} /> : null}
       <ErrorText error={action.error} />
       <PrimaryButton onClick={confirm} busy={action.busy}>Confirmar</PrimaryButton>
       <button

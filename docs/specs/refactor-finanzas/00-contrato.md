@@ -1,7 +1,11 @@
 # Refactor "Hogar → Finanzas" — Contrato compartido
 
 Fuente de verdad del diseño: https://claude.ai/artifact/EKRHHmwFTNEZMeHJq3RU4y (leer con la herramienta Artifact, action `read`).
-Rama de integración: `develop` (parte de `main`). Una rama `feat/finanzas-sN-*` por semana, PR hacia `develop`.
+Base de desarrollo vigente: `main`, con una rama por etapa y PR hacia `main`, siguiendo el flujo utilizado en S1.1 y S2.
+
+## Ajuste vigente de S2 por decisión del usuario
+
+S2 se limita a una sola finanza por cuenta, tarjeta y movimiento. Se permite trasladar el recurso completo a otra finanza; no compartirlo ni repartir pagos entre finanzas. El alcance vigente y las decisiones de integridad por resolver están al inicio de `02-semana-2-cuentas-y-tarjetas.md` y reemplazan los requisitos incompatibles de este contrato, incluida la multiplicidad de `AccountFinance`/`CardFinance` y el reparto de resúmenes. Personal muestra todas las cuentas y tarjetas propias con su finanza actual; esta vista no consolida los gastos/ingresos de otras finanzas. Trasladar cuentas o tarjetas incluye su historial y deja la marca «Origen: {finanza}». S3 y siguientes deberán revisar sus supuestos de recursos compartidos al implementarse.
 
 ## Principios (no se discuten en los specs)
 
@@ -19,7 +23,7 @@ Rama de integración: `develop` (parte de `main`). Una rama `feat/finanzas-sN-*`
 | Semana | Entidades nuevas / modificadas |
 |---|---|
 | S1 | `Household.kind (PERSONAL|SHARED)`, `Household.ownerUserId`, `Household.color`, `FinanceMember(userId, householdId, role)`, helper `canAccess`, header/ctx `x-finance-id` (finanza activa), acción "Mover a finanza" |
-| S2 | `PlanAccount(ownerUserId, type, currency, openingBalance)`, `AccountFinance`, `PlanAccountTransfer`, `PlanEntry.accountId`, `Card.ownerUserId`, `CardFinance`, `PlanCardPurchase.householdId`, reparto de pago de resumen por finanza |
+| S2 | `PlanAccount(ownerUserId, householdId, type, currency, openingBalance, openingDate)`, `PlanAccountTransfer`, `PlanEntry.accountId/paidAt`, `Card.ownerUserId`, `PlanCardPayment`, pertenencia exclusiva y `originFinanceName` en traslados con historial |
 | S3 | `EntryLink`, `FinanceCoverage`, `PlanCardStatement.carryOver`, `PlanEntry.source/linkId/refCode`, ajuste `buildSummary` |
 | S4 | `Contact(ownerUserId, name, phone, email, linkedUserId)`, `Invite`, `PlanLoan.contactId | counterpartyHouseholdId`, `LOAN_OUT`, toggle Patrimonio |
 | S5-6 | `Group`, `GroupMember(userId|contactId)`, `GroupExpense`, `GroupExpenseShare`, `GroupSettlement` |

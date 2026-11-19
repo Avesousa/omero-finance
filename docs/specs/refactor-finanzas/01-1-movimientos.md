@@ -1,6 +1,6 @@
 # S1.1 — Movimientos completos y vencidos visibles
 
-Estado: implementado en mobile en `feat/finanzas-s1-1-movimientos`; validación manual en iPhone pendiente. La adaptación web queda pendiente. Paso previo a S2.
+Estado: implementado en mobile en `feat/finanzas-s1-1-movimientos`; validación manual en iPhone pendiente. La adaptación web se incorpora en S2; pendiente despliegue y validación manual. Paso previo a S2.
 
 ## Alcance solicitado
 

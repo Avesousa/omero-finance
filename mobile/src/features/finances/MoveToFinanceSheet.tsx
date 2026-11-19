@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { AccountPicker } from "../accounts/AccountPicker";
+import { usePlan } from "../../data";
+import { useState } from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -14,6 +16,7 @@ export interface MoveToFinanceSheetProps {
   visible: boolean;
   /** Movimientos a mover (de la finanza activa). */
   entryIds: string[];
+  period?: string;
   onClose: () => void;
   /** Se llama al cerrar después de mover al menos uno. */
   onMoved?: (result: MoveEntriesResult) => void;
@@ -27,26 +30,22 @@ export function useMoveTargets(): FinanceDTO[] {
 }
 
 /** "Mover N movimientos a…": elegir finanza → confirmar → resultado (con el detalle de lo que no se pudo mover). */
-export function MoveToFinanceSheet({ visible, entryIds, onClose, onMoved }: MoveToFinanceSheetProps) {
+function MoveToFinanceSheetContent({ visible, entryIds, onClose, onMoved, period }: MoveToFinanceSheetProps) {
   const { t } = useTranslation("finances");
   const { t: tc } = useTranslation("common");
   const { colors, space, radius, sizes, mode } = useTheme();
   const qc = useQueryClient();
   const targets = useMoveTargets();
+  const plan = usePlan(period);
+  const currencies = [...new Set(plan.data?.entries.filter((e) => entryIds.includes(e.id) && (e.accountId || e.isDone)).map((e) => e.currency) ?? [])];
+  const [arsAccount, setArsAccount] = useState<string | null>(null);
+  const [usdAccount, setUsdAccount] = useState<string | null>(null);
   const [target, setTarget] = useState<FinanceDTO | null>(null);
   const [result, setResult] = useState<MoveEntriesResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (visible) {
-      setTarget(null);
-      setResult(null);
-      setError(null);
-    }
-  }, [visible]);
-
   const move = useMutation({
-    mutationFn: (to: FinanceDTO) => moveEntries(entryIds, to.id),
+    mutationFn: (to: FinanceDTO) => moveEntries(entryIds, to.id, { ...(arsAccount ? { ARS: arsAccount } : {}), ...(usdAccount ? { USD: usdAccount } : {}) }),
     onSuccess: async (res) => {
       setResult(res);
       // Cambian los totales de las dos finanzas: se refresca todo lo cacheado.
@@ -100,8 +99,11 @@ export function MoveToFinanceSheet({ visible, entryIds, onClose, onMoved }: Move
             <Text variant="screenTitle">{t("move.sheetTitle", { count: entryIds.length })}</Text>
             <Text variant="bodyStrong">{name(target)}</Text>
             <Text variant="secondary" tone="inkMuted">{t("move.confirm", { name: name(target) })}</Text>
+            {currencies.length ? <Text variant="secondary" tone="inkMuted">El movimiento pasa a la cuenta elegida. Se recalculan los saldos de origen y destino sin generar otro movimiento.</Text> : null}
+            {currencies.includes("ARS") ? <AccountPicker currency="ARS" financeId={target.id} value={arsAccount} onChange={setArsAccount} label="Cuenta destino en pesos" /> : null}
+            {currencies.includes("USD") ? <AccountPicker currency="USD" financeId={target.id} value={usdAccount} onChange={setUsdAccount} label="Cuenta destino en dólares" /> : null}
             {error ? <Text variant="secondary" tone="dangerInk" accessibilityLiveRegion="polite">{error}</Text> : null}
-            <Button testID="move-confirm" label={t("move.submit")} busy={move.isPending} onPress={() => { setError(null); move.mutate(target); }} />
+            <Button testID="move-confirm" label={t("move.submit")} busy={move.isPending} disabled={(currencies.includes("ARS") && !arsAccount) || (currencies.includes("USD") && !usdAccount)} onPress={() => { setError(null); move.mutate(target); }} />
             <Button variant="text" label={tc("actions.cancel")} disabled={move.isPending} onPress={() => setTarget(null)} />
           </>
         ) : (
@@ -133,4 +135,10 @@ export function MoveToFinanceSheet({ visible, entryIds, onClose, onMoved }: Move
       </View>
     </Modal>
   );
+}
+
+
+/** Cada apertura monta un formulario nuevo, sin arrastrar destino o cuentas anteriores. */
+export function MoveToFinanceSheet(props: MoveToFinanceSheetProps) {
+  return props.visible ? <MoveToFinanceSheetContent {...props} /> : null;
 }

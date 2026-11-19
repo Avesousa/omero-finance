@@ -1,3 +1,5 @@
+import { useCanWrite } from "../../providers/ActiveFinanceProvider";
+import { AccountPaymentSheet } from "../accounts/AccountPaymentSheet";
 import { useCallback, useMemo, useState } from "react";
 import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -27,6 +29,8 @@ export function FixedExpensesScreen() {
   const plan = usePlan(selected ?? undefined);
   const view = useFixedExpenses(selected ?? undefined);
   const toggle = useToggleEntryDone();
+  const canWrite = useCanWrite();
+  const [payId, setPayId] = useState<string | null>(null);
   const colorOrder = useCategoryColorOrder(selected ?? undefined);
   const period = selected ?? plan.data?.period ?? null;
   const [refreshing, setRefreshing] = useState(false);
@@ -41,8 +45,8 @@ export function FixedExpensesScreen() {
     }
   }, [qc]);
 
-  const header = <ScreenHeader title={t("title")} onBack={() => router.back()} backLabel={t("back")} />;
-  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} /> : null;
+  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} compact /> : null;
+  const header = <ScreenHeader title={t("title")} onBack={() => router.back()} backLabel={t("back")} right={switcher} />;
 
   // La categoría pedida desde Presupuesto va primero.
   const groups: FixedGroup[] = useMemo(() => {
@@ -76,7 +80,6 @@ export function FixedExpensesScreen() {
   if (view.isError || plan.isError || !view.data || !period) {
     return (
       <ScreenTemplate header={header} edges={["top", "bottom"]} testID="fixed-error" refreshing={refreshing} onRefresh={onRefresh}>
-        {switcher}
         <EmptyState title={t("state.errorTitle")} description={t("state.errorBody")} action={{ label: tc("actions.retry"), onPress: () => void view.refetch() }} />
       </ScreenTemplate>
     );
@@ -88,7 +91,7 @@ export function FixedExpensesScreen() {
 
   return (
     <ScreenTemplate header={header} edges={["top", "bottom"]} testID="fixed" refreshing={refreshing} onRefresh={onRefresh}>
-      {switcher}
+      {payId ? <AccountPaymentSheet currency={plan.data?.entries.find((e) => e.id === payId)?.currency} busy={toggle.isPending} error={toggle.error?.message} onClose={() => setPayId(null)} onConfirm={(accountId) => toggle.mutate({ id: payId, isDone: true, accountId }, { onSuccess: () => setPayId(null) })} /> : null}
       <MoneyHero
         testID="fixed-hero"
         label={t("hero.label")}
@@ -154,10 +157,10 @@ export function FixedExpensesScreen() {
                         isDone={item.isDone}
                         icon={categoryIcon(g.name)}
                         colorIndex={colorOf(g.categoryId)}
-                        readOnly={v.projected || item.entryId == null}
+                        readOnly={!canWrite || v.projected || item.entryId == null}
                         toggling={toggle.isPending && toggle.variables?.id === item.entryId}
-                        onPress={item.entryId ? () => edit(item.entryId!) : undefined}
-                        onToggle={item.entryId ? () => toggle.mutate({ id: item.entryId!, isDone: !item.isDone }) : undefined}
+                        onPress={canWrite && item.entryId ? () => edit(item.entryId!) : undefined}
+                        onToggle={canWrite && item.entryId ? () => item.isDone ? toggle.mutate({ id: item.entryId!, isDone: false }) : setPayId(item.entryId!) : undefined}
                       />
                     </View>
                   );

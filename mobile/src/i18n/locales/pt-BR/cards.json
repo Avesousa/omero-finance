@@ -23,9 +23,11 @@
     "usd": "",
     "installments_one": "",
     "installments_other": "",
-    "markPaid": "",
-    "markPaidLabel": "",
+    "markPaid": "Pagar cartão",
+    "markPaidLabel": "Pagar o cartão {{name}}",
     "loadStatement": "",
+    "undoPaid": "",
+    "undoPaidLabel": "",
     "loadStatementLabel": ""
   },
   "installments": {

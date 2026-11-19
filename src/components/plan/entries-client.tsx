@@ -63,6 +63,8 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
     const loan = loanOf(e);
     const meta = [
       loan ? loan.counterpart : categoryName(e.categoryId),
+      e.accountName,
+      e.originFinanceName ? `Origen: ${e.originFinanceName}` : null,
       e.recurringId ? null : loan ? (e.date ? `vence ${shortDate(e.date)}` : null) : shortDate(e.date),
     ].filter(Boolean).join(" · ");
     const target = categoryName(e.targetCategoryId);
@@ -83,7 +85,7 @@ export function EntriesClient({ data, kind }: { data: PlanData; kind: Kind }) {
           <DoneToggle
             done={e.isDone}
             label={`Marcar ${e.name} como ${words.done}`}
-            onToggle={() => toggle.run(() => api("PATCH", `/api/plan/entries/${e.id}`, { isDone: !e.isDone }))}
+            onToggle={() => { if (e.isDone) void toggle.run(() => api("PATCH", `/api/plan/entries/${e.id}`, { isDone: false })); else open(e); }}
           />
         )}
         <div className="flex-1 min-w-0">

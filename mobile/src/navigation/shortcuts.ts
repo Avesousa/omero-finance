@@ -14,7 +14,7 @@ type IconName = ComponentProps<typeof Ionicons>["name"];
  * `inHome`: aparece en la fila de Inicio. `available`: false = todavía no se puede abrir (se oculta o se marca "pronto").
  * Helper: `homeShortcuts()` = los de Inicio y disponibles.
  */
-export type ShortcutKey = "movements" | "cards" | "debts" | "fixed" | "accounts" | "notifications";
+export type ShortcutKey = "movements" | "cards" | "debts" | "fixed" | "accounts" | "resources" | "notifications";
 
 export interface Shortcut {
   key: ShortcutKey;
@@ -27,10 +27,9 @@ export interface Shortcut {
 
 export const shortcuts: readonly Shortcut[] = [
   { key: "movements", icon: "swap-vertical-outline", labelKey: "shortcuts.movements", route: "/movimientos", inHome: true, available: true },
-  { key: "cards", icon: "card-outline", labelKey: "shortcuts.cards", route: "/tarjetas", inHome: true, available: true },
   { key: "debts", icon: "cash-outline", labelKey: "shortcuts.debts", route: "/deudas", inHome: true, available: true },
   { key: "fixed", icon: "repeat-outline", labelKey: "shortcuts.fixed", route: "/gastos-fijos", inHome: true, available: true },
-  { key: "accounts", icon: "wallet-outline", labelKey: "shortcuts.accounts", route: "/patrimonio?focus=assets", inHome: true, available: true },
+  { key: "resources", icon: "card-outline", labelKey: "shortcuts.resources", route: "/cuentas", inHome: true, available: true },
   { key: "notifications", icon: "notifications-outline", labelKey: "shortcuts.notifications", route: "/notificaciones", inHome: false, available: true },
 ];
 

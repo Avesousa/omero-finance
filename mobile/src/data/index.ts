@@ -4,6 +4,7 @@ import { focusManager, QueryClient, useMutation, useQuery as useRawQuery, useQue
 import { getActiveFinanceId, subscribeActiveFinance } from "../../lib/api";
 import type { MonthPlan, VoiceOutcome } from "../domain";
 import { dataSource, DATA_SOURCE } from "./sources";
+import type { StatementPayOptions } from "./sources/DataSource";
 import { notificationBadgeCount } from "./selectors";
 import { AppError, reportAppError, toAppError } from "./errors";
 import { budgetView, categoryColorOrder, previousBudgetItems, withBudgetItems } from "./budget";
@@ -75,6 +76,8 @@ function useRefreshBudget() {
     () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: ["plan"] }),
+        qc.invalidateQueries({ queryKey: ["accounts"] }),
+        qc.invalidateQueries({ queryKey: ["account-detail"] }),
         qc.invalidateQueries({ queryKey: ["home"] }),
         qc.invalidateQueries({ queryKey: ["notifications"] }),
       ]),
@@ -161,13 +164,15 @@ export function useConfirmPayment() {
       Promise.all([
         qc.invalidateQueries({ queryKey: ["home"] }),
         qc.invalidateQueries({ queryKey: ["plan"] }),
+        qc.invalidateQueries({ queryKey: ["accounts"] }),
+        qc.invalidateQueries({ queryKey: ["account-detail"] }),
         qc.invalidateQueries({ queryKey: queryKeys.pending() }),
         qc.invalidateQueries({ queryKey: queryKeys.notifications() }),
       ]),
     [qc],
   );
   return useMutation({
-    mutationFn: ({ id, amount }: { id: string; amount?: number }) => dataSource.confirmPayment(id, amount),
+    mutationFn: ({ id, amount, accountId }: { id: string; amount?: number; accountId?: string }) => dataSource.confirmPayment(id, amount, accountId),
     onSuccess: refresh,
   });
 }
@@ -189,7 +194,10 @@ export function useMarkStatementPaid() {
     () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: ["cards"] }),
+        qc.invalidateQueries({ queryKey: ["resource-cards"] }),
         qc.invalidateQueries({ queryKey: ["wealth"] }),
+        qc.invalidateQueries({ queryKey: ["accounts"] }),
+        qc.invalidateQueries({ queryKey: ["account-detail"] }),
         qc.invalidateQueries({ queryKey: ["home"] }),
         qc.invalidateQueries({ queryKey: ["plan"] }),
         qc.invalidateQueries({ queryKey: ["notifications"] }),
@@ -197,7 +205,7 @@ export function useMarkStatementPaid() {
     [qc],
   );
   return useMutation({
-    mutationFn: ({ cardId, period }: { cardId: string; period: string }) => dataSource.markStatementPaid(cardId, period),
+    mutationFn: ({ cardId, period, accountId, usdAccountId, ...options }: { cardId: string; period: string; accountId?: string; usdAccountId?: string } & StatementPayOptions) => dataSource.markStatementPaid(cardId, period, accountId, usdAccountId, options),
     onSuccess: refresh,
   });
 }
@@ -214,6 +222,8 @@ function useRefreshDebts() {
       Promise.all([
         qc.invalidateQueries({ queryKey: ["debts"] }),
         qc.invalidateQueries({ queryKey: ["wealth"] }),
+        qc.invalidateQueries({ queryKey: ["accounts"] }),
+        qc.invalidateQueries({ queryKey: ["account-detail"] }),
         qc.invalidateQueries({ queryKey: ["home"] }),
         qc.invalidateQueries({ queryKey: ["plan"] }),
         qc.invalidateQueries({ queryKey: ["notifications"] }),
@@ -226,7 +236,7 @@ function useRefreshDebts() {
 export function useMarkLoanPaid() {
   const refresh = useRefreshDebts();
   return useMutation({
-    mutationFn: ({ loanId, period }: { loanId: string; period: string }) => dataSource.markLoanPaid(loanId, period),
+    mutationFn: ({ loanId, period, accountId }: { loanId: string; period: string; accountId?: string }) => dataSource.markLoanPaid(loanId, period, accountId),
     onSuccess: refresh,
   });
 }
@@ -252,6 +262,8 @@ function useRefreshEntries() {
       Promise.all([
         qc.invalidateQueries({ queryKey: ["home"] }),
         qc.invalidateQueries({ queryKey: ["plan"] }),
+        qc.invalidateQueries({ queryKey: ["accounts"] }),
+        qc.invalidateQueries({ queryKey: ["account-detail"] }),
         qc.invalidateQueries({ queryKey: ["notifications"] }),
         qc.invalidateQueries({ queryKey: ["wealth"] }),
       ]),
@@ -302,7 +314,7 @@ export function useDeleteEntry() {
 export function useToggleEntryDone() {
   const refresh = useRefreshEntries();
   return useMutation({
-    mutationFn: ({ id, isDone }: { id: string; isDone: boolean }) => dataSource.updateEntry(id, { isDone }),
+    mutationFn: ({ id, isDone, accountId }: { id: string; isDone: boolean; accountId?: string }) => dataSource.updateEntry(id, { isDone, ...(accountId ? { accountId } : {}) }),
     onSuccess: refresh,
   });
 }
@@ -334,3 +346,4 @@ export function useInterpretVoice() {
 }
 
 export const isMockData = DATA_SOURCE === "mock";
+export * from "./unassigned";
