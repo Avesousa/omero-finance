@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAccount } from "@/lib/plan/accounts";
 import { prisma } from "@/lib/prisma";
 import { addPastPayments, removeOldestPastPayment } from "@/lib/plan/loans";
 import { readBody, v, withSession } from "@/lib/plan/server";
@@ -14,14 +15,17 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(req: NextRequest, { params }: Params) {
   return withSession(req, "update", async (ctx) => {
     const { id } = await params;
-    const loan = await prisma.planLoan.findUnique({ where: { id }, select: { householdId: true } });
+    const loan = await prisma.planLoan.findUnique({ where: { id }, select: { householdId: true, currency: true } });
     await ctx.assert(loan, "update");
     const body = await readBody(req);
     const count = v.int(body.count, "Cantidad de cuotas", 1, 360);
     const amount = body.amount == null || body.amount === "" ? undefined : v.amount(body.amount, "Monto de la cuota");
     const before = body.before === undefined ? undefined : v.nearPeriod(body.before);
 
-    const created = await prisma.$transaction((tx) => addPastPayments(tx, loan!.householdId, id, { count, amount, before }));
+    const created = await prisma.$transaction(async (tx) => {
+      const accountId = await requireAccount(body.accountId, loan!.householdId, loan!.currency, true, tx);
+      return addPastPayments(tx, loan!.householdId, id, { count, amount, before, accountId });
+    }, { isolationLevel: "Serializable" });
     return NextResponse.json({ ok: true, created }, { status: 201 });
   });
 }

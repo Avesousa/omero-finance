@@ -23,9 +23,11 @@
     "usd": "Más {{amount}} en dólares",
     "installments_one": "{{count}} cuota este mes",
     "installments_other": "{{count}} cuotas este mes",
-    "markPaid": "Marcar pagado",
-    "markPaidLabel": "Marcar pagado el resumen de {{name}}",
+    "markPaid": "Pagar tarjeta",
+    "markPaidLabel": "Pagar la tarjeta {{name}}",
     "loadStatement": "Cargar resumen",
+    "undoPaid": "Deshacer pago",
+    "undoPaidLabel": "Deshacer el pago de {{name}}",
     "loadStatementLabel": "Cargar el resumen de {{name}}"
   },
   "installments": {

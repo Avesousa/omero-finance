@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, Switch } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { HStack, IconButton, Button, Spacer, Surface, Text, TextField, VStack } from "../../components/atoms";
-import { FormField, PeriodSwitcher, SegmentedToggle } from "../../components/molecules";
+import { BigAmountField, FormField, KeyboardDoneBar, PeriodSwitcher, SegmentedToggle } from "../../components/molecules";
 import { ScreenTemplate } from "../../components/templates";
 import { previewLoan, useAddLoan, type NewLoanInput } from "../../data";
 import { useTheme } from "../../design-system";
@@ -168,14 +168,7 @@ export function NewDebtScreen() {
             />
           </FormField>
           <FormField label={t("form.amount")} error={shown("amount")}>
-            <TextField
-              testID="new-debt-amount"
-              accessibilityLabel={t("form.amount")}
-              placeholder={t("form.amountPlaceholder")}
-              keyboardType="decimal-pad"
-              value={amount}
-              onChangeText={(v) => setAmount(formatMoneyInput(v))}
-            />
+            <BigAmountField testID="new-debt-amount" accessibilityLabel={t("form.amount")} value={amount} onChange={setAmount} />
           </FormField>
           {fixed ? (
             <FormField label={t("form.installments")} error={shown("installments")}>
@@ -239,14 +232,7 @@ export function NewDebtScreen() {
           </FormField>
           {!fixed ? (
             <FormField label={t("form.suggested")} error={shown("suggested")}>
-              <TextField
-                testID="new-debt-suggested"
-                accessibilityLabel={t("form.suggested")}
-                placeholder={t("form.suggestedPlaceholder")}
-                keyboardType="decimal-pad"
-                value={suggested}
-                onChangeText={(v) => setSuggested(formatMoneyInput(v))}
-              />
+              <BigAmountField testID="new-debt-suggested" accessibilityLabel={t("form.suggested")} value={suggested} onChange={setSuggested} />
             </FormField>
           ) : null}
         </VStack>
@@ -266,6 +252,7 @@ export function NewDebtScreen() {
           </Text>
         ) : null}
         <Button testID="new-debt-save" label={add.isPending ? t("form.saving") : t("form.save")} busy={add.isPending} onPress={onSave} />
+        <KeyboardDoneBar />
       </ScreenTemplate>
     </KeyboardAvoidingView>
   );

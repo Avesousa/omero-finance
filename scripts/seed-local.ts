@@ -8,7 +8,7 @@
  * Ambos entran con la contraseña "omero123". Idempotente.
  */
 import { config } from "dotenv";
-config({ path: ".env.local", override: true });
+if (!process.env.OMERO_DEV_ENV) config({ path: ".env.local", override: true });
 config();
 
 import bcrypt from "bcryptjs";

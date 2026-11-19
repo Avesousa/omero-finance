@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountPicker } from "./account-picker";
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
@@ -333,6 +334,7 @@ function LoanCard({ loan, entry, data, onEdit, onPayment, onPast, onBalance }: {
 export function PaymentSheet({ loan, entry, onClose }: { loan: LoanDTO; entry: EntryDTO; onClose: () => void }) {
   const action = useAction();
   const owe = loan.direction === "OWE";
+  const [accountId, setAccountId] = useState(entry.accountId ?? "");
   const [amount, setAmount] = useState(numberToInput(entry.amount));
   const [date, setDate] = useState(entry.date ?? "");
   const [isDone, setIsDone] = useState(entry.isDone);
@@ -340,16 +342,18 @@ export function PaymentSheet({ loan, entry, onClose }: { loan: LoanDTO; entry: E
   const number = loanPaymentLabel(loan, entry.period);
 
   function save() {
+    if (isDone && !accountId) return action.setError("Elegí una cuenta");
     const parsed = parseMoney(amount);
     if (!(parsed > 0)) return action.setError("Ingresá un monto mayor a cero");
     return action.run(
-      () => api("PATCH", `/api/plan/entries/${entry.id}`, { amount: parsed, date: date || null, isDone }),
+      () => api("PATCH", `/api/plan/entries/${entry.id}`, { amount: parsed, date: date || null, isDone, accountId }),
       onClose,
     );
   }
 
   return (
     <Sheet title={`${loan.name}${number ? ` · cuota ${number}` : ""}`} onClose={onClose}>
+      <AccountPicker currency={entry.currency} value={accountId} onChange={setAccountId} />
       <Field
         label={`Cuota de ${periodLabel(entry.period)}`}
         hint={loan.mode === "SCHEDULE"
@@ -408,6 +412,7 @@ export function PaymentSheet({ loan, entry, onClose }: { loan: LoanDTO; entry: E
  */
 export function PastPaymentsSheet({ loan, period, onClose }: { loan: LoanDTO; period: string; onClose: () => void }) {
   const action = useAction();
+  const [accountId, setAccountId] = useState("");
   const owe = loan.direction === "OWE";
   const done = owe ? "pagadas" : "cobradas";
   const state = loanState(loan);
@@ -434,7 +439,7 @@ export function PastPaymentsSheet({ loan, period, onClose }: { loan: LoanDTO; pe
     if (!isSchedule && !(parsedAmount > 0)) return action.setError("Ingresá el monto de cada cuota");
     return action.run(
       () => api("POST", `/api/plan/loans/${loan.id}/past-payments`, {
-        count, before: period, ...(isSchedule ? {} : { amount: parsedAmount }),
+        accountId, count, before: period, ...(isSchedule ? {} : { amount: parsedAmount }),
       }),
       onClose,
     );
@@ -442,6 +447,7 @@ export function PastPaymentsSheet({ loan, period, onClose }: { loan: LoanDTO; pe
 
   return (
     <Sheet title={`Cuotas ya ${done}`} onClose={onClose}>
+      <AccountPicker currency={loan.currency} value={accountId} onChange={setAccountId} />
       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
         <strong style={{ color: "var(--text-primary)" }}>{loan.name}</strong>: hoy figuran {state.paidCount} de {of} cuotas {done}.
         Cargá acá las que ya estaban saldadas antes de {periodLabel(base.anchor)}: bajan el saldo y corrigen el

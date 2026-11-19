@@ -5,6 +5,8 @@
 
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { ApiError } from "./api-error";
+import { requireAccount } from "./accounts";
 import { ensurePersonalFinanceId, type FinanceKindName, type Role } from "./access";
 
 // ─── Paleta ───────────────────────────────────────────────────────────────────
@@ -141,7 +143,7 @@ export interface MoveResult {
  */
 export async function moveEntries(
   tx: Tx,
-  input: { entryIds: string[]; fromId: string; toId: string },
+  input: { entryIds: string[]; fromId: string; toId: string; accountId?: string; accountIds?: Record<string, string> },
 ): Promise<MoveResult> {
   const { fromId, toId } = input;
   const entryIds = [...new Set(input.entryIds)];
@@ -176,12 +178,19 @@ export async function moveEntries(
   const catMap = await mapCategoriesByName(tx, fromId, toId, catIds);
   const remap = (id: string | null) => (id ? (catMap.get(id) ?? null) : null);
 
+  const sourceFinance = await tx.household.findUniqueOrThrow({ where: { id: fromId } });
   const moved: string[] = [];
   for (const e of movable) {
+    let accountId: string | null = null;
+    if (e.accountId || e.isDone) {
+      const requested = input.accountIds?.[e.currency] ?? input.accountId;
+      if (e.accountId && !requested) throw new ApiError("Elegí la cuenta de destino para mover el movimiento");
+      accountId = await requireAccount(requested, toId, e.currency, e.isDone, tx);
+    }
     // Filtra por origen: si otro request ya lo movió, no encuentra la fila y se reporta.
     const res = await tx.planEntry.updateMany({
       where: { id: e.id, householdId: fromId },
-      data: { householdId: toId, categoryId: remap(e.categoryId), targetCategoryId: remap(e.targetCategoryId) },
+      data: { householdId: toId, categoryId: remap(e.categoryId), targetCategoryId: remap(e.targetCategoryId), accountId, originFinanceName: e.originFinanceName ?? sourceFinance.name },
     });
     if (res.count === 1) moved.push(e.id);
     else skipped.push({ id: e.id, reason: "No encontrado" });
@@ -190,6 +199,6 @@ export async function moveEntries(
 }
 
 /** Wrapper transaccional para las rutas. */
-export function moveEntriesTx(input: { entryIds: string[]; fromId: string; toId: string }): Promise<MoveResult> {
+export function moveEntriesTx(input: { entryIds: string[]; fromId: string; toId: string; accountId?: string; accountIds?: Record<string, string> }): Promise<MoveResult> {
   return prisma.$transaction((tx) => moveEntries(tx, input));
 }

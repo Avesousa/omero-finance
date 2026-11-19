@@ -1,5 +1,7 @@
 "use client";
 
+import { MoveEntryControl } from "./move-entry-control";
+import { AccountPicker } from "./account-picker";
 import { useState } from "react";
 import {
   FREQUENCY_LABEL, FREQUENCY_UNIT, fmtMoney, numberToInput, occurrencesInPeriod, parseMoney,
@@ -47,6 +49,9 @@ export function EntrySheet({ kind, period, categories, entry, rule, defaultFixed
   const isFixedEntry = !!entry?.recurringId;
   const action = useAction();
 
+  const [isDone, setIsDone] = useState(entry?.isDone ?? (kind === "INCOME"));
+  const [collectedAt, setCollectedAt] = useState(entry?.collectedAt ?? todayIso());
+  const [accountId, setAccountId] = useState(entry?.accountId ?? "");
   const [fixed, setFixed] = useState(isEdit ? isFixedEntry : !!defaultFixed);
   const [amount, setAmount] = useState(numberToInput(entry?.amount));
   const [currency, setCurrency] = useState<Currency>(entry?.currency ?? "ARS");
@@ -77,10 +82,13 @@ export function EntrySheet({ kind, period, categories, entry, rule, defaultFixed
     : `Nuevo ${isIncome ? "ingreso" : "gasto"}`;
 
   function save() {
+    if ((!fixed || isDone) && !accountId) return action.setError("Elegí una cuenta");
     if (!name.trim()) return action.setError("Ponele un nombre");
     if (!(parsed > 0)) return action.setError("Ingresá un monto mayor a cero");
 
     const common = {
+      accountId,
+      ...(fixed ? { isDone, ...(isIncome ? { collectedAt: isDone ? collectedAt : null } : {}) } : {}),
       name: name.trim(),
       amount: parsed,
       currency,
@@ -225,6 +233,9 @@ export function EntrySheet({ kind, period, categories, entry, rule, defaultFixed
         </div>
       )}
 
+      {fixed ? <Field label={isIncome ? "Cobro" : "Pago"}><label><input type="checkbox" checked={isDone} onChange={(e) => setIsDone(e.target.checked)} /> {isIncome ? "Ya lo cobré" : "Ya lo pagué"}</label>{isIncome && isDone ? <TextInput type="date" aria-label="Fecha de cobro" value={collectedAt} onChange={(e) => setCollectedAt(e.target.value)} /> : null}</Field> : null}
+      <AccountPicker currency={currency} value={accountId} onChange={setAccountId} label={isIncome ? "Entra a" : "Sale de"} />
+      {entry && !entry.recurringId && !entry.loanId ? <MoveEntryControl id={entry.id} currency={entry.currency} onMoved={onClose} /> : null}
       <ErrorText error={action.error} />
       <PrimaryButton onClick={save} busy={action.busy}>
         {isEdit ? "Guardar cambios" : fixed ? "Agregar fijo" : `Agregar ${isIncome ? "ingreso" : "gasto"}`}

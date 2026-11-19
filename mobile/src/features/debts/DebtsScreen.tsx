@@ -1,3 +1,5 @@
+import { useCanWrite } from "../../providers/ActiveFinanceProvider";
+import { AccountPaymentSheet } from "../accounts/AccountPaymentSheet";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable } from "react-native";
 import { router } from "expo-router";
@@ -36,6 +38,8 @@ export function DebtsScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const { data, isPending, isError, refetch } = useDebts(selected ?? undefined);
   const markPaid = useMarkLoanPaid();
+  const canWrite = useCanWrite();
+  const [payId, setPayId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const period = selected ?? data?.period ?? null;
 
@@ -48,14 +52,13 @@ export function DebtsScreen() {
     }
   }, [qc, refetch]);
 
-  const header = <ScreenHeader title={sectionTitle} onBack={() => router.back()} backLabel={tc("actions.back")} />;
-  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} /> : null;
+  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} compact /> : null;
+  const header = <ScreenHeader title={sectionTitle} onBack={() => router.back()} backLabel={tc("actions.back")} right={switcher} />;
 
   if (isPending) {
     return (
       <ScreenTemplate header={header} testID="debts-loading">
         <VStack gap={4} accessibilityLabel={t("state.loading")} accessibilityLiveRegion="polite">
-          {switcher}
           <Skeleton height={190} shape="hero" />
           <Skeleton height={56} shape="pill" />
           <Skeleton height={240} />
@@ -68,7 +71,6 @@ export function DebtsScreen() {
   if (isError || !data || !period) {
     return (
       <ScreenTemplate header={header} testID="debts-error" refreshing={refreshing} onRefresh={onRefresh}>
-        {switcher}
         <EmptyState title={t("state.errorTitle")} description={t("state.errorBody")} action={{ label: tc("actions.retry"), onPress: () => void refetch() }} />
       </ScreenTemplate>
     );
@@ -77,7 +79,6 @@ export function DebtsScreen() {
   if (data.loans.length === 0 && data.cards.count === 0) {
     return (
       <ScreenTemplate header={header} testID="debts-empty" refreshing={refreshing} onRefresh={onRefresh}>
-        {switcher}
         <EmptyState
           title={t("state.emptyTitle")}
           description={t("state.emptyBody")}
@@ -89,12 +90,12 @@ export function DebtsScreen() {
 
   return (
     <ScreenTemplate header={header} testID="debts" refreshing={refreshing} onRefresh={onRefresh}>
-      {switcher}
+      {payId ? <AccountPaymentSheet title={data.loans.find((l) => l.id === payId)?.direction === "OWED" ? "Elegí en qué cuenta cobraste" : "Elegí de qué cuenta pagaste"} currency={data.loans.find((l) => l.id === payId)?.currency} busy={markPaid.isPending} error={markPaid.error?.message} onClose={() => setPayId(null)} onConfirm={(accountId) => markPaid.mutate({ loanId: payId, period: period!, accountId }, { onSuccess: () => setPayId(null) })} /> : null}
       <DebtsBody
         data={data}
         period={period}
         markingId={markPaid.isPending ? markPaid.variables?.loanId : undefined}
-        onMarkPaid={(loanId) => markPaid.mutate({ loanId, period })}
+        onMarkPaid={canWrite ? (loanId) => setPayId(loanId) : undefined}
       />
     </ScreenTemplate>
   );
@@ -114,7 +115,7 @@ function DebtsBody({
   data: DebtsOverview;
   period: string;
   markingId?: string;
-  onMarkPaid: (loanId: string) => void;
+  onMarkPaid?: (loanId: string) => void;
 }) {
   const { t } = useTranslation("debts");
   const [view, setView] = useState<Direction>("OWE");
@@ -181,7 +182,7 @@ function DebtsBody({
       monthPayment={r.monthPayment}
       period={period}
       busy={markingId === r.id}
-      onMarkPaid={() => onMarkPaid(r.id)}
+      onMarkPaid={onMarkPaid ? () => onMarkPaid(r.id) : undefined}
     />
   );
 

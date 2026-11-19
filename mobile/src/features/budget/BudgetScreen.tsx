@@ -86,8 +86,8 @@ export function BudgetScreen() {
     }
   }, [qc]);
 
-  const header = <ScreenHeader title={t("title")} />;
-  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} /> : null;
+  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} compact /> : null;
+  const header = <ScreenHeader title={t("title")} right={switcher} />;
 
   const goalRows = useMemo(
     () => (goals.data?.goals ?? []).map((g) => ({ id: g.id, name: g.name, saved: g.saved, target: g.target, currency: g.currency, ratio: goalProgress(g).ratio })),
@@ -150,7 +150,6 @@ export function BudgetScreen() {
   if (view.isError || plan.isError || !view.data || !period || !allocation) {
     return (
       <ScreenTemplate header={header} edges={["top", "bottom"]} testID="budget-error" refreshing={refreshing} onRefresh={onRefresh}>
-        {switcher}
         <EmptyState title={t("state.errorTitle")} description={t("state.errorBody")} action={{ label: tc("actions.retry"), onPress: () => void view.refetch() }} />
       </ScreenTemplate>
     );
@@ -196,7 +195,6 @@ export function BudgetScreen() {
   return (
     <View style={{ flex: 1 }}>
       <ScreenTemplate header={header} edges={["top", "bottom"]} testID="budget" refreshing={refreshing} onRefresh={onRefresh}>
-        {switcher}
         {b.projected ? (
           <Text testID="budget-projected" variant="secondary" tone="inkMuted">
             {t("projected.notice", { month: capitalize(monthName(period)) })}

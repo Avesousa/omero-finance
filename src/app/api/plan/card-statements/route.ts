@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { PAY_MODES, readBody, requireCard, v, withSession } from "@/lib/plan/server";
+import { ApiError, PAY_MODES, readBody, requireCard, v, withSession } from "@/lib/plan/server";
 
 /**
  * POST /api/plan/card-statements — carga (o reemplaza) el resumen de una tarjeta en un mes.
@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
       customAmount: v.optionalAmount(body.customAmount, "Monto a pagar"),
     };
 
+    const existing = await prisma.planCardStatement.findUnique({ where: { cardId_period: { cardId, period } }, include: { payments: true } });
+    if (existing?.isPaid || existing?.payments.length) throw new ApiError("Deshacé el pago antes de reemplazar el resumen", 409);
     const saved = await prisma.planCardStatement.upsert({
       where: { cardId_period: { cardId, period } },
       create: { householdId, cardId, period, ...data },

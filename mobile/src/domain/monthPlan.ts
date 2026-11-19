@@ -31,6 +31,7 @@ export interface MonthPlan {
   previousBudgetPeriod: string | null;
   cards: CardDTO[];
   statements: StatementDTO[];
+  cardPayments?: import("../../../src/lib/plan/core.ts").CardPaymentDTO[];
   purchases: PurchaseDTO[];
   loans: LoanDTO[];
 }

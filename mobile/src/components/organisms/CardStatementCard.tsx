@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { formatDate, formatMoney } from "../../i18n/format";
-import { Amount, BrandMark, Button, HStack, Pill, Spacer, Surface, Text, VStack, type BrandMarkBrand, type PillProps } from "../atoms";
+import { Pressable } from "react-native";
+import { Amount, BankLogo, BrandMark, Button, HStack, Icon, Pill, Spacer, Surface, Text, VStack, type BrandMarkBrand, type PillProps } from "../atoms";
 
 export type CardStatementStatus = "paid" | "overdue" | "dueSoon" | "upcoming" | "estimated" | "empty";
 
@@ -18,6 +19,10 @@ export interface CardStatementCardProps {
   installmentsCount: number;
   onMarkPaid?: () => void;
   onLoadStatement?: () => void;
+  /** Toda la tarjeta es tocable: abre su detalle (movimientos y administración). */
+  onPress?: () => void;
+  /** Deshacer el pago (solo si el resumen está pagado). */
+  onUndoPaid?: () => void;
   busy?: boolean;
 }
 
@@ -33,6 +38,8 @@ export function CardStatementCard({
   installmentsCount,
   onMarkPaid,
   onLoadStatement,
+  onPress,
+  onUndoPaid,
   busy,
 }: CardStatementCardProps) {
   const { t } = useTranslation("cards");
@@ -54,24 +61,27 @@ export function CardStatementCard({
   if (usdAmount != null) details.push(t("statement.usd", { amount: formatMoney(usdAmount, "USD") }));
   if (installmentsCount > 0) details.push(t("statement.installments", { count: installmentsCount }));
   return (
+    <Pressable accessibilityRole="button" accessibilityLabel={card.name} disabled={!onPress} onPress={onPress}>
     <Surface testID={`card-statement-${card.name}`}>
       <VStack gap={3}>
         <HStack gap={3}>
+          <BankLogo name={card.entity} />
           <VStack gap={1} style={{ flexShrink: 1 }}>
+            <Text variant="bodyStrong" numberOfLines={1}>
+              {card.name}
+            </Text>
             <HStack gap={2}>
-              {card.brand ? <BrandMark brand={card.brand} /> : null}
-              <Text variant="bodyStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
-                {card.name}
-              </Text>
+              {card.brand ? <BrandMark brand={card.brand} size={16} /> : null}
+              {card.entity ? (
+                <Text variant="secondary" tone="inkMuted" numberOfLines={1} style={{ flexShrink: 1 }}>
+                  {card.entity}
+                </Text>
+              ) : null}
             </HStack>
-            {card.entity ? (
-              <Text variant="secondary" tone="inkMuted">
-                {card.entity}
-              </Text>
-            ) : null}
           </VStack>
           <Spacer />
           <Amount variant="number" value={amount} />
+          {onPress ? <Icon name="chevron-forward" size="sm" tone="inkMuted" /> : null}
         </HStack>
         <Pill label={pill.label} tone={pill.tone} />
         {details.length > 0 ? (
@@ -79,7 +89,7 @@ export function CardStatementCard({
             {details.join(" · ")}
           </Text>
         ) : null}
-        {hasStatement && status !== "paid" && onMarkPaid ? (
+        {status !== "paid" && onMarkPaid ? (
           <Button
             variant="secondary"
             label={t("statement.markPaid")}
@@ -96,7 +106,9 @@ export function CardStatementCard({
             onPress={onLoadStatement}
           />
         ) : null}
+        {status === "paid" && onUndoPaid ? <Button variant="text" label={t("statement.undoPaid")} accessibilityLabel={t("statement.undoPaidLabel", { name: card.name })} onPress={onUndoPaid} /> : null}
       </VStack>
     </Surface>
+    </Pressable>
   );
 }

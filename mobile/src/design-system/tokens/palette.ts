@@ -4,6 +4,38 @@
  */
 export const palette = {
   white: "#FFFFFF",
+  black: "#000000",
+  /** Velos sobre fondos de color (tarjeta visual): oscurecer, brillo y transparente. */
+  shade: "rgba(0,0,0,0.38)",
+  glass: "rgba(255,255,255,0.14)",
+  clear: "rgba(0,0,0,0)",
+
+  /** Identidad de las dos entidades de «Cuentas y tarjetas» (tonos de la familia categórica de Omero, oscurecidos para texto blanco). */
+  entity: {
+    accounts: "#1F7A6D",
+    cards: "#6A4BA3",
+  },
+
+  /** Colores de marcas de tarjetas y bancos (identidad visual de terceros; no son roles de UI). */
+  brand: {
+    visa: "#1A1F71",
+    mcRed: "#EB001B",
+    mcOrange: "#F79E1B",
+    amex: "#2557D6",
+    cabal: "#0B5CAB",
+    diners: "#0079BE",
+    galicia: "#F26A21",
+    santander: "#EC0000",
+    bbva: "#004481",
+    macro: "#0A3D91",
+    nacion: "#0A6EBD",
+    provincia: "#00833E",
+    icbc: "#C8102E",
+    brubank: "#5B2D8E",
+    mercadopago: "#00A5E0",
+    uala: "#3F3FE0",
+    naranjax: "#FF6A13",
+  },
 
   tranqui: {
     bg: "#F4F6F8",

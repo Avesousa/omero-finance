@@ -209,7 +209,7 @@ export async function addPastPayments(
   tx: Tx,
   householdId: string,
   loanId: string,
-  opts: { count: number; amount?: number; before?: string },
+  opts: { count: number; amount?: number; before?: string; accountId?: string | null },
 ): Promise<number> {
   const [loan] = await loadLoans(householdId, { id: loanId }, tx);
   if (!loan) throw new ApiError("No encontrado", 404);
@@ -249,6 +249,7 @@ export async function addPastPayments(
       name: loan.name,
       categoryId: loan.categoryId,
       currency: loan.currency,
+      accountId: opts.accountId ?? null,
       amount,
       interestAmount: proposal.interest || null,
       date: due ? new Date(`${due}T00:00:00Z`) : null,

@@ -1,5 +1,6 @@
 "use client";
 
+import { StatementPaymentControl } from "./statement-payment-control";
 import { useState } from "react";
 import { ChevronRight, Plus, Settings2 } from "lucide-react";
 import { CardBrandIcon } from "./card-brand";
@@ -10,7 +11,7 @@ import {
 } from "@/lib/plan/core";
 import type { PlanData } from "@/lib/plan/server";
 import {
-  Chips, DoneToggle, EmptyHint, ErrorText, Fab, Field, ListCard, MoneyInput, Pill, PlanHeader,
+  Chips, EmptyHint, ErrorText, Fab, Field, ListCard, MoneyInput, Pill, PlanHeader,
   PrimaryButton, SecondaryButton, SectionTitle, Segmented, Sheet, SmallAction, TextInput,
   api, cardStyle, useAction,
 } from "./plan-ui";
@@ -214,11 +215,7 @@ function StatementCard({ card, line, usdRate, onEdit }: {
         className="p-4 space-y-3 cursor-pointer"
       >
         <div className="flex items-center gap-3">
-          <DoneToggle
-            done={st.isPaid}
-            label={`Marcar ${cardLabel(card)} como pagada`}
-            onToggle={() => action.run(() => api("PATCH", `/api/plan/card-statements/${st.id}`, { isPaid: !st.isPaid }))}
-          />
+          <StatementPaymentControl id={st.id} isPaid={st.isPaid} hasUsd={!!st.usdAmount && st.payMode === "TOTAL"} />
           <CardIdentity
             card={card}
             extra={st.isPaid ? "Pagada" : st.dueDate ? `Vence el ${shortDate(st.dueDate)}` : "Sin fecha de vencimiento"}
@@ -593,6 +590,9 @@ const CARD_TYPES = [
   { id: "VISA", label: "Visa" },
   { id: "MC", label: "Mastercard" },
   { id: "AMEX", label: "Amex" },
+  { id: "CABAL", label: "Cabal" },
+  { id: "DINERS", label: "Diners" },
+  { id: "OTHER", label: "Otra" },
 ];
 
 const BANKS = ["Banco Nación", "Galicia", "BBVA", "Santander", "MercadoPago", "Brubank", "Naranja X", "Cencopay"];

@@ -48,6 +48,10 @@ export interface RecurringDTO {
 }
 
 export interface EntryDTO {
+  paidAt?: string | null;
+  accountId?: string | null;
+  accountName?: string | null;
+  originFinanceName?: string | null;
   id: string;
   period: string;
   kind: Kind;
@@ -74,6 +78,9 @@ export interface BudgetDTO {
 }
 
 export interface CardDTO {
+  ownerUserId?: string | null;
+  householdId?: string;
+  originFinanceName?: string | null;
   id: string;
   /** Nombre heredado de la app clásica; puede ser una sigla ("VISA AVELINO BN"). */
   name: string;
@@ -98,6 +105,8 @@ export interface PurchaseDTO {
 }
 
 export interface StatementDTO {
+  originFinanceName?: string | null;
+  payments?: { id: string; accountId: string; accountName: string; currency: Currency; amount: number; paidAt: string }[];
   id: string;
   cardId: string;
   period: string;
@@ -1192,4 +1201,11 @@ export function normalizeMerchant(s: string): string {
 /** Clave estable del nombre de una tarjeta de Wallet. */
 export function normalizeWalletCard(s: string): string {
   return s.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+
+/** Salida real de dinero por resumen; su finanza puede reclasificarse conservando la cuenta histórica. */
+export interface CardPaymentDTO {
+  id: string; statementId: string; householdId: string; accountId: string; accountName: string;
+  currency: Currency; amount: number; paidAt: string; originFinanceName: string | null;
 }

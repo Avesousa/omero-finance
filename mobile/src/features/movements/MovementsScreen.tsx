@@ -3,14 +3,14 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, HStack, IconButton, Skeleton, Surface, Text, TextField, VStack } from "../../components/atoms";
-import { EmptyState, PeriodSwitcher, SegmentedToggle } from "../../components/molecules";
+import { EmptyState, FinanceChip, PeriodSwitcher, SegmentedToggle } from "../../components/molecules";
 import { MovementRow, ScreenHeader } from "../../components/organisms";
 import { ScreenTemplate } from "../../components/templates";
 import { pendingIncomes, usePlan, useMovements, type MovementsKind, type MovementsView } from "../../data";
 import { formatMoney, formatWeekdayDate } from "../../i18n/format";
 import { addDays } from "../../domain";
 import { MoveToFinanceSheet, useMoveTargets } from "../finances/MoveToFinanceSheet";
-import { useCanWrite } from "../../providers/ActiveFinanceProvider";
+import { useActiveFinance, useCanWrite } from "../../providers/ActiveFinanceProvider";
 
 /** Solo se mueven los movimientos reales: no los fijos, las cuotas de préstamo ni las propuestas de un mes sin iniciar. */
 const movable = (m: { fixed: boolean; installment: boolean; projected: boolean; statement?: boolean }) => !m.statement && !m.fixed && !m.installment && !m.projected;
@@ -40,6 +40,7 @@ export function MovementsScreen() {
   // Modo selección para mover a otra finanza: solo si hay otra finanza donde cargar y mi rol lo permite.
   const canMove = useMoveTargets().length > 0;
   const canWrite = useCanWrite();
+  const { active } = useActiveFinance();
   const [picked, setPicked] = useState<Set<string> | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
   const selecting = picked !== null;
@@ -60,8 +61,8 @@ export function MovementsScreen() {
     }
   }, [qc]);
 
-  const header = <ScreenHeader title={t("title")} onBack={() => router.back()} backLabel={t("back")} />;
-  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} /> : null;
+  const switcher = period ? <PeriodSwitcher period={period} onChange={setSelected} min={MIN_PERIOD} max={MAX_PERIOD} compact /> : null;
+  const header = <ScreenHeader title={t("title")} onBack={() => router.back()} backLabel={t("back")} right={switcher} />;
   const edit = (entryId: string, entryPeriod: string) => router.push({ pathname: "/movimientos/editar", params: { entryId, period: entryPeriod } });
 
   if (isPending) {
@@ -80,7 +81,6 @@ export function MovementsScreen() {
   if (isError || !data || !period) {
     return (
       <ScreenTemplate header={header} edges={["top", "bottom"]} testID="movements-error" refreshing={refreshing} onRefresh={onRefresh}>
-        {switcher}
         <EmptyState title={t("state.errorTitle")} description={t("state.errorBody")} action={{ label: tc("actions.retry"), onPress: () => void refetch() }} />
       </ScreenTemplate>
     );
@@ -88,7 +88,7 @@ export function MovementsScreen() {
 
   return (
     <ScreenTemplate header={header} edges={["top", "bottom"]} testID="movements" refreshing={refreshing} onRefresh={onRefresh}>
-      {switcher}
+      {active ? <FinanceChip name={active.name} /> : null}
       <SegmentedToggle<MovementsKind>
         testID="movements-filter"
         accessibilityLabel={t("filter.label")}
@@ -140,6 +140,7 @@ export function MovementsScreen() {
       ) : null}
       <MoveToFinanceSheet
         visible={moveOpen}
+        period={period ?? undefined}
         entryIds={picked ? [...picked] : []}
         onClose={() => setMoveOpen(false)}
         onMoved={() => setPicked(null)}
@@ -194,7 +195,7 @@ function MovementsList({
             testID={`movement-${m.id}`}
             kind={m.kind}
             name={m.name}
-            categoryName={m.categoryName}
+            categoryName={[m.categoryName, m.accountName, m.originFinanceName ? `Origen: ${m.originFinanceName}` : null].filter(Boolean).join(" · ") || null}
             amount={m.amount}
             currency={m.currency}
             fixed={m.fixed}

@@ -45,6 +45,9 @@ model Household {
   planInboxItems     PlanInboxItem[]
   planInboxRules     PlanInboxRule[]
   appErrorReports    AppErrorReport[]
+  planAccounts       PlanAccount[]
+  accountTransfers   PlanAccountTransfer[]
+  cardPayments       PlanCardPayment[]
 
   @@index([ownerUserId])
 }
@@ -89,6 +92,8 @@ model User {
   financeMemberships FinanceMember[]
   sessions  Session[]
   planApiTokens PlanApiToken[]
+  planAccounts PlanAccount[]
+  ownedCards Card[]
 }
 
 model Session {
@@ -106,6 +111,9 @@ model Session {
 // ─────────────────────────────────────────────
 
 model Card {
+  ownerUserId String?
+  owner User? @relation(fields: [ownerUserId], references: [id])
+  originFinanceName String?
   id          String   @id @default(cuid())
   householdId String
   name        String
@@ -267,6 +275,10 @@ model PlanRecurring {
 /// Un ingreso o gasto de un mes. Si `recurringId` está presente es un fijo
 /// (generado desde la regla); si no, es un movimiento variable.
 model PlanEntry {
+  accountId String?
+  account PlanAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  originFinanceName String?
+  @@index([accountId, isDone])
   id               String    @id @default(cuid())
   householdId      String
   period           String
@@ -280,6 +292,8 @@ model PlanEntry {
   date             DateTime? @db.Date
   /// Fecha real de cobro del ingreso; independiente del vencimiento.
   collectedAt      DateTime? @db.Date
+  /// Fecha real de pago del gasto/cuota; no reemplaza su vencimiento.
+  paidAt           DateTime? @db.Date
   /// Fijos: cobrado / pagado.
   isDone           Boolean   @default(false)
   note             String?
@@ -389,6 +403,7 @@ model PlanBudget {
 
 /// Compra con tarjeta. Las cuotas se proyectan solas desde `firstPeriod`.
 model PlanCardPurchase {
+  originFinanceName String?
   id           String    @id @default(cuid())
   householdId  String
   cardId       String
@@ -413,6 +428,8 @@ model PlanCardPurchase {
 
 /// Resumen de una tarjeta para un mes: lo que hay que pagar.
 model PlanCardStatement {
+  originFinanceName String?
+  payments PlanCardPayment[]
   id           String      @id @default(cuid())
   householdId  String
   cardId       String
@@ -545,4 +562,74 @@ model AppErrorReport {
 
   @@index([createdAt])
   @@index([source, code])
+}
+
+
+enum PlanAccountType {
+  BANK
+  WALLET
+  CASH
+  OTHER
+}
+enum PlanTransferKind {
+  TRANSFER
+  CASH_WITHDRAWAL
+  BUY_USD
+}
+model PlanAccount {
+  id String @id @default(cuid())
+  ownerUserId String
+  householdId String
+  name String
+  type PlanAccountType @default(BANK)
+  currency Currency @default(ARS)
+  openingBalance Decimal @default(0) @db.Decimal(14, 2)
+  openingDate DateTime? @db.Date
+  isArchived Boolean @default(false)
+  originFinanceName String?
+  createdAt DateTime @default(now())
+  owner User @relation(fields: [ownerUserId], references: [id])
+  household Household @relation(fields: [householdId], references: [id])
+  entries PlanEntry[]
+  transfersOut PlanAccountTransfer[] @relation("TransferFrom")
+  transfersIn PlanAccountTransfer[] @relation("TransferTo")
+  payments PlanCardPayment[]
+  @@index([householdId, currency, isArchived])
+  @@index([ownerUserId])
+}
+model PlanAccountTransfer {
+  originFinanceName String?
+  id String @id @default(cuid())
+  householdId String
+  createdByUserId String
+  kind PlanTransferKind
+  fromAccountId String
+  toAccountId String
+  amountFrom Decimal @db.Decimal(14, 2)
+  amountTo Decimal @db.Decimal(14, 2)
+  rate Decimal? @db.Decimal(14, 4)
+  date DateTime @db.Date
+  note String?
+  createdAt DateTime @default(now())
+  household Household @relation(fields: [householdId], references: [id])
+  from PlanAccount @relation("TransferFrom", fields: [fromAccountId], references: [id])
+  to PlanAccount @relation("TransferTo", fields: [toAccountId], references: [id])
+  @@index([fromAccountId, date])
+  @@index([toAccountId, date])
+}
+model PlanCardPayment {
+  id String @id @default(cuid())
+  statementId String
+  householdId String
+  accountId String
+  currency Currency
+  amount Decimal @db.Decimal(14, 2)
+  paidByUserId String
+  paidAt DateTime @default(now())
+  originFinanceName String?
+  statement PlanCardStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  household Household @relation(fields: [householdId], references: [id])
+  account PlanAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  @@unique([statementId, currency])
+  @@index([accountId])
 }

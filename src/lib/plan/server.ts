@@ -13,7 +13,7 @@ import {
 } from "./access";
 import {
   TDC_KEY, addMonths, buildLoanProposal, buildProposal, currentPeriod, isValidPeriod, todayIso,
-  type BalanceItemDTO, type BudgetDTO, type CardDTO, type CategoryDTO, type Currency,
+  type CardPaymentDTO, type BalanceItemDTO, type BudgetDTO, type CardDTO, type CategoryDTO, type Currency,
   type EntryDTO, type Frequency, type Kind, type LoanDTO, type LoanDirection, type LoanMode,
   type LoanProposalRow, type PayMode, type ProposalRow,
   type PurchaseDTO, type RecurringDTO, type StatementDTO,
@@ -62,6 +62,7 @@ export interface PlanData {
   /** Resúmenes cargados por tarjeta en todos los meses (para avisar antes de borrarla). */
   cardStatementCounts: Record<string, number>;
   statements: StatementDTO[];
+  cardPayments?: CardPaymentDTO[];
   purchases: PurchaseDTO[];
   /** Fijos que se traerían al iniciar el mes (solo si no está iniciado). */
   proposal: ProposalRow[];
@@ -120,12 +121,13 @@ export async function loadPlan(householdId: string, period: string, role: Role =
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       }),
       prisma.planEntry.findMany({
+        include: { account: { select: { name: true } } },
         where: { householdId, period },
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       }),
       prisma.planBudget.findMany({ where: { householdId, period } }),
       prisma.card.findMany({ where: { householdId }, orderBy: [{ entity: "asc" }, { name: "asc" }] }),
-      prisma.planCardStatement.findMany({ where: { householdId, period } }),
+      prisma.planCardStatement.findMany({ where: { householdId, period }, include: { payments: { include: { account: { select: { name: true, householdId: true } } } } } }),
       prisma.planCardPurchase.findMany({
         where: { householdId },
         orderBy: [{ firstPeriod: "desc" }, { createdAt: "desc" }],
@@ -139,6 +141,8 @@ export async function loadPlan(householdId: string, period: string, role: Role =
       prisma.planInboxItem.count({ where: { householdId, status: "PENDING" } }),
     ]);
 
+  const nextPeriod = addMonths(period, 1);
+  const cardPayments = await prisma.planCardPayment.findMany({ where: { householdId, paidAt: { gte: new Date(`${period}-01T03:00:00Z`), lt: new Date(`${nextPeriod}-01T03:00:00Z`) } }, include: { account: { select: { name: true, householdId: true } } } });
   let previousBudgets: BudgetDTO[] = [];
   let previousBudgetPeriod: string | null = null;
   if (budgets.length === 0) {
@@ -186,6 +190,7 @@ export async function loadPlan(householdId: string, period: string, role: Role =
       period: e.period,
       kind: e.kind as Kind,
       recurringId: e.recurringId,
+      accountId: e.accountId, accountName: e.account?.name ?? null, originFinanceName: e.originFinanceName,
       name: e.name,
       categoryId: e.categoryId,
       targetCategoryId: e.targetCategoryId,
@@ -193,6 +198,7 @@ export async function loadPlan(householdId: string, period: string, role: Role =
       amount: Number(e.amount),
       date: iso(e.date),
       collectedAt: iso(e.collectedAt),
+      paidAt: iso(e.paidAt),
       isDone: e.isDone,
       note: e.note,
       loanId: e.loanId,
@@ -204,6 +210,7 @@ export async function loadPlan(householdId: string, period: string, role: Role =
     cards: cards.map(cardToDto),
     cardStatementCounts: Object.fromEntries(statementCounts.map((g) => [g.cardId, g._count._all])),
     statements: statements.map(statementToDto),
+    cardPayments: cardPayments.map((p) => ({ id: p.id, statementId: p.statementId, householdId: p.householdId, accountId: p.accountId, accountName: p.account.householdId === householdId ? p.account.name : "Cuenta de origen", currency: p.currency, amount: Number(p.amount), paidAt: p.paidAt.toISOString(), originFinanceName: p.originFinanceName })),
     purchases: purchases.map((p) => ({
       id: p.id,
       cardId: p.cardId,
@@ -228,10 +235,10 @@ type CardRow = Awaited<ReturnType<typeof prisma.card.findMany>>[number];
 type StatementRow = Awaited<ReturnType<typeof prisma.planCardStatement.findMany>>[number];
 
 function cardToDto(c: CardRow): CardDTO {
-  return { id: c.id, name: c.name, entity: c.entity, cardType: c.cardType, ownerName: c.ownerName };
+  return { ownerUserId: c.ownerUserId, householdId: c.householdId, originFinanceName: c.originFinanceName, id: c.id, name: c.name, entity: c.entity, cardType: c.cardType, ownerName: c.ownerName };
 }
 
-function statementToDto(s: StatementRow): StatementDTO {
+function statementToDto(s: StatementRow & { payments?: { id: string; accountId: string; currency: Currency; amount: unknown; paidAt: Date; account: { name: string; householdId?: string } }[] }): StatementDTO {
   return {
     id: s.id,
     cardId: s.cardId,
@@ -242,6 +249,8 @@ function statementToDto(s: StatementRow): StatementDTO {
     usdAmount: num(s.usdAmount),
     payMode: s.payMode as PayMode,
     customAmount: num(s.customAmount),
+    originFinanceName: s.originFinanceName,
+    payments: s.payments?.map((p) => ({ id: p.id, accountId: p.accountId, accountName: p.account.householdId && p.account.householdId !== s.householdId ? "Cuenta de origen" : p.account.name, currency: p.currency, amount: Number(p.amount), paidAt: p.paidAt.toISOString() })),
     isPaid: s.isPaid,
     paidAt: s.paidAt?.toISOString() ?? null,
   };
@@ -350,7 +359,7 @@ export interface ApiContext {
   role: Role;
   finance: ActiveFinance;
   /** Para ids sueltos: carga la fila (sin filtro de finanza) y autoriza contra SU finanza (404 / 403). */
-  assert: (row: { householdId: string } | null, action: Action) => Promise<void>;
+  assert: (row: { householdId: string; ownerUserId?: string | null } | null, action: Action) => Promise<void>;
 }
 
 export interface UserContext {
@@ -364,6 +373,7 @@ const FINANCE_COOKIE = "omero_finance";
 
 function errorResponse(req: NextRequest, err: unknown): Response {
   if (err instanceof ApiError) return NextResponse.json({ error: err.message }, { status: err.status });
+  if (err && typeof err === "object" && "code" in err && ["P2034", "P2002"].includes(String(err.code))) return NextResponse.json({ error: "La operación coincidió con otro cambio. Volvé a intentarlo." }, { status: 409 });
   console.error(`[${new URL(req.url).pathname} ${req.method}]`, err);
   return NextResponse.json({ error: "Error interno" }, { status: 500 });
 }
@@ -460,7 +470,9 @@ export const v = {
       throw new ApiError(`${label} inválido`);
     }
     if (n > 999_999_999_999) throw new ApiError(`${label} demasiado grande`);
-    return Math.round(n * 100) / 100;
+    const rounded = Math.round(n * 100) / 100;
+    if (!allowZero && rounded <= 0) throw new ApiError(`${label} inválido`);
+    return rounded;
   },
   optionalAmount(value: unknown, label = "Monto"): number | null {
     if (value == null || value === "") return null;
@@ -493,7 +505,7 @@ export const v = {
       throw new ApiError("Fecha inválida");
     }
     const d = new Date(`${value}T00:00:00Z`);
-    if (Number.isNaN(d.getTime())) throw new ApiError("Fecha inválida");
+    if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== value) throw new ApiError("Fecha inválida");
     return d;
   },
 };

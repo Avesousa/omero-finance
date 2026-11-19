@@ -26,6 +26,6 @@ export function updateFinance(financeId: string, patch: { name?: string; color?:
   return api<{ finance: FinanceDTO }>("PATCH", `/api/plan/finances/${financeId}`, patch);
 }
 
-export function moveEntries(entryIds: string[], toFinanceId: string) {
-  return api<MoveEntriesResult>("POST", "/api/plan/entries/move", { entryIds, toFinanceId });
+export function moveEntries(entryIds: string[], toFinanceId: string, accountIds?: Record<string, string>) {
+  return api<MoveEntriesResult>("POST", "/api/plan/entries/move", { entryIds, toFinanceId, accountIds });
 }

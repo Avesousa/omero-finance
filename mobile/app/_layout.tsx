@@ -41,7 +41,12 @@ function Shell() {
           <Stack.Screen name="deudas/nueva" options={{ presentation: "modal" }} />
           <Stack.Screen name="ingresos/nuevo" options={{ presentation: "modal" }} />
           <Stack.Screen name="gastos/nuevo" options={{ presentation: "modal" }} />
-          <Stack.Screen name="tarjetas" />
+          <Stack.Screen name="cuentas/index" />
+          <Stack.Screen name="cuentas/todas" />
+          <Stack.Screen name="cuentas/nueva" options={{ presentation: "modal" }} />
+          <Stack.Screen name="cuentas/[id]" />
+          <Stack.Screen name="cuentas/transferir" />
+          <Stack.Screen name="tarjetas" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
           <Stack.Screen name="deudas/index" />
           <Stack.Screen name="movimientos/index" />
           <Stack.Screen name="movimientos/editar" options={{ presentation: "modal" }} />

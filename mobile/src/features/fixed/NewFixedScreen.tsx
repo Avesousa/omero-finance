@@ -25,7 +25,7 @@ export function NewFixedScreen() {
     const period = plan.data?.period;
     if (!period || !v.fixed) return;
     add.mutate(
-      { kind: "EXPENSE", period, name: v.name, amount: v.amount, currency: v.currency, categoryId: v.categoryId, date: null, note: null, fixed: v.fixed },
+      { kind: "EXPENSE", accountId: v.accountId, period, name: v.name, amount: v.amount, currency: v.currency, categoryId: v.categoryId, date: null, note: null, fixed: v.fixed },
       {
         onSuccess: () => {
           setSavedName(v.name);

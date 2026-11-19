@@ -51,6 +51,7 @@ export function ScreenTemplate({
           style={{ flex: 1 }}
           contentContainerStyle={[padding, contentStyle]}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
           refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.ink} /> : undefined}
         >

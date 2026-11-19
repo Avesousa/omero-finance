@@ -1,8 +1,11 @@
+import { DATA_SOURCE } from "../../data/sources";
+import { useActiveFinance } from "../../providers/ActiveFinanceProvider";
+import { AccountPicker } from "../accounts/AccountPicker";
 import { useMemo, useState } from "react";
 import { Switch } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Button, Chip, HStack, Spacer, Surface, Text, TextField, VStack } from "../../components/atoms";
-import { FormField, SegmentedToggle } from "../../components/molecules";
+import { BigAmountField, FinanceChip, FormField, KeyboardDoneBar, SegmentedToggle } from "../../components/molecules";
 import { useCategories, type EntryKind, type NewEntryInput } from "../../data";
 import { useTheme } from "../../design-system";
 import {
@@ -28,6 +31,7 @@ const digits = (text: string) => text.replace(/\D/g, "");
 
 /** Valores de arranque del formulario (un borrador de la mascota o un gasto fijo existente). */
 export interface EntryFormInitial {
+  accountId?: string | null;
   isDone?: boolean;
   name?: string | null;
   /** Monto por vez si es fijo. */
@@ -41,6 +45,7 @@ export interface EntryFormInitial {
 }
 
 export interface EntryFormValues {
+  accountId?: string | null;
   isDone?: boolean;
   collectedAt?: string | null;
   name: string;
@@ -101,6 +106,7 @@ export function EntryForm({
   const { t } = useTranslation("entry");
   const { t: tf } = useTranslation("fixed");
   const { colors } = useTheme();
+  const { active } = useActiveFinance();
   const categories = useCategories(kind);
   const today = useMemo(() => todayIso(), []);
   const yesterday = useMemo(() => addDays(today, -1), [today]);
@@ -113,6 +119,7 @@ export function EntryForm({
   const [otherMonth] = useState(() => (initialDate ? initialDate.slice(0, 7) : currentPeriod()));
   const [day, setDay] = useState(() => (initialDate && initialDate !== today && initialDate !== yesterday ? String(Number(initialDate.slice(8, 10))) : ""));
 
+  const [accountId, setAccountId] = useState(initial?.accountId ?? null);
   const [name, setName] = useState(initial?.name ?? "");
   const [amount, setAmount] = useState(numberToInput(initial?.amount));
   const [currency, setCurrency] = useState<Currency>(initial?.currency ?? "ARS");
@@ -159,6 +166,7 @@ export function EntryForm({
     setSubmitted(true);
     if (Object.keys(errors).length > 0 || (showDate && !date)) return;
     onSubmit({
+      accountId,
       ...(incomeFixed ? { isDone, collectedAt: isDone ? date : null } : {}),
       name: name.trim(),
       amount: amountValue,
@@ -189,14 +197,7 @@ export function EntryForm({
         <TextField testID={`${id}-name`} accessibilityLabel={t("form.name")} placeholder={t(`form.namePlaceholder.${kind}`)} value={name} onChangeText={setName} />
       </FormField>
       <FormField label={perTime ? t("form.amountPerTime") : t("form.amount")} error={shown("amount")}>
-        <TextField
-          testID={`${id}-amount`}
-          accessibilityLabel={perTime ? t("form.amountPerTime") : t("form.amount")}
-          placeholder={t("form.amountPlaceholder")}
-          keyboardType="decimal-pad"
-          value={amount}
-          onChangeText={(v) => setAmount(formatMoneyInput(v))}
-        />
+        <BigAmountField testID={`${id}-amount`} accessibilityLabel={perTime ? t("form.amountPerTime") : t("form.amount")} value={amount} onChange={setAmount} />
       </FormField>
       <FormField label={t("form.currency")}>
         <SegmentedToggle
@@ -337,6 +338,9 @@ export function EntryForm({
         </>
       ) : null}
 
+      {active ? <FinanceChip name={active.name} /> : null}
+      <AccountPicker currency={currency} value={accountId} onChange={setAccountId} label={kind === "INCOME" ? "Entra a" : "Sale de"} />
+
       {showNote ? (
         <FormField label={t("form.note")}>
           <TextField
@@ -354,7 +358,8 @@ export function EntryForm({
           {error}
         </Text>
       ) : null}
-      <Button testID={`${id}-save`} label={busy ? t("form.saving") : saveLabel} busy={busy} onPress={onSave} />
+      <Button testID={`${id}-save`} label={busy ? t("form.saving") : saveLabel} busy={busy} disabled={DATA_SOURCE === "api" && !accountId && (!isFixed || (incomeFixed && isDone) || (mode === "edit" && initial?.isDone === true))} onPress={onSave} />
+      <KeyboardDoneBar />
     </VStack>
   );
 }

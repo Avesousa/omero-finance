@@ -59,6 +59,7 @@ export interface PlanData {
   cards: CardDTO[];
   cardStatementCounts: Record<string, number>;
   statements: StatementDTO[];
+  cardPayments?: import("../../src/lib/plan/core").CardPaymentDTO[];
   purchases: PurchaseDTO[];
   proposal: ProposalRow[];
   loans: LoanDTO[];

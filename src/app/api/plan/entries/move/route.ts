@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     await ctx.assert({ householdId: toFinanceId }, "create");
 
     await ensurePlanDefaults(toFinanceId);
-    const result = await moveEntriesTx({ entryIds: [...visibleIds], fromId, toId: toFinanceId });
+    const result = await moveEntriesTx({ entryIds: [...visibleIds], fromId, toId: toFinanceId, accountId: typeof body.accountId === "string" ? body.accountId : undefined, accountIds: body.accountIds && typeof body.accountIds === "object" ? body.accountIds as Record<string, string> : undefined });
     if (result.moved.length === 0) {
       throw new ApiError(result.skipped[0]?.reason ?? "No hay movimientos para mover", 422);
     }

@@ -1,0 +1,152 @@
+-- CreateEnum
+CREATE TYPE "PlanAccountType" AS ENUM ('BANK', 'WALLET', 'CASH', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "PlanTransferKind" AS ENUM ('TRANSFER', 'CASH_WITHDRAWAL', 'BUY_USD');
+
+-- AlterTable
+ALTER TABLE "Card" ADD COLUMN     "ownerUserId" TEXT;
+
+-- AlterTable
+ALTER TABLE "PlanEntry" ADD COLUMN     "accountId" TEXT;
+
+-- CreateTable
+CREATE TABLE "PlanAccount" (
+    "id" TEXT NOT NULL,
+    "ownerUserId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" "PlanAccountType" NOT NULL DEFAULT 'BANK',
+    "currency" "Currency" NOT NULL DEFAULT 'ARS',
+    "openingBalance" DECIMAL(14,2) NOT NULL DEFAULT 0,
+    "isArchived" BOOLEAN NOT NULL DEFAULT false,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PlanAccount_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AccountFinance" (
+    "id" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "householdId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AccountFinance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PlanAccountTransfer" (
+    "id" TEXT NOT NULL,
+    "createdByUserId" TEXT NOT NULL,
+    "kind" "PlanTransferKind" NOT NULL DEFAULT 'TRANSFER',
+    "fromAccountId" TEXT NOT NULL,
+    "toAccountId" TEXT NOT NULL,
+    "amountFrom" DECIMAL(14,2) NOT NULL,
+    "amountTo" DECIMAL(14,2) NOT NULL,
+    "rate" DECIMAL(14,4),
+    "date" DATE NOT NULL,
+    "note" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PlanAccountTransfer_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CardFinance" (
+    "id" TEXT NOT NULL,
+    "cardId" TEXT NOT NULL,
+    "householdId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CardFinance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PlanCardPayment" (
+    "id" TEXT NOT NULL,
+    "statementId" TEXT NOT NULL,
+    "householdId" TEXT NOT NULL,
+    "accountId" TEXT NOT NULL,
+    "currency" "Currency" NOT NULL DEFAULT 'ARS',
+    "amount" DECIMAL(14,2) NOT NULL,
+    "paidByUserId" TEXT NOT NULL,
+    "paidAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PlanCardPayment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "PlanAccount_ownerUserId_isArchived_idx" ON "PlanAccount"("ownerUserId", "isArchived");
+
+-- CreateIndex
+CREATE INDEX "AccountFinance_householdId_idx" ON "AccountFinance"("householdId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AccountFinance_accountId_householdId_key" ON "AccountFinance"("accountId", "householdId");
+
+-- CreateIndex
+CREATE INDEX "PlanAccountTransfer_fromAccountId_date_idx" ON "PlanAccountTransfer"("fromAccountId", "date");
+
+-- CreateIndex
+CREATE INDEX "PlanAccountTransfer_toAccountId_date_idx" ON "PlanAccountTransfer"("toAccountId", "date");
+
+-- CreateIndex
+CREATE INDEX "CardFinance_householdId_idx" ON "CardFinance"("householdId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CardFinance_cardId_householdId_key" ON "CardFinance"("cardId", "householdId");
+
+-- CreateIndex
+CREATE INDEX "PlanCardPayment_statementId_idx" ON "PlanCardPayment"("statementId");
+
+-- CreateIndex
+CREATE INDEX "PlanCardPayment_accountId_idx" ON "PlanCardPayment"("accountId");
+
+-- CreateIndex
+CREATE INDEX "Card_ownerUserId_idx" ON "Card"("ownerUserId");
+
+-- CreateIndex
+CREATE INDEX "PlanEntry_accountId_isDone_idx" ON "PlanEntry"("accountId", "isDone");
+
+-- AddForeignKey
+ALTER TABLE "Card" ADD CONSTRAINT "Card_ownerUserId_fkey" FOREIGN KEY ("ownerUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanEntry" ADD CONSTRAINT "PlanEntry_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "PlanAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanAccount" ADD CONSTRAINT "PlanAccount_ownerUserId_fkey" FOREIGN KEY ("ownerUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccountFinance" ADD CONSTRAINT "AccountFinance_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "PlanAccount"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccountFinance" ADD CONSTRAINT "AccountFinance_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "Household"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanAccountTransfer" ADD CONSTRAINT "PlanAccountTransfer_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanAccountTransfer" ADD CONSTRAINT "PlanAccountTransfer_fromAccountId_fkey" FOREIGN KEY ("fromAccountId") REFERENCES "PlanAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanAccountTransfer" ADD CONSTRAINT "PlanAccountTransfer_toAccountId_fkey" FOREIGN KEY ("toAccountId") REFERENCES "PlanAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CardFinance" ADD CONSTRAINT "CardFinance_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "Card"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CardFinance" ADD CONSTRAINT "CardFinance_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "Household"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanCardPayment" ADD CONSTRAINT "PlanCardPayment_statementId_fkey" FOREIGN KEY ("statementId") REFERENCES "PlanCardStatement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanCardPayment" ADD CONSTRAINT "PlanCardPayment_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "Household"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanCardPayment" ADD CONSTRAINT "PlanCardPayment_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "PlanAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PlanCardPayment" ADD CONSTRAINT "PlanCardPayment_paidByUserId_fkey" FOREIGN KEY ("paidByUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

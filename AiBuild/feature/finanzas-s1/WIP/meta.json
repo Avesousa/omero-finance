@@ -1,0 +1,409 @@
+{
+  "language": "Español",
+  "type": "feature",
+  "feature": "finanzas-s1",
+  "branch": "feat/finanzas-s1-duenio-finanzas",
+  "tests_required": true,
+  "status": "build-in-progress",
+  "spec": "docs/specs/refactor-finanzas/01-semana-1-duenio-y-finanzas.md",
+  "tasks": [
+    {
+      "id": "T000",
+      "title": "Verificar docs de Next (prioridad entries/move, cookies/headers)",
+      "depends_on": [],
+      "block": "A",
+      "needs_db": false,
+      "status": "done",
+      "completed_at": "2026-11-01T19:53:07Z",
+      "note": "cookies()/headers() async en Next 16; prioridad static>dynamic no documentada explícitamente, se cubre con test en T011/T012b",
+      "files_modified": []
+    },
+    {
+      "id": "T001",
+      "title": "Prisma: enums, columnas Household, FinanceMember, relaciones; SQL de migración; generate",
+      "depends_on": [],
+      "block": "A",
+      "needs_db": true,
+      "status": "done",
+      "started_at": "2026-11-01T19:53:07Z",
+      "completed_at": "2026-11-01T19:53:50Z",
+      "files_modified": [
+        "prisma/schema.prisma",
+        "prisma/migrations/20261101195318_add_finance_owner_members/migration.sql"
+      ]
+    },
+    {
+      "id": "T002",
+      "title": "Backfill prisma/backfill/finanzas-s1.ts con --dry-run",
+      "depends_on": [
+        "T001"
+      ],
+      "block": "A",
+      "needs_db": true,
+      "status": "done",
+      "started_at": "2026-11-01T19:53:50Z",
+      "completed_at": "2026-11-01T19:54:43Z",
+      "files_modified": [
+        "prisma/backfill/finanzas-s1.ts"
+      ],
+      "note": "verificado en DB local: dry-run sin escrituras, 2da corrida en 0"
+    },
+    {
+      "id": "T003",
+      "title": "src/lib/plan/access.ts + tests",
+      "depends_on": [
+        "T001"
+      ],
+      "block": "B",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:54:43Z",
+      "completed_at": "2026-11-01T19:56:39Z",
+      "files_modified": [
+        "src/lib/plan/access.ts",
+        "src/lib/plan/api-error.ts",
+        "src/lib/plan/server.ts",
+        "src/lib/plan/access.test.ts"
+      ]
+    },
+    {
+      "id": "T004",
+      "title": "src/lib/plan/finances.ts + tests",
+      "depends_on": [
+        "T001"
+      ],
+      "block": "B",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:54:43Z",
+      "completed_at": "2026-11-01T19:56:39Z",
+      "files_modified": [
+        "src/lib/plan/finances.ts",
+        "src/lib/plan/finances.test.ts"
+      ]
+    },
+    {
+      "id": "T005",
+      "title": "withSession/withUser con acción obligatoria; loadPlan devuelve finance",
+      "depends_on": [
+        "T003",
+        "T004"
+      ],
+      "block": "B",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:56:39Z",
+      "completed_at": "2026-11-01T19:57:12Z",
+      "files_modified": [
+        "src/lib/plan/server.ts"
+      ],
+      "note": "las rutas sin migrar fallan en tsc a propósito (acción obligatoria)"
+    },
+    {
+      "id": "T006",
+      "title": "Migrar rutas 1-7",
+      "depends_on": [
+        "T005"
+      ],
+      "block": "C",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:57:12Z",
+      "completed_at": "2026-11-01T19:57:34Z",
+      "files_modified": [
+        "balance/route.ts",
+        "balance/[id]/route.ts",
+        "budget/route.ts",
+        "card-purchases/route.ts",
+        "card-purchases/[id]/route.ts",
+        "card-statements/route.ts",
+        "card-statements/[id]/route.ts"
+      ]
+    },
+    {
+      "id": "T007",
+      "title": "Migrar rutas 8-14",
+      "depends_on": [
+        "T005"
+      ],
+      "block": "C",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:57:34Z",
+      "completed_at": "2026-11-01T19:58:00Z",
+      "files_modified": [
+        "cards/route.ts",
+        "cards/[id]/route.ts",
+        "categories/route.ts",
+        "categories/[id]/route.ts",
+        "data/route.ts",
+        "entries/route.ts",
+        "entries/[id]/route.ts"
+      ]
+    },
+    {
+      "id": "T008",
+      "title": "Migrar rutas 16-24",
+      "depends_on": [
+        "T005"
+      ],
+      "block": "C",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:58:00Z",
+      "completed_at": "2026-11-01T19:58:28Z",
+      "files_modified": [
+        "errors",
+        "inbox (3)",
+        "inbox/apple-pay",
+        "loans (4)"
+      ]
+    },
+    {
+      "id": "T009",
+      "title": "Migrar rutas 25-28",
+      "depends_on": [
+        "T005"
+      ],
+      "block": "C",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:58:28Z",
+      "completed_at": "2026-11-01T19:58:59Z",
+      "files_modified": [
+        "month/route.ts",
+        "tokens/route.ts",
+        "tokens/[id]/route.ts",
+        "voice/route.ts"
+      ]
+    },
+    {
+      "id": "T010",
+      "title": "Endpoints finances, members, finances/active",
+      "depends_on": [
+        "T005"
+      ],
+      "block": "C",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T19:58:59Z",
+      "completed_at": "2026-11-01T20:00:17Z",
+      "files_modified": [
+        "finances/route.ts",
+        "finances/[id]/route.ts",
+        "finances/[id]/members/route.ts",
+        "finances/[id]/members/[userId]/route.ts",
+        "finances/active/route.ts",
+        "src/lib/plan/server.ts (UserContext.defaultHouseholdId)",
+        "src/lib/plan/finances.ts (countAdmins)"
+      ]
+    },
+    {
+      "id": "T011",
+      "title": "entries/move",
+      "depends_on": [
+        "T005"
+      ],
+      "block": "C",
+      "needs_db": false,
+      "status": "done",
+      "completed_at": "2026-11-01T20:00:17Z",
+      "files_modified": [
+        "entries/move/route.ts"
+      ]
+    },
+    {
+      "id": "T012",
+      "title": "Verificación de exhaustividad + tsc",
+      "depends_on": [
+        "T006",
+        "T007",
+        "T008",
+        "T009",
+        "T010",
+        "T011"
+      ],
+      "block": "C",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T20:00:17Z",
+      "completed_at": "2026-11-01T20:00:30Z",
+      "files_modified": [],
+      "note": "tsc limpio; grep: solo apple-pay + 5 rutas withUser; quedan session.user.householdId solo en páginas web (T019) y auth"
+    },
+    {
+      "id": "T012b",
+      "title": "Suite de integración completa (R8)",
+      "depends_on": [
+        "T012"
+      ],
+      "block": "C",
+      "needs_db": true,
+      "status": "done",
+      "started_at": "2026-11-01T20:00:30Z",
+      "completed_at": "2026-11-01T20:05:44Z",
+      "files_modified": [
+        "src/lib/plan/__int__/harness.ts",
+        "src/lib/plan/__int__/finanzas.int.test.ts",
+        "jest.config.ts",
+        "jest.env.ts",
+        "package.json (test:int)"
+      ],
+      "note": "46 tests contra DB local, repetible, sin residuos; npm run test:int"
+    },
+    {
+      "id": "T013",
+      "title": "Mobile: api.ts header + ActiveFinanceProvider",
+      "depends_on": [
+        "T010"
+      ],
+      "block": "D",
+      "needs_db": false,
+      "status": "done",
+      "completed_at": "2026-11-01T23:45:37Z",
+      "files_modified": [
+        "mobile/lib/api.ts",
+        "mobile/lib/types.ts",
+        "mobile/src/data/index.ts",
+        "mobile/src/providers/ActiveFinanceProvider.tsx",
+        "mobile/src/providers/AppProviders.tsx"
+      ]
+    },
+    {
+      "id": "T014",
+      "title": "Mobile: tema/borde por finanza",
+      "depends_on": [
+        "T013"
+      ],
+      "block": "D",
+      "needs_db": false,
+      "status": "done",
+      "completed_at": "2026-11-01T23:45:37Z",
+      "files_modified": [
+        "mobile/src/design-system/tokens/financeColors.ts",
+        "mobile/src/design-system/theme/ThemeProvider.tsx",
+        "mobile/app/_layout.tsx",
+        "mobile/src/data/__tests__/financeColors.test.ts"
+      ]
+    },
+    {
+      "id": "T015",
+      "title": "Mobile: FinanceSwitcher + FinanceSheet",
+      "depends_on": [
+        "T013"
+      ],
+      "block": "D",
+      "needs_db": false,
+      "status": "done",
+      "completed_at": "2026-11-01T23:45:37Z",
+      "files_modified": [
+        "mobile/src/components/organisms/FinanceSwitcher.tsx",
+        "mobile/src/components/organisms/FinanceSheet.tsx",
+        "mobile/src/components/organisms/AppHeader.tsx",
+        "mobile/src/features/finances/financeDisplay.ts",
+        "mobile/src/i18n (namespace finances)"
+      ]
+    },
+    {
+      "id": "T016",
+      "title": "Mobile: Crear Hogar y miembros",
+      "depends_on": [
+        "T013"
+      ],
+      "block": "D",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T23:45:37Z",
+      "completed_at": "2026-11-01T23:46:35Z",
+      "files_modified": [
+        "mobile/app/finanzas/nueva.tsx",
+        "mobile/app/finanzas/[id].tsx",
+        "mobile/app/_layout.tsx",
+        "mobile/src/features/finances/*"
+      ]
+    },
+    {
+      "id": "T017",
+      "title": "Mobile: Mover a finanza",
+      "depends_on": [
+        "T013",
+        "T011"
+      ],
+      "block": "D",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T23:46:35Z",
+      "completed_at": "2026-11-01T23:47:50Z",
+      "files_modified": [
+        "mobile/src/features/finances/MoveToFinanceSheet.tsx",
+        "mobile/src/features/finances/api.ts",
+        "mobile/src/features/movements/MovementsScreen.tsx",
+        "mobile/src/features/movements/EditMovementScreen.tsx",
+        "mobile/src/components/organisms/MovementRow.tsx"
+      ]
+    },
+    {
+      "id": "T018",
+      "title": "Mobile: modo Lector + i18n + tipos",
+      "depends_on": [
+        "T013"
+      ],
+      "block": "D",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T23:47:50Z",
+      "completed_at": "2026-11-01T23:48:34Z",
+      "files_modified": [
+        "mobile/src/providers/ActiveFinanceProvider.tsx (useCanWrite)",
+        "mobile/src/components/organisms/TabBar.tsx",
+        "mobile/src/features/movements/MovementsScreen.tsx",
+        "mobile/app/_layout.tsx"
+      ],
+      "note": "Lector: sin FAB, filas de Movimientos de solo lectura, banner. Otras pantallas de edición (fijos, deudas) no ocultan acciones; el servidor responde 403."
+    },
+    {
+      "id": "T019",
+      "title": "Web mínimo (cookie, selector, borde)",
+      "depends_on": [
+        "T010"
+      ],
+      "block": "D",
+      "needs_db": false,
+      "status": "done",
+      "started_at": "2026-11-01T23:48:34Z",
+      "completed_at": "2026-11-01T23:49:30Z",
+      "files_modified": [
+        "src/lib/plan/page.ts",
+        "src/app/plan/layout.tsx",
+        "src/components/plan/finance-switcher.tsx",
+        "src/app/plan/perfil/page.tsx",
+        "src/app/plan/apple-pay/page.tsx"
+      ]
+    },
+    {
+      "id": "T020",
+      "title": "Backfill en producción (requiere confirmación explícita)",
+      "depends_on": [
+        "T012b"
+      ],
+      "block": "E",
+      "needs_db": true,
+      "status": "pending",
+      "note": "En espera: el usuario pidió NO tocar producción todavía. Requiere confirmación explícita; migración y backfill sin aplicar en Neon."
+    },
+    {
+      "id": "T021",
+      "title": "E2E manual en iPhone + release EAS",
+      "depends_on": [
+        "T013",
+        "T019",
+        "T020"
+      ],
+      "block": "E",
+      "needs_db": false,
+      "status": "pending",
+      "note": "Manual en iPhone (sección 6 de la spec) + release EAS; depende de T020."
+    }
+  ],
+  "updated_at": "2026-11-01T23:51:20Z"
+}

@@ -49,3 +49,10 @@ export { BudgetAssistSummaryCard, type BudgetAssistSummaryCardProps, type Assist
 
 // — movimientos —
 export { MovementRow, type MovementRowProps } from "./MovementRow";
+export { CardVisual, type CardVisualProps } from "./CardVisual";
+export { ResourceGroupCard, GroupRow, type ResourceGroupCardProps } from "./ResourceGroupCard";
+export { PlataHero } from "./PlataHero";
+export { AccountTile, AddTile } from "./AccountTile";
+export { CardFace, CardStrip, StatementStatePill, type CardStatePill, type CardFaceProps } from "./CardFace";
+export { GroupedMovements, type MovementGroup, type MovementItem } from "./GroupedMovements";
+export { BottomSheet, type BottomSheetProps } from "./BottomSheet";

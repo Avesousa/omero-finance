@@ -60,6 +60,7 @@ export interface HomeSummary {
 
 /** Pago detectado (Apple Pay) que espera confirmación. `amount: null` = sin monto. */
 export interface PendingPayment {
+  suggestedMethod?: string | null;
   id: string;
   merchant: string;
   amount: number | null;
@@ -90,7 +91,7 @@ export interface AppNotifications {
   notices: AppNotice[];
 }
 
-export type CardBrand = "VISA" | "MC" | "AMEX";
+export type CardBrand = "VISA" | "MC" | "AMEX" | "CABAL" | "DINERS" | "OTHER";
 
 export interface CardStatement {
   /** 'YYYY-MM' */
@@ -281,6 +282,7 @@ export type IncomeCategory = Category;
 
 /** Lo que carga el formulario de ingreso o gasto. Igual al body de `POST /api/plan/entries`. */
 export interface NewEntryInput {
+  accountId?: string | null;
   isDone?: boolean;
   collectedAt?: string | null;
   kind: EntryKind;
@@ -303,6 +305,7 @@ export interface NewEntryInput {
  * `applyToRule` guarda también en la regla (próximos meses) y es lo único que habilita `frequency`, `weekday` y `dueDay`.
  */
 export type EntryPatch = Partial<{
+  accountId: string | null;
   collectedAt: string | null;
   name: string;
   amount: number;

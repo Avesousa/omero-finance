@@ -8,7 +8,7 @@ import { homeFromPlan } from "../plan.ts";
 import { equityRatio, nestStage, wealthTotals } from "../selectors.ts";
 import { cardsFromPlan, debtsFromPlan, wealthFromPlan } from "./apiMappers.ts";
 import { AppError, toAppError } from "../errors";
-import { type DataSource } from "./DataSource";
+import { type DataSource, type StatementPayOptions } from "./DataSource";
 import type { BudgetItem, EntryKind, EntryPatch, NewEntryInput, NewLoanInput, PendingPayment, VoiceInput } from "../types";
 
 const VOICE_TIMEOUT_MS = 45_000;
@@ -126,6 +126,7 @@ function toPending(item: InboxItemDTO): PendingPayment {
     amount: item.amount,
     currency: item.currency,
     card: item.walletCard,
+    suggestedMethod: item.suggestedMethod,
     occurredAt: item.occurredAt.slice(0, 16),
   };
 }
@@ -145,6 +146,7 @@ export function toMonthPlan(data: PlanData): MonthPlan {
     previousBudgetPeriod: data.previousBudgetPeriod,
     cards: data.cards,
     statements: data.statements,
+    cardPayments: data.cardPayments,
     purchases: data.purchases,
     loans: data.loans,
   };
@@ -206,7 +208,7 @@ export const apiSource: DataSource = {
     const res = await api<{ items: InboxItemDTO[] }>("GET", "/api/plan/inbox");
     return { pending: res.items.map(toPending), notices: [] };
   },
-  confirmPayment: async (id: string, amount?: number) => {
+  confirmPayment: async (id: string, amount?: number, accountId?: string) => {
     // Se confirma con lo que la web ya sugiere (categoría, débito o tarjeta); la app solo puede completar el monto.
     const res = await api<{ items: InboxItemDTO[] }>("GET", "/api/plan/inbox");
     const item = res.items.find((i) => i.id === id);
@@ -216,6 +218,7 @@ export const apiSource: DataSource = {
     const useCard = item.suggestedMethod === "CARD" && !!item.suggestedCardId;
     await api("POST", `/api/plan/inbox/${id}/confirm`, {
       amount: value,
+      accountId,
       currency: item.currency,
       categoryId: item.suggestedCategoryId,
       date: item.occurredAt.slice(0, 10),
@@ -229,18 +232,24 @@ export const apiSource: DataSource = {
     const [data, balance] = await Promise.all([fetchPlan(period), fetchBalance()]);
     return wealthFromPlan(toMonthPlan(data), balance);
   },
-  markStatementPaid: async (cardId: string, period: string) => {
+  markStatementPaid: async (cardId: string, period: string, accountId?: string, usdAccountId?: string, options?: StatementPayOptions) => {
     const plan = toMonthPlan(await fetchPlan(period));
     const statement = plan.statements.find((st) => st.cardId === cardId && st.period === period);
-    if (!statement) throw new AppError("Todavía no hay un resumen cargado para ese mes.", { code: "internal" });
-    await api("PATCH", `/api/plan/card-statements/${statement.id}`, { isPaid: true });
+    if (!statement) {
+      // Sin resumen cargado solo se puede pagar «otro monto»: se crea el resumen del mes con ese monto y se paga.
+      if (options?.mode !== "CUSTOM" || !options.amount) throw new AppError("Todavía no hay un resumen cargado para ese mes.", { code: "internal" });
+      const created = await api<{ id: string }>("POST", "/api/plan/card-statements", { cardId, period, totalArs: options.amount, payMode: "CUSTOM", customAmount: options.amount });
+      await api("POST", `/api/plan/card-statements/${created.id}/pay`, { accountId, ...options });
+      return;
+    }
+    await api("POST", `/api/plan/card-statements/${statement.id}/pay`, { accountId, usdAccountId, ...options });
   },
   getDebts: async (period?: string) => debtsFromPlan(toMonthPlan(await fetchPlan(period))),
-  markLoanPaid: async (loanId: string, period: string) => {
+  markLoanPaid: async (loanId: string, period: string, accountId?: string) => {
     const plan = toMonthPlan(await fetchPlan(period));
     const payment = plan.loans.find((l) => l.id === loanId)?.payments.find((p) => p.period === period);
     if (!payment) throw new AppError("Esa cuota todavía no existe: iniciá el mes en la web.", { code: "internal" });
-    await api("PATCH", `/api/plan/entries/${payment.entryId}`, { isDone: true });
+    await api("PATCH", `/api/plan/entries/${payment.entryId}`, { isDone: true, accountId });
   },
   addLoan: async (input: NewLoanInput) => {
     const created = await api<{ id: string }>("POST", "/api/plan/loans", {

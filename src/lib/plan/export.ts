@@ -13,6 +13,7 @@ import {
 /** Lo que hace falta del mes para armar el resumen (un subconjunto de PlanData). */
 export interface ExportInput {
   period: string;
+  finance?: { name: string };
   today: string;
   started: boolean;
   usdRate: number;
@@ -34,6 +35,9 @@ interface Movimiento {
   enPesos: number;
   estado: string;
   fecha: string | null;
+  cuenta?: string | null;
+  finanza?: string | null;
+  origen?: string | null;
 }
 
 export interface PlanExport {
@@ -156,7 +160,8 @@ export function buildExport(
       moneda: e.currency,
       enPesos: ars(e.amount, e.currency),
       estado,
-      fecha: e.date,
+      fecha: e.collectedAt ?? e.paidAt ?? e.date,
+      cuenta: e.accountName ?? null, finanza: data.finance?.name ?? null, origen: e.originFinanceName ?? null,
     };
   };
 
@@ -328,16 +333,16 @@ export function exportToMarkdown(x: PlanExport): string {
   if (x.ingresos.length > 0) {
     out.push("## Ingresos");
     out.push(table(
-      ["Ingreso", "Tipo", "Categoría", "Monto", "Estado", "Destino"],
-      x.ingresos.map((i) => [i.nombre, i.tipo, i.categoria, money(i.monto, i.moneda, i.enPesos), i.estado, i.destino]),
+      ["Ingreso", "Tipo", "Categoría", "Monto", "Estado", "Destino", "Cuenta", "Finanza", "Origen"],
+      x.ingresos.map((i) => [i.nombre, i.tipo, i.categoria, money(i.monto, i.moneda, i.enPesos), i.estado, i.destino, i.cuenta ?? null, i.finanza ?? null, i.origen ?? null]),
     ));
   }
 
   if (x.gastos.length > 0) {
     out.push("## Gastos");
     out.push(table(
-      ["Gasto", "Tipo", "Categoría", "Monto", "Estado", "Fecha"],
-      x.gastos.map((g) => [g.nombre, g.tipo, g.categoria, money(g.monto, g.moneda, g.enPesos), g.estado, shortDate(g.fecha)]),
+      ["Gasto", "Tipo", "Categoría", "Monto", "Estado", "Fecha", "Cuenta", "Finanza", "Origen"],
+      x.gastos.map((g) => [g.nombre, g.tipo, g.categoria, money(g.monto, g.moneda, g.enPesos), g.estado, shortDate(g.fecha), g.cuenta ?? null, g.finanza ?? null, g.origen ?? null]),
     ));
   }
 

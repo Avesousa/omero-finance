@@ -81,6 +81,7 @@ export function EditFixedScreen() {
       {
         id: entryId,
         patch: {
+          accountId: v.accountId,
           name: v.name,
           // `amount` del patch es el total del mes: monto por vez × veces en el mes.
           amount: monthlyAmount(v.amount, v.fixed.frequency, planPeriod, v.fixed.weekday),
@@ -104,6 +105,8 @@ export function EditFixedScreen() {
         showDate={false}
         showNote={false}
         initial={{
+          accountId: plan.data?.entries.find((e) => e.id === entryId)?.accountId,
+          isDone: item.isDone,
           name: item.name,
           amount: item.unitAmount,
           currency: item.currency,
