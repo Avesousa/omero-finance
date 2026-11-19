@@ -41,6 +41,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "node --experimental-strip-types --no-warnings --test src/data/__tests__/*.test.ts src/features/load/__tests__/*.test.ts src/features/load/conversation/__tests__/*.test.ts src/features/budget/__tests__/*.test.ts src/features/auth/__tests__/*.test.ts src/components/molecules/__tests__/*.test.ts",
+    "ios:archive": "bash scripts/ios-release.sh archive",
+    "ios:upload": "bash scripts/ios-release.sh upload",
     "lint": "expo lint"
   },
   "private": true
