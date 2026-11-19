@@ -32,7 +32,9 @@
     "emailPlaceholder": "",
     "password": "",
     "passwordPlaceholder": "",
-    "missingFields": ""
+    "missingFields": "",
+    "missingEmail": "",
+    "forgot": ""
   },
   "comingSoon": {
     "heading": "",
@@ -62,5 +64,20 @@
   },
   "errors": {
     "monthNotStarted": ""
+  },
+  "password": {
+    "changeTitle": "",
+    "current": "",
+    "new": "",
+    "confirm": "",
+    "hint": "",
+    "missingFields": "",
+    "missing": "",
+    "tooShort": "",
+    "mismatch": "",
+    "changed": "",
+    "forgotTitle": "",
+    "forgotIntro": "",
+    "forgotSubmit": ""
   }
 }

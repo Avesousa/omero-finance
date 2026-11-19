@@ -58,9 +58,11 @@ function Shell() {
           <Stack.Screen name="notificaciones" />
           <Stack.Screen name="finanzas/nueva" options={{ presentation: "modal" }} />
           <Stack.Screen name="finanzas/[id]" options={{ presentation: "modal" }} />
+          <Stack.Screen name="cambiar-clave" />
         </Stack.Protected>
         <Stack.Protected guard={!allowed}>
           <Stack.Screen name="login" />
+          <Stack.Screen name="olvide-clave" />
         </Stack.Protected>
       </Stack>
     </View>

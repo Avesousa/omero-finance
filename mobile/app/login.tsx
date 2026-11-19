@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Button, Text, TextField, VStack } from "../src/components/atoms";
 import { ScreenTemplate } from "../src/components/templates";
@@ -70,6 +71,7 @@ export default function Login() {
             </Text>
           ) : null}
           <Button testID="login-submit" label={t("actions.login")} busy={busy} onPress={submit} />
+          <Button testID="login-forgot" variant="text" label={t("login.forgot")} onPress={() => router.push("/olvide-clave")} />
         </VStack>
       </ScreenTemplate>
     </KeyboardAvoidingView>
