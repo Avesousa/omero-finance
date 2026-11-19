@@ -32,7 +32,9 @@
     "emailPlaceholder": "vos@ejemplo.com",
     "password": "Contraseña",
     "passwordPlaceholder": "••••••••",
-    "missingFields": "Poné tu email y tu contraseña."
+    "missingFields": "Poné tu email y tu contraseña.",
+    "missingEmail": "Poné tu email.",
+    "forgot": "¿No te acordás de tu contraseña?"
   },
   "comingSoon": {
     "heading": "Estamos puliendo esto",
@@ -62,5 +64,20 @@
   },
   "errors": {
     "monthNotStarted": "Este mes todavía no empezó. Iniciálo desde la web y volvé a intentar."
+  },
+  "password": {
+    "changeTitle": "Cambiar contraseña",
+    "current": "Contraseña actual",
+    "new": "Contraseña nueva",
+    "confirm": "Repetí la contraseña nueva",
+    "hint": "Mínimo 8 caracteres.",
+    "missingFields": "Completá todos los campos.",
+    "missing": "Completá todos los campos.",
+    "tooShort": "La contraseña nueva debe tener al menos 8 caracteres.",
+    "mismatch": "Las contraseñas no coinciden.",
+    "changed": "Listo, cambiaste tu contraseña.",
+    "forgotTitle": "Nueva contraseña",
+    "forgotIntro": "Poné tu email y elegí una contraseña nueva. Al terminar, entrás directo.",
+    "forgotSubmit": "Cambiar y entrar"
   }
 }

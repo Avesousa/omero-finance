@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest) {
 
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) {
-      return NextResponse.json({ error: "Contraseña actual incorrecta" }, { status: 401 });
+      return NextResponse.json({ error: "Contraseña actual incorrecta" }, { status: 400 });
     }
 
     const hash = await bcrypt.hash(newPassword, 12);

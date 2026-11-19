@@ -116,6 +116,7 @@ export function MenuScreen() {
                   </Text>
                 </View>
               ) : null}
+              <Button testID="change-password" variant="secondary" label={tc("password.changeTitle")} onPress={() => router.push("/cambiar-clave")} />
               <Button testID="logout" variant="secondary" label={tc("actions.logout")} onPress={() => void signOut()} />
             </VStack>
           </Surface>
