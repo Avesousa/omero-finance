@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Compila la app iOS en Release con la configuración de producción.
 #
-#   npm run ios:archive   → genera ios/build/Omero.xcarchive (sin subir nada)
+# Se corre desde la raíz del repo:
+#   npm run ios:archive   → genera mobile/ios/build/Omero.xcarchive (sin subir nada)
 #   npm run ios:upload    → archiva y sube el build a App Store Connect (TestFlight)
 #
 # Variables opcionales:
@@ -16,8 +17,8 @@ set -euo pipefail
 MODE="${1:-archive}"
 [[ "$MODE" == "archive" || "$MODE" == "upload" ]] || { echo "Uso: ios-release.sh [archive|upload]"; exit 1; }
 
-cd "$(dirname "$0")/.."
-ROOT="$PWD"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT/mobile"
 WORKSPACE="ios/Omero.xcworkspace"
 SCHEME="Omero"
 ARCHIVE="ios/build/Omero.xcarchive"
@@ -29,6 +30,16 @@ export EXPO_PUBLIC_API_URL="https://omero-finance.vercel.app"
 export EXPO_PUBLIC_DATA_SOURCE="api"
 export EXPO_PUBLIC_VOICE_SOURCE="api"
 export NODE_ENV="production"
+
+command -v xcodebuild >/dev/null || { echo "✗ Falta Xcode (xcodebuild)."; exit 1; }
+if [[ -z "${SKIP_PODS:-}" ]]; then
+  command -v pod >/dev/null || { echo "✗ Falta CocoaPods. Instalalo con: brew install cocoapods"; exit 1; }
+fi
+
+if [[ ! -d node_modules ]]; then
+  echo "▸ npm install (mobile)"
+  npm install
+fi
 
 [[ -d "$WORKSPACE" ]] || { echo "No existe $WORKSPACE. Generalo con: npx expo prebuild --platform ios"; exit 1; }
 
@@ -59,8 +70,8 @@ grep -aq "omero-finance.vercel.app" "$BUNDLE" || { echo "✗ El bundle no apunta
 echo "✓ Bundle apunta a producción"
 
 if [[ "$MODE" == "archive" ]]; then
-  echo "✓ Listo: $ROOT/$ARCHIVE"
-  echo "  Para subirlo: abrí Xcode → Window → Organizer → Distribute App, o corré npm run ios:upload"
+  echo "✓ Listo: $PWD/$ARCHIVE"
+  echo "  Para subirlo: abrí Xcode → Window → Organizer → Distribute App, o corré npm run ios:upload desde la raíz"
   exit 0
 fi
 
