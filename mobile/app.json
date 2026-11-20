@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.avesousa.omero"
+      "bundleIdentifier": "com.omero.finance"
     },
     "android": {
       "package": "com.avesousa.omero",

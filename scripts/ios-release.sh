@@ -24,6 +24,7 @@ SCHEME="Omero"
 ARCHIVE="ios/build/Omero.xcarchive"
 EXPORT_DIR="ios/build/export"
 TEAM_ID="${TEAM_ID:-2582MLZ4GP}"
+BUNDLE_ID="com.omero.finance"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date +%y%m%d%H%M)}"
 
 export EXPO_PUBLIC_API_URL="https://omero-finance.vercel.app"
@@ -68,6 +69,11 @@ if grep -aq "192\.168\.\|localhost:3" "$BUNDLE"; then
 fi
 grep -aq "omero-finance.vercel.app" "$BUNDLE" || { echo "✗ El bundle no apunta a $EXPO_PUBLIC_API_URL."; exit 1; }
 echo "✓ Bundle apunta a producción"
+
+APP_PLIST="$(find "$ARCHIVE/Products/Applications" -maxdepth 2 -name Info.plist | head -n 1)"
+FOUND_ID="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PLIST")"
+[[ "$FOUND_ID" == "$BUNDLE_ID" ]] || { echo "✗ Bundle ID $FOUND_ID: se esperaba $BUNDLE_ID (si subís esto, Apple lo toma como otra app)."; exit 1; }
+echo "✓ Bundle ID $BUNDLE_ID"
 
 if [[ "$MODE" == "archive" ]]; then
   echo "✓ Listo: $PWD/$ARCHIVE"
