@@ -14,6 +14,10 @@
 # producción nunca apunta a tu Mac aunque tengas un .env.local de desarrollo.
 set -euo pipefail
 
+# Todo va dentro de main(): bash lee el archivo completo antes de ejecutar, así editar el script
+# mientras corre un build no lo rompe.
+main() {
+
 MODE="${1:-archive}"
 [[ "$MODE" == "archive" || "$MODE" == "upload" ]] || { echo "Uso: ios-release.sh [archive|upload]"; exit 1; }
 
@@ -121,3 +125,6 @@ run_xcodebuild ios/build/export.log -exportArchive \
   -exportPath "$EXPORT_DIR" \
   -allowProvisioningUpdates
 echo "✓ Subido. Esperá unos minutos a que App Store Connect lo procese y elegilo en TestFlight."
+}
+
+main "$@"
