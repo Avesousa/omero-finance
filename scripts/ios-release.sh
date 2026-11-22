@@ -32,6 +32,24 @@ export EXPO_PUBLIC_DATA_SOURCE="api"
 export EXPO_PUBLIC_VOICE_SOURCE="api"
 export NODE_ENV="production"
 
+# Ejecuta xcodebuild guardando todo el detalle en un log y mostrando solo el avance.
+# Uso: run_xcodebuild <log> <args...>
+run_xcodebuild() {
+  local log="$1"; shift
+  mkdir -p "$(dirname "$log")"
+  if xcodebuild "$@" 2>&1 | tee "$log" | awk '
+    /^=== BUILD TARGET / { t=$4; if (t != last) { print "  ▸ " t; last=t } }
+    /^CompileC |^SwiftCompile |^CompileSwift / { n++; if (n % 100 == 0) print "    … " n " archivos compilados" }
+    /^PhaseScriptExecution .*Bundle/ { print "  ▸ Empaquetando el JS (puede tardar)" }
+    /^Ld |^CodeSign / { if (!seen[$1]++) print "  ▸ " ($1=="Ld" ? "Enlazando" : "Firmando") }
+    /error:/ { print "  ✗ " $0 }
+    /\*\* [A-Z ]+(SUCCEEDED|FAILED) \*\*/ { print "  " $0 }
+    { fflush() }'; then
+    return 0
+  fi
+  echo "✗ Falló. Detalle completo en: $PWD/$log"; return 1
+}
+
 command -v xcodebuild >/dev/null || { echo "✗ Falta Xcode (xcodebuild)."; exit 1; }
 if [[ -z "${SKIP_PODS:-}" ]]; then
   command -v pod >/dev/null || { echo "✗ Falta CocoaPods. Instalalo con: brew install cocoapods"; exit 1; }
@@ -49,9 +67,9 @@ if [[ -z "${SKIP_PODS:-}" ]]; then
   (cd ios && pod install)
 fi
 
-echo "▸ Archivando (build $BUILD_NUMBER, API $EXPO_PUBLIC_API_URL)"
+echo "▸ Archivando (build $BUILD_NUMBER, API $EXPO_PUBLIC_API_URL). Detalle en mobile/ios/build/archive.log"
 rm -rf "$ARCHIVE"
-xcodebuild \
+run_xcodebuild ios/build/archive.log \
   -workspace "$WORKSPACE" \
   -scheme "$SCHEME" \
   -configuration Release \
@@ -97,7 +115,7 @@ cat > "$PLIST" <<PLIST_EOF
 PLIST_EOF
 
 echo "▸ Subiendo a App Store Connect"
-xcodebuild -exportArchive \
+run_xcodebuild ios/build/export.log -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportOptionsPlist "$PLIST" \
   -exportPath "$EXPORT_DIR" \
