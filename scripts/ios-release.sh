@@ -66,9 +66,15 @@ fi
 
 [[ -d "$WORKSPACE" ]] || { echo "No existe $WORKSPACE. Generalo con: npx expo prebuild --platform ios"; exit 1; }
 
+# pod install reescribe Pods.xcodeproj aunque nada haya cambiado, y eso puede obligar a
+# recompilar todos los pods. Solo se corre si Podfile.lock difiere de lo ya instalado.
 if [[ -z "${SKIP_PODS:-}" ]]; then
-  echo "▸ pod install"
-  (cd ios && pod install)
+  if [[ -f ios/Pods/Manifest.lock ]] && cmp -s ios/Podfile.lock ios/Pods/Manifest.lock; then
+    echo "▸ Pods al día (se omite pod install)"
+  else
+    echo "▸ pod install"
+    (cd ios && pod install)
+  fi
 fi
 
 echo "▸ Archivando (build $BUILD_NUMBER, API $EXPO_PUBLIC_API_URL). Detalle en mobile/ios/build/archive.log"
@@ -82,6 +88,8 @@ run_xcodebuild ios/build/archive.log \
   -allowProvisioningUpdates \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
   archive
+
+echo "▸ Archivos compilados: $(grep -c '^CompileC \|^SwiftCompile ' ios/build/archive.log || true) (en una segunda corrida sin cambios debería ser ~0)"
 
 # Verificación: el bundle JS debe apuntar a producción y no a una IP local.
 BUNDLE="$(find "$ARCHIVE" -name main.jsbundle | head -n 1)"
